@@ -16,7 +16,7 @@ class LLVM(Recipe):
                 "https://llvm.org/git/llvm",
                 target_path=local_repo_path,
                 branch=self.branch)
-            ws.apply_patches(self.name, local_repo_path)
+            ws.apply_patches("llvm", local_repo_path)
 
         test_suite_path = local_repo_path / 'projects/test-suite'
         if not test_suite_path.is_dir():
