@@ -13,9 +13,8 @@ class Workspace:
             # by default, use the directory of the script that is being run
             ws_path = Path(sys.argv[0]).parent.resolve(strict=True)
         else:
-            ws_path = Path(
-                ws_path
-            )  # make sure we have a Path, Path(Path()) is just Path()
+            # make sure we have a Path, Path(Path()) is just Path()
+            ws_path = Path(ws_path)
 
         self.ws_path = ws_path
         self.ref_dir = self.ws_path / '.ref'

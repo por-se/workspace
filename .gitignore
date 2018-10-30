@@ -1,0 +1,21 @@
+# build system
+/Pipfile.lock
+__pycache__
+#/build/build.egg-info
+
+# repositories
+/.ref
+/googletest
+/klee
+/klee-uclibc
+/llvm
+/minisat
+/stp
+/testsuite
+/z3
+
+# editor files
+.vscode
+
+# OS garbage
+.DS_Store

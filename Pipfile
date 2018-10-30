@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+lit = ">=0.6.0"
+tabulate = "*"
+wllvm = "*"
+#build = { path = "build", editable = true }
+
+[requires]
+python_version = "3.7"
+
+#[scripts]
+#build = "python -m build"
