@@ -1,7 +1,7 @@
 # build system
 /Pipfile.lock
 __pycache__
-#/build/build.egg-info
+*.egg-info/
 
 # repositories
 /.ref

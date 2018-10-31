@@ -7,10 +7,7 @@ name = "pypi"
 lit = ">=0.6.0"
 tabulate = "*"
 wllvm = "*"
-#build = { path = "build", editable = true }
+workspace_base = { path = "workspace_base", editable = true }
 
 [requires]
 python_version = "3.7"
-
-#[scripts]
-#build = "python -m build"

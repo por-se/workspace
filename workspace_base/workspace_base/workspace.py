@@ -8,13 +8,12 @@ def _run(cmd, *args, **kwargs):
     subprocess.run(cmd, *args, **kwargs)
 
 class Workspace:
-    def __init__(self, ws_path=None):
+    def __init__(self, ws_path):
         if not ws_path:
-            # by default, use the directory of the script that is being run
-            ws_path = Path(sys.argv[0]).parent.resolve(strict=True)
-        else:
-            # make sure we have a Path, Path(Path()) is just Path()
-            ws_path = Path(ws_path)
+            raise RuntimeException("'ws_path' not set")
+
+        # make sure we have a Path, Path(Path()) is just Path()
+        ws_path = Path(ws_path)
 
         self.ws_path = ws_path
         self.ref_dir = self.ws_path / '.ref'
