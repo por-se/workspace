@@ -1,11 +1,12 @@
 import os, sys, subprocess, re
-
 from pathlib import Path
+
 
 def _run(cmd, *args, **kwargs):
     kwargs.setdefault("check", True)
     print(cmd)
     subprocess.run(cmd, *args, **kwargs)
+
 
 class Workspace:
     def __init__(self, ws_path):
@@ -32,7 +33,8 @@ class Workspace:
             if self.ref_dir.is_symlink():
                 os.makedirs(self.ref_dir.resolve(), exist_ok=True)
             else:
-                ref_target_path = Path.home() / '.cache/symbiosys-reference-repos'
+                ref_target_path = Path.home(
+                ) / '.cache/symbiosys-reference-repos'
                 ref_target_path = input(
                     f"Where would you like to story reference repository data? [{ref_target_path}] "
                 ) or ref_target_path
@@ -73,7 +75,8 @@ class Workspace:
             _run(["git", "gc", "--aggressive"], cwd=ref_path)
 
         _run([
-            "git", "clone", "--reference", ref_path, repo_uri, target_path, "--branch", branch
+            "git", "clone", "--reference", ref_path, repo_uri, target_path,
+            "--branch", branch
         ] + clone_args)
 
     def apply_patches(self, name, target_path):

@@ -7,6 +7,7 @@ name = "pypi"
 lit = ">=0.6.0"
 tabulate = "*"
 wllvm = "*"
+toml = "*"
 workspace_base = { path = "workspace_base", editable = true }
 
 [requires]

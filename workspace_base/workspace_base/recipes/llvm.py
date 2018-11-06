@@ -1,12 +1,13 @@
-from .. import Workspace
+from workspace_base.workspace import Workspace
 from . import Recipe
 
 from pathlib import Path
 
 class LLVM(Recipe):
-    def __init__(self, name, branch):
+    def __init__(self, name="llvm", branch="master"):
         super().__init__(name)
         self.branch = branch
+        print(f"[LLVM]: branch: {branch}")
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
