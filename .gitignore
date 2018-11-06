@@ -2,9 +2,10 @@
 /Pipfile.lock
 __pycache__
 *.egg-info/
+/.ref
+/.build
 
 # repositories
-/.ref
 /googletest
 /klee
 /klee-uclibc
