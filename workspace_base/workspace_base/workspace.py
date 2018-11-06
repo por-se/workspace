@@ -52,11 +52,8 @@ class Workspace:
     def reference_clone(self,
                         repo_uri,
                         target_path,
-                        branch="master",
+                        branch,
                         clone_args=[]):
-        if target_path.is_dir():
-            return
-
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
             name = re.sub("\.git$", "", name)

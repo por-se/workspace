@@ -21,16 +21,19 @@ def _ws_from_config(ws_path, config_path):
     with open(config_path) as f:
         config = toml.load(f)
 
-    print(config)
+    # collect all true subclasses of 'recipes.Recipe' that are in 'recipes'
     # https://stackoverflow.com/questions/7584418/iterate-the-classes-defined-in-a-module-imported-dynamically
     all_recipes = dict(
         [(name, cls) for name, cls in recipes.__dict__.items()
          if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
          and not cls == recipes.Recipe])
 
-    print(f"all_recipes: {all_recipes}")
-
     for (target, options) in config.items():
+        if not target in all_recipes:
+            raise RuntimeError(
+                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
+            )
+
         rep = all_recipes[target](**options)
         ws.builds += [rep]
 

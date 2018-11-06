@@ -1,2 +1,3 @@
 [LLVM]
 branch = "release_70"
+profile = "debug"

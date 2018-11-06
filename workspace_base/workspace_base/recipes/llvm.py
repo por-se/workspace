@@ -4,10 +4,9 @@ from . import Recipe
 from pathlib import Path
 
 class LLVM(Recipe):
-    def __init__(self, name="llvm", branch="master"):
+    def __init__(self, branch, profile, name="llvm"):
         super().__init__(name)
         self.branch = branch
-        print(f"[LLVM]: branch: {branch}")
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
