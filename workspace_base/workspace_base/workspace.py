@@ -60,6 +60,8 @@ class Workspace:
             if self.builds[i].name == build_name:
                 return self.builds[i]
 
+            i += 1
+
         return None
 
 

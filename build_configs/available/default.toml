@@ -9,5 +9,8 @@ profile = "release"
 [MINISAT]
 branch = "master"
 
+[STP]
+branch = "master"
+
 [KLEE_UCLIBC]
 branch = "klee_0_9_29"

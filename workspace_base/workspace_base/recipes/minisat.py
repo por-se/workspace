@@ -35,4 +35,5 @@ class MINISAT(Recipe):
 
         _run(["cmake", "--build", "."], cwd=build_path)
 
+        self.include_path = local_repo_path
         self.build_output_path = build_path
