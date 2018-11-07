@@ -55,7 +55,7 @@ class LLVM(Recipe):
                 cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
             else:
                 raise RuntimeException(
-                    f"[LLVM] unknown profile: '{self.profile}'")
+                    f"[LLVM] unknown profile: '{self.profile}' (available: 'debug', 'release')")
 
             _run(["cmake"] + cmake_args, cwd=build_path)
 
