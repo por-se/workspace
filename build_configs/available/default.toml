@@ -6,5 +6,8 @@ profile = "release"
 branch = "z3-4.8.1"
 profile = "release"
 
+[MINISAT]
+branch = "master"
+
 [KLEE_UCLIBC]
 branch = "klee_0_9_29"
