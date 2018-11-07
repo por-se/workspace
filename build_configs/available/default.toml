@@ -1,16 +1,21 @@
-[LLVM]
+[[LLVM]]
 branch = "release_70"
 profile = "release"
 
-[Z3]
+[[LLVM]]
+name = "llvm-debug"
+branch = "release_70"
+profile = "release"
+
+[[Z3]]
 branch = "z3-4.8.1"
 profile = "release"
 
-[MINISAT]
+[[MINISAT]]
 branch = "master"
 
-[STP]
+[[STP]]
 branch = "master"
 
-[KLEE_UCLIBC]
+[[KLEE_UCLIBC]]
 branch = "klee_0_9_29"

@@ -28,14 +28,23 @@ def _ws_from_config(ws_path, config_path):
          if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
          and not cls == recipes.Recipe])
 
-    for (target, options) in config.items():
+    for (target, variations) in config.items():
         if not target in all_recipes:
             raise RuntimeError(
                 f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
             )
 
-        rep = all_recipes[target](**options)
-        ws.builds += [rep]
+        seen_names = set()
+        for options in variations:
+            rep = all_recipes[target](**options)
+
+            if rep.name in seen_names:
+                raise RuntimeError(
+                    f"two variations for target '{target}' with same name '{rep.name}' found"
+                )
+            seen_names.update({rep.name})
+
+            ws.builds += [rep]
 
     return ws
 
