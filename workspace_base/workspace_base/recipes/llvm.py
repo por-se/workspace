@@ -7,7 +7,9 @@ from pathlib import Path
 
 
 class LLVM(Recipe):
-    def __init__(self, branch, profile, name="llvm"):
+    default_name = "llvm"
+
+    def __init__(self, branch, profile, name=default_name):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
@@ -60,3 +62,5 @@ class LLVM(Recipe):
             _run(["cmake"] + cmake_args, cwd=build_path)
 
         _run(["cmake", "--build", "."], cwd=build_path)
+
+        self.build_output_path = build_path

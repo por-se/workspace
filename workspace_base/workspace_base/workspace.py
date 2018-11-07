@@ -50,6 +50,19 @@ class Workspace:
     def set_builds(self, builds):
         self.builds = builds
 
+    def find_build(self, build_name, before=None):
+        i = 0
+
+        while i < len(self.builds):
+            if before and self.builds[i] == before:
+                return None
+
+            if self.builds[i].name == build_name:
+                return self.builds[i]
+
+        return None
+
+
     def reference_clone(self,
                         repo_uri,
                         target_path,

@@ -7,7 +7,9 @@ from pathlib import Path
 
 
 class Z3(Recipe):
-    def __init__(self, branch, profile, name="z3"):
+    default_name = "z3"
+
+    def __init__(self, branch, profile, name=default_name):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
