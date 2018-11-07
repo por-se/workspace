@@ -9,17 +9,18 @@ from pathlib import Path
 class Z3(Recipe):
     default_name = "z3"
 
-    def __init__(self, branch, profile, name=default_name):
+    def __init__(self, branch, profile, repository="git@github.com:Z3Prover/z3.git", name=default_name):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
+        self.repository = repository
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
 
         if not local_repo_path.is_dir():
             ws.reference_clone(
-                "git@github.com:Z3Prover/z3.git",
+                self.repository,
                 target_path=local_repo_path,
                 branch=self.branch)
             ws.apply_patches("z3", local_repo_path)

@@ -12,18 +12,20 @@ class KLEE_UCLIBC(Recipe):
 
     def __init__(self,
                  branch,
+                 repository="git@github.com:klee/klee-uclibc.git",
                  name=default_name,
                  llvm_name=LLVM.default_name):
         super().__init__(name)
         self.branch = branch
         self.llvm_name = llvm_name
+        self.repository = repository
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
 
         if not local_repo_path.is_dir():
             ws.reference_clone(
-                "git@github.com:klee/klee-uclibc.git",
+                self.repository,
                 target_path=local_repo_path,
                 branch=self.branch)
             ws.apply_patches("klee-uclibc", local_repo_path)

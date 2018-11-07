@@ -9,17 +9,24 @@ from pathlib import Path
 class LLVM(Recipe):
     default_name = "llvm"
 
-    def __init__(self, branch, profile, name=default_name):
+    def __init__(self, branch, profile,
+                 repository_llvm="https://llvm.org/git/llvm",
+                 repository_test_suite="https://llvm.org/git/test-suite",
+                 repository_clang="https://llvm.org/git/clang",
+                 name=default_name):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
+        self.repository_llvm = repository_llvm
+        self.repository_test_suite = repository_test_suite
+        self.repository_clang = repository_clang
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
 
         if not local_repo_path.is_dir():
             ws.reference_clone(
-                "https://llvm.org/git/llvm",
+                self.repository_llvm,
                 target_path=local_repo_path,
                 branch=self.branch)
             ws.apply_patches("llvm", local_repo_path)
@@ -27,7 +34,7 @@ class LLVM(Recipe):
         test_suite_path = local_repo_path / 'projects/test-suite'
         if not test_suite_path.is_dir():
             ws.reference_clone(
-                "https://llvm.org/git/llvm",
+                self.repository_test_suite,
                 target_path=test_suite_path,
                 branch=self.branch)
             ws.apply_patches("llvm-test-suite", test_suite_path)
@@ -35,7 +42,7 @@ class LLVM(Recipe):
         clang_path = local_repo_path / 'tools/clang'
         if not clang_path.is_dir():
             ws.reference_clone(
-                "https://llvm.org/git/clang",
+                self.repository_clang,
                 target_path=clang_path,
                 branch=self.branch)
             ws.apply_patches("clang", clang_path)
