@@ -93,7 +93,8 @@ class KLEE(Recipe):
                 f'-DKLEE_UCLIBC_PATH={klee_uclibc.repo_path}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
-                # TODO figure out what we need (probably googletest?)
+                # Waiting for this to be merged:
+                # https://github.com/klee/klee/pull/1005
                 '-DENABLE_UNIT_TESTS=Off',
                 '-DENABLE_TCMALLOC=On',
                 '-DCMAKE_CXX_FLAGS=-fno-rtti -fuse-ld=gold -fdiagnostics-color=always',
