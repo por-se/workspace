@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from pathlib import Path
 from pprint import pprint
 
@@ -51,8 +51,14 @@ def _ws_from_config(ws_path, config_path):
 
 def main():
     ws_path = Path(__file__).resolve().parent.parent.parent
-    active_config_dir = ws_path / 'build_configs' / 'active'
 
-    for config in active_config_dir.glob('*.toml'):
+    if "WS_ENV_CONFIGURATION" in os.environ:
+        available_config_dir = ws_path / 'build_configs' / 'available'
+        configs = [available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"]
+    else:
+        active_config_dir = ws_path / 'build_configs' / 'active'
+        configs = active_config_dir.glob('*.toml')
+
+    for config in configs:
         ws = _ws_from_config(ws_path, config)
         ws.main()
