@@ -39,3 +39,5 @@ class KLEE_UCLIBC(Recipe):
                  cwd=local_repo_path)
 
             _run(["make", "-j", str(multiprocessing.cpu_count())], cwd=local_repo_path)
+
+        self.repo_path = local_repo_path

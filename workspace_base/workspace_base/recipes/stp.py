@@ -51,3 +51,6 @@ class STP(Recipe):
             _run(["cmake"] + cmake_args, cwd=build_path)
 
         _run(["cmake", "--build", "."], cwd=build_path)
+
+        self.build_output_path = build_path
+        self.stp_dir = local_repo_path

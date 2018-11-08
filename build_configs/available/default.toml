@@ -2,10 +2,10 @@
 branch = "release_70"
 profile = "release"
 
-[[LLVM]]
-name = "llvm-debug"
-branch = "release_70"
-profile = "release"
+# [[LLVM]]
+# name = "llvm-debug"
+# branch = "release_70"
+# profile = "release"
 
 [[Z3]]
 branch = "z3-4.8.1"
@@ -19,3 +19,7 @@ branch = "master"
 
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"
+
+[[KLEE]]
+branch = "master"
+profile = "release"
