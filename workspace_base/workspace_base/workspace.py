@@ -97,9 +97,6 @@ class Workspace:
             _run(f"git apply < {patch}", shell=True, cwd=target_path)
 
     def main(self):
-        print(sys.argv)
-        return
-
         self.__check_create_ref_dir()
 
         for build in self.builds:
