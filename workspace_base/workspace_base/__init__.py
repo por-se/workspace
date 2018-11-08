@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, shutil, subprocess
 from pathlib import Path
 from pprint import pprint
 
@@ -9,9 +9,7 @@ from workspace_base.workspace import Workspace
 from .workspace import Workspace
 
 
-def _ws_from_config(ws_path, config_path):
-    print(f".. loading config: {config_path}")
-
+def ws_from_config(ws_path, config_path):
     ws = Workspace(ws_path)
 
     assert config_path, "no config given"
@@ -48,17 +46,54 @@ def _ws_from_config(ws_path, config_path):
 
     return ws
 
+def __ws_path_from_here():
+    return Path(__file__).resolve().parent.parent.parent
 
-def main():
-    ws_path = Path(__file__).resolve().parent.parent.parent
+def build_main():
+    ws_path = __ws_path_from_here()
 
     if "WS_ENV_CONFIGURATION" in os.environ:
         available_config_dir = ws_path / 'build_configs' / 'available'
-        configs = [available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"]
+        configs = [
+            available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
+        ]
     else:
         active_config_dir = ws_path / 'build_configs' / 'active'
         configs = active_config_dir.glob('*.toml')
 
     for config in configs:
-        ws = _ws_from_config(ws_path, config)
+        ws = ws_from_config(ws_path, config)
         ws.main()
+
+
+def env_main():
+    cmd_name = Path(sys.argv[0]).name
+    if len(sys.argv) != 2:
+        print(f"Usage: pipenv run {cmd_name} <config_name>", file=sys.stderr)
+        print(
+            f"Example (for 'default.toml' config): pipenv run {cmd_name} default",
+            file=sys.stderr)
+        sys.exit(1)
+
+    config_name = sys.argv[1]
+
+    env = os.environ.copy()
+    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
+
+    ws_path = __ws_path_from_here()
+
+    config_path = ws_path / 'build_configs' / 'available' / f"{config_name}.toml"
+    if not config_path.exists():
+        print(f"configuration '{config_name}' not found at '{config_path}'")
+        sys.exit(1)
+
+    ws = workspace_base.ws_from_config(ws_path, config_path)
+    ws.add_to_env(env)
+
+    # yes, the `str()` is actually necessary
+    env["WS_ENV_CONFIGURATION"] = str(config_name)
+
+    os.execvpe("pipenv", [
+        shutil.which("pipenv"), "shell",
+        f"PROMPT=\"({ws_path.name}) ({config_name}) $PROMPT\""
+    ], env)

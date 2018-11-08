@@ -7,5 +7,8 @@ class Recipe:
     def build(self, ws: Workspace):
         raise NotImplementedError
 
+    def add_to_env(self, env, ws: Workspace):
+        pass
+
     def clean(self, ws: Workspace):
         raise NotImplementedError

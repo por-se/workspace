@@ -4,7 +4,6 @@ from pathlib import Path
 
 def _run(cmd, *args, **kwargs):
     kwargs.setdefault("check", True)
-    print(cmd)
     subprocess.run(cmd, *args, **kwargs)
 
 
@@ -21,8 +20,6 @@ class Workspace:
         self.patch_dir = self.ws_path / 'patch'
         self.build_dir = self.ws_path / '.build'
         self.builds = []
-
-        print(f"Workspace path: {self.ws_path}")
 
     def __check_create_ref_dir(self):
         if not self.ref_dir.is_dir():
@@ -95,6 +92,10 @@ class Workspace:
     def apply_patches(self, name, target_path):
         for patch in (self.patch_dir / name).glob("*.patch"):
             _run(f"git apply < {patch}", shell=True, cwd=target_path)
+
+    def add_to_env(self, env):
+        for build in self.builds:
+            build.add_to_env(env, self)
 
     def main(self):
         self.__check_create_ref_dir()

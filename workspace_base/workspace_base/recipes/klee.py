@@ -50,6 +50,9 @@ class KLEE(Recipe):
         self.llvm_name = llvm_name
         self.klee_uclibc_name = klee_uclibc_name
 
+    def _make_build_path(self, ws: Workspace):
+        return ws.build_dir / self.name / self.profile
+
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
 
@@ -60,7 +63,7 @@ class KLEE(Recipe):
                 branch=self.branch)
             ws.apply_patches("klee", local_repo_path)
 
-        build_path = ws.build_dir / self.name / self.profile
+        build_path = self._make_build_path(ws)
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -107,3 +110,6 @@ class KLEE(Recipe):
                 cwd=build_path)
 
         _run(["cmake", "--build", "."], cwd=build_path)
+
+    def add_to_env(self, env, ws: Workspace):
+        env["PATH"] = str(self._make_build_path(ws) / "bin") + ":" + env["PATH"]

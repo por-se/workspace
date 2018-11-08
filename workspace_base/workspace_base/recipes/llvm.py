@@ -21,6 +21,9 @@ class LLVM(Recipe):
         self.repository_test_suite = repository_test_suite
         self.repository_clang = repository_clang
 
+    def _make_build_path(self, ws: Workspace):
+        return ws.build_dir / self.name / self.profile
+
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
 
@@ -47,7 +50,7 @@ class LLVM(Recipe):
                 branch=self.branch)
             ws.apply_patches("clang", clang_path)
 
-        build_path = ws.build_dir / self.name / self.profile
+        build_path = self._make_build_path(ws)
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -71,3 +74,6 @@ class LLVM(Recipe):
         _run(["cmake", "--build", "."], cwd=build_path)
 
         self.build_output_path = build_path
+
+    def add_to_env(self, env, ws: Workspace):
+        env["PATH"] = str(self._make_build_path(ws) / "bin") + ":" + env["PATH"]
