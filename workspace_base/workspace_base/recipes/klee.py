@@ -1,6 +1,7 @@
 import os, multiprocessing, shutil
 
 from workspace_base.workspace import Workspace, _run
+from workspace_base.util import j_from_num_threads
 from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC
 
 from pathlib import Path
@@ -109,7 +110,7 @@ class KLEE(Recipe):
                 self.profiles[self.profile]["cmake_args"],
                 cwd=build_path)
 
-        _run(["cmake", "--build", "."], cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 
     def add_to_env(self, env, ws: Workspace):
         env["PATH"] = str(self._make_build_path(ws) / "bin") + ":" + env["PATH"]

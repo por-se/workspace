@@ -1,6 +1,7 @@
 import os, multiprocessing
 
 from workspace_base.workspace import Workspace, _run
+from workspace_base.util import j_from_num_threads
 from . import Recipe, MINISAT
 
 from pathlib import Path
@@ -50,7 +51,7 @@ class STP(Recipe):
 
             _run(["cmake"] + cmake_args, cwd=build_path)
 
-        _run(["cmake", "--build", "."], cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 
         self.build_output_path = build_path
         self.stp_dir = local_repo_path

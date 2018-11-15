@@ -1,5 +1,7 @@
-import os, sys, subprocess, re
+import os, sys, subprocess, re, multiprocessing
 from pathlib import Path
+
+import workspace_base.util as util
 
 
 def _run(cmd, *args, **kwargs):
@@ -61,12 +63,7 @@ class Workspace:
 
         return None
 
-
-    def reference_clone(self,
-                        repo_uri,
-                        target_path,
-                        branch,
-                        clone_args=[]):
+    def reference_clone(self, repo_uri, target_path, branch, clone_args=[]):
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
             name = re.sub("\.git$", "", name)
@@ -98,6 +95,15 @@ class Workspace:
             build.add_to_env(env, self)
 
     def main(self):
+        parser = util.EnvVarArgumentParser(description="build this workspace")
+        parser.add_argument(
+            '-j',
+            '--num_threads',
+            type=int,
+            default=multiprocessing.cpu_count(),
+            help="specify number of threads to use in parallel")
+        self.args = parser.parse_args()
+
         self.__check_create_ref_dir()
 
         for build in self.builds:

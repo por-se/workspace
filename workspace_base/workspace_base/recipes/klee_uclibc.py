@@ -1,6 +1,7 @@
-import os, multiprocessing
+import os
 
 from workspace_base.workspace import Workspace, _run
+from workspace_base.util import j_from_num_threads
 from . import Recipe
 from .llvm import LLVM
 
@@ -38,6 +39,8 @@ class KLEE_UCLIBC(Recipe):
             ],
                  cwd=local_repo_path)
 
-            _run(["make", "-j", str(multiprocessing.cpu_count())], cwd=local_repo_path)
+
+
+            _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=local_repo_path)
 
         self.repo_path = local_repo_path
