@@ -9,6 +9,7 @@ tabulate = "*"
 wllvm = "*"
 toml = "*"
 workspace_base = { path = "workspace_base", editable = true }
+psutil = "*"
 
 [requires]
 python_version = "3.7"

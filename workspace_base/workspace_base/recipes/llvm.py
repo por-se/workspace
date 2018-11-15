@@ -1,4 +1,6 @@
-import os
+import os, sys
+
+import psutil
 
 from workspace_base.workspace import Workspace, _run
 from workspace_base.util import j_from_num_threads
@@ -64,6 +66,10 @@ class LLVM(Recipe):
 
             if self.profile == "debug":
                 cmake_args += ["-DCMAKE_BUILD_TYPE=Debug"]
+                avail_mem =  psutil.virtual_memory().available
+                if avail_mem < ws.args.num_threads * 12000000000:
+                    print("[LLVM] less than 12G memory per thread available during a debug build; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]")
+                    cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
             elif self.profile == "release":
                 cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
             else:
