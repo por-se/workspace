@@ -1,5 +1,6 @@
 import argparse, os
 
+# https://stackoverflow.com/questions/10551117/setting-options-from-environment-variables-when-using-argparse/24662215#24662215
 class EnvVarArgumentParser(argparse.ArgumentParser):
     class _CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
         def _get_help_string(self, action):
