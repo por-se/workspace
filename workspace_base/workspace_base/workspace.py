@@ -34,7 +34,7 @@ class Workspace:
                 os.makedirs(self.ref_dir.resolve(), exist_ok=True)
             else:
                 ref_target_path = Path.home(
-                ) / '.cache/symbiosys-reference-repos'
+                ) / '.cache/reference-repos'
                 ref_target_path = input(
                     f"Where would you like to story reference repository data? [{ref_target_path}] "
                 ) or ref_target_path
