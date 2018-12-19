@@ -3,6 +3,7 @@ from pathlib import Path
 from pprint import pprint
 
 import toml
+import shellingham
 
 import workspace_base.recipes
 from workspace_base.workspace import Workspace
@@ -46,8 +47,10 @@ def ws_from_config(ws_path, config_path):
 
     return ws
 
+
 def __ws_path_from_here():
     return Path(__file__).resolve().parent.parent.parent
+
 
 def build_main():
     ws_path = __ws_path_from_here()
@@ -93,7 +96,18 @@ def env_main():
     # yes, the `str()` is actually necessary
     env["WS_ENV_CONFIGURATION"] = str(config_name)
 
+    shell = shellingham.detect_shell()[0]
+    if shell == "bash":
+        prompt_cmd = f"PS1=\"({ws_path.name}) ({config_name}) $PS1\""
+    elif shell == "zsh":
+        prompt_cmd = f"PROMPT=\"({ws_path.name}) ({config_name}) $PROMPT\""
+    elif shell == "fish":
+        prompt_cmd = f"functions -c fish_prompt _fish_nested_prompt ; function fish_prompt ; printf \"\\n%s\" \"({ws_path.name}) ({config_name}) \" ; _fish_nested_prompt ; end"
+
+    # need "--anyway" as we are already running in a pipenv context, so pipenv believes it should not spawn a shell..
     os.execvpe("pipenv", [
-        shutil.which("pipenv"), "shell",
-        f"PROMPT=\"({ws_path.name}) ({config_name}) $PROMPT\""
+        shutil.which("pipenv"),
+        "shell",
+        "--anyway",
+        prompt_cmd,
     ], env)

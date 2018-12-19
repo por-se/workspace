@@ -10,6 +10,7 @@ wllvm = "*"
 toml = "*"
 workspace_base = { path = "workspace_base", editable = true }
 psutil = "*"
+shellingham = "*"
 
 [requires]
 python_version = "3.7"
