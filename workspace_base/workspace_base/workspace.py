@@ -35,9 +35,9 @@ class Workspace:
             else:
                 ref_target_path = Path.home(
                 ) / '.cache/reference-repos'
-                ref_target_path = input(
-                    f"Where would you like to story reference repository data? [{ref_target_path}] "
-                ) or ref_target_path
+                input_res = input(f"Where would you like to story reference repository data? [{ref_target_path}] ")
+                if input:
+                    ref_target_path = Path(input_res)
 
                 ref_target_path = ref_target_path.resolve()
 
