@@ -1,4 +1,4 @@
-import sys, os, shutil, subprocess
+import sys, os, shutil, subprocess, argparse, multiprocessing
 from pathlib import Path
 from pprint import pprint
 
@@ -53,20 +53,45 @@ def __ws_path_from_here():
 
 
 def build_main():
+    parser = util.EnvVarArgumentParser(
+        description=
+        "Build one or more configurations. By default, builds all configurations, or only the configuration of the current environment if one is active."
+    )
+
+    parser.add_argument(
+        'configs',
+        metavar='config',
+        type=str,
+        nargs='*',
+        help="The configurations to build")
+
+    parser.add_argument(
+        '-j',
+        '--num_threads',
+        type=int,
+        default=multiprocessing.cpu_count(),
+        help="specify number of threads to use in parallel")
+
+    args = parser.parse_args()
+
     ws_path = __ws_path_from_here()
 
-    if "WS_ENV_CONFIGURATION" in os.environ:
+    if args.configs:
         available_config_dir = ws_path / 'build_configs' / 'available'
-        configs = [
-            available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
-        ]
+        configs = [available_config_dir / f"{config}.toml" for config in args.configs]
     else:
-        active_config_dir = ws_path / 'build_configs' / 'active'
-        configs = active_config_dir.glob('*.toml')
+        if "WS_ENV_CONFIGURATION" in os.environ:
+            available_config_dir = ws_path / 'build_configs' / 'available'
+            configs = [
+                available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
+            ]
+        else:
+            active_config_dir = ws_path / 'build_configs' / 'active'
+            configs = active_config_dir.glob('*.toml')
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
-        ws.main()
+        ws.build(num_threads = args.num_threads)
 
 
 def env_main():

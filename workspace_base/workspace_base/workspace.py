@@ -1,4 +1,4 @@
-import os, sys, subprocess, re, multiprocessing
+import os, sys, subprocess, re
 from pathlib import Path
 
 import workspace_base.util as util
@@ -94,15 +94,12 @@ class Workspace:
         for build in self.builds:
             build.add_to_env(env, self)
 
-    def main(self):
-        parser = util.EnvVarArgumentParser(description="build this workspace")
-        parser.add_argument(
-            '-j',
-            '--num_threads',
-            type=int,
-            default=multiprocessing.cpu_count(),
-            help="specify number of threads to use in parallel")
-        self.args = parser.parse_args()
+    def build(self, num_threads):
+        class Args:
+            pass
+
+        self.args = Args()
+        self.args.num_threads = num_threads
 
         self.__check_create_ref_dir()
 
