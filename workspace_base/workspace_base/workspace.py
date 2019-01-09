@@ -105,3 +105,6 @@ class Workspace:
 
         for build in self.builds:
             build.build(self)
+
+    def print_options(self):
+        pass
