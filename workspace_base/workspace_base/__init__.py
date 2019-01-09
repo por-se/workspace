@@ -170,6 +170,14 @@ def list_options_main():
     elif "WS_ENV_CONFIGURATION" in os.environ:
         available_config_dir = ws_path / 'build_configs' / 'available'
         config = available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
+    else:
+        config = None
 
-    ws = ws_from_config(ws_path, config)
-    ws.print_options()
+    if config:
+        raise NotImplementedError
+    else:
+        all_recipes = _get_all_recipes()
+        for (name, clas) in all_recipes.items():
+            print(f"{name}:")
+            clas.list_options()
+            print()

@@ -12,3 +12,7 @@ class Recipe:
 
     def clean(self, ws: Workspace):
         raise NotImplementedError
+
+    @classmethod
+    def list_options(cls, setting_dict={}):
+        print(dir(cls))
