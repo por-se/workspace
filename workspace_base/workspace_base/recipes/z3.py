@@ -26,7 +26,7 @@ class Z3(Recipe):
                 branch=self.branch)
             ws.apply_patches("z3", local_repo_path)
 
-        build_path = ws.build_dir / self.name / self.profile
+        build_path = ws.build_dir / self.name
         if not build_path.exists():
             os.makedirs(build_path)
 

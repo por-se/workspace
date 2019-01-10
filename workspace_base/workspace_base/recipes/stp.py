@@ -30,7 +30,7 @@ class STP(Recipe):
                 branch=self.branch)
             ws.apply_patches("stp", local_repo_path)
 
-        build_path = ws.build_dir / self.name / 'release'
+        build_path = ws.build_dir / self.name
         if not build_path.exists():
             os.makedirs(build_path)
 

@@ -52,7 +52,7 @@ class KLEE(Recipe):
         self.klee_uclibc_name = klee_uclibc_name
 
     def _make_build_path(self, ws: Workspace):
-        return ws.build_dir / self.name / self.profile
+        return ws.build_dir / self.name
 
     def build(self, ws: Workspace):
         local_repo_path = ws.ws_path / self.name
@@ -111,6 +111,9 @@ class KLEE(Recipe):
                 cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
+
+    def clean(self, ws: Workspace):
+        raise NotImplementedError
 
     def add_to_env(self, env, ws: Workspace):
         env["PATH"] = str(self._make_build_path(ws) / "bin") + ":" + env["PATH"]

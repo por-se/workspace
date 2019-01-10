@@ -13,6 +13,7 @@ setup(
             # do NOT name this 'env', as it will override the shell-builtin 'env'!
             "into_env = workspace_base:env_main",
             "list_options = workspace_base:list_options_main",
+            "clean = workspace_base:clean_main",
 		],
 	},
 )

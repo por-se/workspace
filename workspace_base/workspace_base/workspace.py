@@ -106,5 +106,12 @@ class Workspace:
         for build in self.builds:
             build.build(self)
 
-    def print_options(self):
-        pass
+    def clean(self, dist_clean):
+        class Args:
+            pass
+
+        self.args = Args()
+        self.args.dist_clean = dist_clean
+
+        for build in self.builds:
+            build.clean(self)

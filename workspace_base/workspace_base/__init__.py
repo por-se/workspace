@@ -18,6 +18,21 @@ def _get_all_recipes():
          and not cls == recipes.Recipe])
     return recipes_to_list
 
+def _resolve_or_default_configs(ws_path, given_configs):
+    if given_configs:
+        available_config_dir = ws_path / 'build_configs' / 'available'
+        configs = [available_config_dir / f"{config}.toml" for config in given_configs]
+    else:
+        if "WS_ENV_CONFIGURATION" in os.environ:
+            available_config_dir = ws_path / 'build_configs' / 'available'
+            configs = [
+                available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
+            ]
+        else:
+            active_config_dir = ws_path / 'build_configs' / 'active'
+            configs = active_config_dir.glob('*.toml')
+    return configs
+
 def ws_from_config(ws_path, config_path):
     ws = Workspace(ws_path)
 
@@ -79,18 +94,7 @@ def build_main():
 
     ws_path = __ws_path_from_here()
 
-    if args.configs:
-        available_config_dir = ws_path / 'build_configs' / 'available'
-        configs = [available_config_dir / f"{config}.toml" for config in args.configs]
-    else:
-        if "WS_ENV_CONFIGURATION" in os.environ:
-            available_config_dir = ws_path / 'build_configs' / 'available'
-            configs = [
-                available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
-            ]
-        else:
-            active_config_dir = ws_path / 'build_configs' / 'active'
-            configs = active_config_dir.glob('*.toml')
+    configs = _resolve_or_default_configs(ws_path, args.configs)
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
@@ -139,6 +143,36 @@ def env_main():
         "--anyway",
         prompt_cmd,
     ], env)
+
+def clean_main():
+    parser = argparse.ArgumentParser(
+        description=
+        "Clean one or more configurations. By default, cleans all configurations, or only the configuration of the current environment if one is active."
+    )
+
+    parser.add_argument(
+        'configs',
+        metavar='config',
+        type=str,
+        nargs='*',
+        help="The configurations to clean")
+
+    parser.add_argument(
+        "--dist-clean",
+        action='store_true',
+        default=False,
+        help="Clean fully, e.g., also removing all cloned repositories etc."
+    )
+
+    args = parser.parse_args()
+
+    ws_path = __ws_path_from_here()
+
+    configs = _resolve_or_default_configs(ws_path, args.configs)
+
+    for config in configs:
+        ws = ws_from_config(ws_path, config)
+        ws.clean(dist_clean=args.dist_clean)
 
 def list_options_main():
     parser = argparse.ArgumentParser(

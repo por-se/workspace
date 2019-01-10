@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, shutil
 
 import psutil
 
@@ -27,12 +27,22 @@ class LLVM(Recipe):
         self.repository_test_suite = repository_test_suite
         self.repository_clang = repository_clang
 
-    def _make_build_path(self, ws: Workspace):
-        return ws.build_dir / self.name / self.profile
+    def _make_internal_paths(self, ws: Workspace):
+        class InternalPaths:
+            pass
+
+        res = InternalPaths()
+        res.local_repo_path = ws.ws_path / self.name
+        res.test_suite_path = res.local_repo_path / 'projects/test-suite'
+        res.clang_path = res.local_repo_path / 'tools/clang'
+        res.build_path = ws.build_dir / self.name
+
+        return res
 
     def build(self, ws: Workspace):
-        local_repo_path = ws.ws_path / self.name
+        internal_paths = self._make_internal_paths(ws)
 
+        local_repo_path = internal_paths.local_repo_path
         if not local_repo_path.is_dir():
             ws.reference_clone(
                 self.repository_llvm,
@@ -40,7 +50,7 @@ class LLVM(Recipe):
                 branch=self.branch)
             ws.apply_patches("llvm", local_repo_path)
 
-        test_suite_path = local_repo_path / 'projects/test-suite'
+        test_suite_path = internal_paths.test_suite_path
         if not test_suite_path.is_dir():
             ws.reference_clone(
                 self.repository_test_suite,
@@ -48,7 +58,7 @@ class LLVM(Recipe):
                 branch=self.branch)
             ws.apply_patches("llvm-test-suite", test_suite_path)
 
-        clang_path = local_repo_path / 'tools/clang'
+        clang_path = internal_paths.clang_path
         if not clang_path.is_dir():
             ws.reference_clone(
                 self.repository_clang,
@@ -56,7 +66,7 @@ class LLVM(Recipe):
                 branch=self.branch)
             ws.apply_patches("clang", clang_path)
 
-        build_path = self._make_build_path(ws)
+        build_path = internal_paths.build_path
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -91,6 +101,12 @@ class LLVM(Recipe):
 
         self.build_output_path = build_path
 
+    def clean(self, ws: Workspace):
+        ips = self._make_internal_paths(ws)
+        shutil.rmtree(ips.build_path)
+        if ws.args.dist_clean:
+            shutil.rmtree(ips.local_repo_path)
+
     def add_to_env(self, env, ws: Workspace):
-        env["PATH"] = str(
-            self._make_build_path(ws) / "bin") + ":" + env["PATH"]
+        build_path = self._make_internal_paths(ws).build_path
+        env["PATH"] = str(build_path / "bin") + ":" + env["PATH"]
