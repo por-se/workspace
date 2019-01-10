@@ -9,6 +9,14 @@ import workspace_base.recipes
 from workspace_base.workspace import Workspace
 from .workspace import Workspace
 
+def _get_all_recipes():
+    # collect all true subclasses of 'recipes.Recipe' that are in 'recipes'
+    # https://stackoverflow.com/questions/7584418/iterate-the-classes-defined-in-a-module-imported-dynamically
+    recipes_to_list = dict(
+        [(name, cls) for name, cls in recipes.__dict__.items()
+         if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
+         and not cls == recipes.Recipe])
+    return recipes_to_list
 
 def ws_from_config(ws_path, config_path):
     ws = Workspace(ws_path)
@@ -20,22 +28,17 @@ def ws_from_config(ws_path, config_path):
     with open(config_path) as f:
         config = toml.load(f)
 
-    # collect all true subclasses of 'recipes.Recipe' that are in 'recipes'
-    # https://stackoverflow.com/questions/7584418/iterate-the-classes-defined-in-a-module-imported-dynamically
-    all_recipes = dict(
-        [(name, cls) for name, cls in recipes.__dict__.items()
-         if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
-         and not cls == recipes.Recipe])
+    recipes_to_list = _get_all_recipes()
 
     for (target, variations) in config.items():
-        if not target in all_recipes:
+        if not target in recipes_to_list:
             raise RuntimeError(
                 f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
             )
 
         seen_names = set()
         for options in variations:
-            rep = all_recipes[target](**options)
+            rep = recipes_to_list[target](**options)
 
             if rep.name in seen_names:
                 raise RuntimeError(
@@ -136,3 +139,56 @@ def env_main():
         "--anyway",
         prompt_cmd,
     ], env)
+
+def list_options_main():
+    parser = argparse.ArgumentParser(
+        description=
+        "List all available options. If given a configuration, only for the recipes appearing in that configuration, otherwise for all available recipes."
+    )
+
+    parser.add_argument(
+        'recipes',
+        metavar='recipe',
+        type=str,
+        nargs='*',
+        help="The recipes for which to print options")
+
+    parser.add_argument(
+        '-c',
+        '--config',
+        type=str,
+        default=None,
+        help="specify the configuration for which to print options")
+
+    args = parser.parse_args()
+
+    ws_path = __ws_path_from_here()
+
+    if args.config:
+        available_config_dir = ws_path / 'build_configs' / 'available'
+        config = available_config_dir / f"{args.config}.toml"
+    elif "WS_ENV_CONFIGURATION" in os.environ:
+        available_config_dir = ws_path / 'build_configs' / 'available'
+        config = available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
+    else:
+        config = None
+
+    recipes_to_list = _get_all_recipes()
+    if args.recipes:
+        recipes_to_list = {k: recipes_to_list[k] for k in args.recipes}
+
+    if config:
+        ws = ws_from_config(ws_path, config)
+        for rep in ws.builds:
+            clas = rep.__class__
+            name = clas.__name__
+            if not name in recipes_to_list:
+                continue
+            print(f"{name}:")
+            clas.list_options(instance=rep)
+            print()
+    else:
+        for (name, clas) in recipes_to_list.items():
+            print(f"{name}:")
+            clas.list_options()
+            print()
