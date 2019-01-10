@@ -178,7 +178,15 @@ def list_options_main():
         recipes_to_list = {k: recipes_to_list[k] for k in args.recipes}
 
     if config:
-        raise NotImplementedError
+        ws = ws_from_config(ws_path, config)
+        for rep in ws.builds:
+            clas = rep.__class__
+            name = clas.__name__
+            if not name in recipes_to_list:
+                continue
+            print(f"{name}:")
+            clas.list_options(instance=rep)
+            print()
     else:
         for (name, clas) in recipes_to_list.items():
             print(f"{name}:")
