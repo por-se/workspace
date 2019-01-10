@@ -12,11 +12,11 @@ from .workspace import Workspace
 def _get_all_recipes():
     # collect all true subclasses of 'recipes.Recipe' that are in 'recipes'
     # https://stackoverflow.com/questions/7584418/iterate-the-classes-defined-in-a-module-imported-dynamically
-    all_recipes = dict(
+    recipes_to_list = dict(
         [(name, cls) for name, cls in recipes.__dict__.items()
          if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
          and not cls == recipes.Recipe])
-    return all_recipes
+    return recipes_to_list
 
 def ws_from_config(ws_path, config_path):
     ws = Workspace(ws_path)
@@ -28,17 +28,17 @@ def ws_from_config(ws_path, config_path):
     with open(config_path) as f:
         config = toml.load(f)
 
-    all_recipes = _get_all_recipes()
+    recipes_to_list = _get_all_recipes()
 
     for (target, variations) in config.items():
-        if not target in all_recipes:
+        if not target in recipes_to_list:
             raise RuntimeError(
                 f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
             )
 
         seen_names = set()
         for options in variations:
-            rep = all_recipes[target](**options)
+            rep = recipes_to_list[target](**options)
 
             if rep.name in seen_names:
                 raise RuntimeError(
@@ -173,11 +173,14 @@ def list_options_main():
     else:
         config = None
 
+    recipes_to_list = _get_all_recipes()
+    if args.recipes:
+        recipes_to_list = {k: recipes_to_list[k] for k in args.recipes}
+
     if config:
         raise NotImplementedError
     else:
-        all_recipes = _get_all_recipes()
-        for (name, clas) in all_recipes.items():
+        for (name, clas) in recipes_to_list.items():
             print(f"{name}:")
             clas.list_options()
             print()
