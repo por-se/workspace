@@ -19,6 +19,7 @@ class LLVM(Recipe):
                  repository_test_suite="https://llvm.org/git/test-suite",
                  repository_clang="https://llvm.org/git/clang",
                  name=default_name):
+        """Build LLVM."""
         super().__init__(name)
         self.branch = branch
         self.profile = profile
