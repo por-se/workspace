@@ -143,7 +143,7 @@ def env_main():
 def list_options_main():
     parser = argparse.ArgumentParser(
         description=
-        "List all available options. If given a configuration, only for the recipes appearing in that configuration, otherwise for all available recipes."
+        "List all available options with their default values. If given a configuration, only for the recipes appearing in that configuration, otherwise for all available recipes."
     )
 
     parser.add_argument(
