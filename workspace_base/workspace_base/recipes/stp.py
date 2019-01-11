@@ -1,7 +1,7 @@
 import os, multiprocessing, shutil
 
 from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads
+from workspace_base.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe, MINISAT
 
 from pathlib import Path
@@ -14,11 +14,13 @@ class STP(Recipe):
                  branch,
                  name=default_name,
                  repository="git@github.com:stp/stp.git",
-                 minisat_name=MINISAT.default_name):
+                 minisat_name=MINISAT.default_name,
+                 cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.repository = repository
         self.minisat_name = minisat_name
+        self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
@@ -56,10 +58,11 @@ class STP(Recipe):
                 '-DENABLE_PYTHON_INTERFACE=Off', '-DENABLE_ASSERTIONS=On',
                 '-DSANITIZE=Off', '-DSTATICCOMPILE=On',
                 '-DCMAKE_CXX_FLAGS=-std=c++11 -fuse-ld=gold -fdiagnostics-color=always',
-                local_repo_path
             ]
 
-            _run(["cmake"] + cmake_args, cwd=build_path)
+            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 

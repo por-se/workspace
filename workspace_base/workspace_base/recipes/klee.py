@@ -1,7 +1,7 @@
 import os, multiprocessing, shutil
 
 from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads
+from workspace_base.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC
 
 from pathlib import Path
@@ -38,7 +38,8 @@ class KLEE(Recipe):
                  stp_name=STP.default_name,
                  z3_name=Z3.default_name,
                  llvm_name=LLVM.default_name,
-                 klee_uclibc_name=KLEE_UCLIBC.default_name):
+                 klee_uclibc_name=KLEE_UCLIBC.default_name,
+                 cmake_adjustments=[]):
         if not profile in self.profiles:
             raise RuntimeError
 
@@ -50,6 +51,7 @@ class KLEE(Recipe):
         self.z3_name = z3_name
         self.llvm_name = llvm_name
         self.klee_uclibc_name = klee_uclibc_name
+        self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
@@ -108,12 +110,13 @@ class KLEE(Recipe):
                 '-DENABLE_UNIT_TESTS=Off',
                 '-DENABLE_TCMALLOC=On',
                 '-DCMAKE_CXX_FLAGS=-fno-rtti -fuse-ld=gold -fdiagnostics-color=always',
-                local_repo_path
             ]
 
+            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
+            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+
             _run(
-                ["cmake"] + cmake_args +
-                self.profiles[self.profile]["cmake_args"],
+                ["cmake"] + cmake_args + [local_repo_path],
                 cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)

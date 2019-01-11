@@ -1,7 +1,7 @@
 import os, multiprocessing, shutil
 
 from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads
+from workspace_base.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
 from .llvm import LLVM
 
@@ -11,10 +11,11 @@ from pathlib import Path
 class MINISAT(Recipe):
     default_name = "minisat"
 
-    def __init__(self, branch, name=default_name, repository="git@github.com:stp/minisat.git"):
+    def __init__(self, branch, name=default_name, repository="git@github.com:stp/minisat.git", cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.repository = repository
+        self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
@@ -39,10 +40,8 @@ class MINISAT(Recipe):
         build_path = int_paths.build_path
         if not build_path.exists():
             os.makedirs(build_path)
-
-            cmake_args = ['-G', 'Ninja', local_repo_path]
-
-            _run(["cmake"] + cmake_args, cwd=build_path)
+            cmake_args = adjusted_cmake_args(['-G', 'Ninja'], self.cmake_adjustments)
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 

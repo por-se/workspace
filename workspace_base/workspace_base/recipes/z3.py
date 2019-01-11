@@ -1,7 +1,7 @@
 import os, shutil
 
 from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads
+from workspace_base.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
 
 from pathlib import Path
@@ -10,11 +10,12 @@ from pathlib import Path
 class Z3(Recipe):
     default_name = "z3"
 
-    def __init__(self, branch, profile, repository="git@github.com:Z3Prover/z3.git", name=default_name):
+    def __init__(self, branch, profile, repository="git@github.com:Z3Prover/z3.git", name=default_name, cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
@@ -44,7 +45,6 @@ class Z3(Recipe):
                 '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 '-DBUILD_LIBZ3_SHARED=false', '-DUSE_OPENMP=0',
                 '-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always',
-                local_repo_path
             ]
 
             if self.profile == "release":
@@ -53,7 +53,9 @@ class Z3(Recipe):
                 raise RuntimeException(
                     f"[Z3] unknown profile: '{self.profile}' (available: 'release')")
 
-            _run(["cmake"] + cmake_args, cwd=build_path)
+            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 

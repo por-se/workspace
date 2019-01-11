@@ -3,7 +3,7 @@ import os, sys, shutil
 import psutil
 
 from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads
+from workspace_base.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
 
 from pathlib import Path
@@ -18,7 +18,8 @@ class LLVM(Recipe):
                  repository_llvm="https://llvm.org/git/llvm",
                  repository_test_suite="https://llvm.org/git/test-suite",
                  repository_clang="https://llvm.org/git/clang",
-                 name=default_name):
+                 name=default_name,
+                 cmake_adjustments=[]):
         """Build LLVM."""
         super().__init__(name)
         self.branch = branch
@@ -26,6 +27,7 @@ class LLVM(Recipe):
         self.repository_llvm = repository_llvm
         self.repository_test_suite = repository_test_suite
         self.repository_clang = repository_clang
+        self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
@@ -73,7 +75,7 @@ class LLVM(Recipe):
                 '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 '-DLLVM_ENABLE_ASSERTIONS=On', '-DLLVM_TARGETS_TO_BUILD=X86',
                 '-DCMAKE_CXX_FLAGS=-std=c++11 -fuse-ld=gold -fdiagnostics-color=always',
-                '-DHAVE_VALGRIND_VALGRIND_H=0', local_repo_path
+                '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
 
             if self.profile == "debug":
@@ -91,7 +93,9 @@ class LLVM(Recipe):
                     f"[LLVM] unknown profile: '{self.profile}' (available: 'debug', 'release')"
                 )
 
-            _run(["cmake"] + cmake_args, cwd=build_path)
+            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
 
         _run(
             ["cmake", "--build", "."] + j_from_num_threads(
