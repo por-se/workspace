@@ -51,12 +51,19 @@ class KLEE(Recipe):
         self.llvm_name = llvm_name
         self.klee_uclibc_name = klee_uclibc_name
 
-    def _make_build_path(self, ws: Workspace):
-        return ws.build_dir / self.name
+    def _make_internal_paths(self, ws: Workspace):
+        class InternalPaths:
+            pass
+
+        res = InternalPaths()
+        res.local_repo_path = ws.ws_path / self.name
+        res.build_path = ws.build_dir / self.name
+        return res
 
     def build(self, ws: Workspace):
-        local_repo_path = ws.ws_path / self.name
+        int_paths = self._make_internal_paths(ws)
 
+        local_repo_path = int_paths.local_repo_path
         if not local_repo_path.is_dir():
             ws.reference_clone(
                 self.repository,
@@ -64,7 +71,7 @@ class KLEE(Recipe):
                 branch=self.branch)
             ws.apply_patches("klee", local_repo_path)
 
-        build_path = self._make_build_path(ws)
+        build_path = int_paths.build_path
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -91,7 +98,6 @@ class KLEE(Recipe):
                 '-DENABLE_SOLVER_Z3=On',
                 f'-DZ3_INCLUDE_DIRS={z3.z3_dir}/src/api/',
                 f'-DZ3_LIBRARIES={z3.build_output_path}/libz3.a',
-                '-DENABLE_PTHREAD_RUNTIME=On',
                 '-DENABLE_POSIX_RUNTIME=On',
                 '-DENABLE_KLEE_UCLIBC=On',
                 f'-DKLEE_UCLIBC_PATH={klee_uclibc.repo_path}',
@@ -113,7 +119,12 @@ class KLEE(Recipe):
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 
     def clean(self, ws: Workspace):
-        raise NotImplementedError
+        int_paths = self._make_internal_paths(ws)
+        if int_paths.build_path.is_dir():
+            shutil.rmtree(int_paths.build_path)
+        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
+            shutil.rmtree(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
-        env["PATH"] = str(self._make_build_path(ws) / "bin") + ":" + env["PATH"]
+        build_path = self._make_internal_paths(ws).build_path
+        env["PATH"] = str(build_path / "bin") + ":" + env["PATH"]

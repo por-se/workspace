@@ -36,7 +36,6 @@ class LLVM(Recipe):
         res.test_suite_path = res.local_repo_path / 'projects/test-suite'
         res.clang_path = res.local_repo_path / 'tools/clang'
         res.build_path = ws.build_dir / self.name
-
         return res
 
     def build(self, ws: Workspace):
@@ -102,10 +101,11 @@ class LLVM(Recipe):
         self.build_output_path = build_path
 
     def clean(self, ws: Workspace):
-        ips = self._make_internal_paths(ws)
-        shutil.rmtree(ips.build_path)
-        if ws.args.dist_clean:
-            shutil.rmtree(ips.local_repo_path)
+        int_paths = self._make_internal_paths(ws)
+        if int_paths.build_path.is_dir():
+            shutil.rmtree(int_paths.build_path)
+        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
+            shutil.rmtree(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
         build_path = self._make_internal_paths(ws).build_path
