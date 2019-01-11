@@ -113,6 +113,5 @@ class Workspace:
         self.args = Args()
         self.args.dist_clean = dist_clean
 
-        print(self.builds)
         for build in self.builds:
             build.clean(self)
