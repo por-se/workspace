@@ -10,7 +10,9 @@ __pycache__
 /klee
 /klee-uclibc
 /llvm
+/llvm-debug
 /minisat
+/simulator
 /stp
 /testsuite
 /z3

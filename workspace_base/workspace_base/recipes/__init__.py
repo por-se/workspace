@@ -5,3 +5,6 @@ from .klee_uclibc import KLEE_UCLIBC
 from .minisat import MINISAT
 from .stp import STP
 from .klee import KLEE
+
+from .simulator import SIMULATOR
+from .porse import PORSE

@@ -20,6 +20,10 @@ branch = "master"
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"
 
-[[KLEE]]
+[[SIMULATOR]]
+branch = "master"
+profile = "release"
+
+[[PORSE]]
 branch = "master"
 profile = "release"
