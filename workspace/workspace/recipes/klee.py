@@ -1,4 +1,5 @@
 import os, multiprocessing, shutil
+from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
 from workspace.util import j_from_num_threads, adjusted_cmake_args
@@ -53,17 +54,49 @@ class KLEE(Recipe):
         self.klee_uclibc_name = klee_uclibc_name
         self.cmake_adjustments = cmake_adjustments
 
+    def _compute_digest(self, ws: Workspace):
+        if self.digest is None:
+            digest = blake2s()
+            digest.update(self.name.encode())
+            digest.update(self.profile.encode())
+            for adjustment in self.cmake_adjustments:
+                digest.update("CMAKE_ADJUSTMENT:".encode())
+                digest.update(adjustment.encode())
+
+            # branch and repository need not be part of the digest, as we will build whatever
+            # we find at the target path, no matter what it turns out to be at build time
+
+            stp = ws.find_build(build_name=self.stp_name, before=self)
+            z3 = ws.find_build(build_name=self.z3_name, before=self)
+            llvm = ws.find_build(build_name=self.llvm_name, before=self)
+            klee_uclibc = ws.find_build(
+                build_name=self.klee_uclibc_name, before=self)
+
+            assert stp, "klee requires stp"
+            assert z3, "klee requires z3"
+            assert llvm, "klee requires llvm"
+            assert klee_uclibc, "klee requires klee_uclibc"
+
+            digest.update(stp.digest.encode())
+            digest.update(z3.digest.encode())
+            digest.update(llvm.digest.encode())
+            digest.update(klee_uclibc.digest.encode())
+
+            self.digest = digest.hexdigest()[:12]
+        return self.digest
+
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
             pass
 
         res = InternalPaths()
         res.local_repo_path = ws.ws_path / self.name
-        res.build_path = ws.build_dir / self.name
+        res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self._compute_digest(ws)}'
         return res
 
     def build(self, ws: Workspace):
         int_paths = self._make_internal_paths(ws)
+        self._compute_digest(ws)
 
         local_repo_path = int_paths.local_repo_path
         if not local_repo_path.is_dir():

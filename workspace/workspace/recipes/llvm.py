@@ -1,4 +1,5 @@
 import os, sys, shutil
+from hashlib import blake2s
 
 import psutil
 
@@ -27,6 +28,21 @@ class LLVM(Recipe):
         self.repository_test_suite = repository_test_suite
         self.cmake_adjustments = cmake_adjustments
 
+    def _compute_digest(self, ws: Workspace):
+        if self.digest is None:
+            digest = blake2s()
+            digest.update(self.name.encode())
+            digest.update(self.profile.encode())
+            for adjustment in self.cmake_adjustments:
+                digest.update("CMAKE_ADJUSTMENT:".encode())
+                digest.update(adjustment.encode())
+
+            # branch and repository need not be part of the digest, as we will build whatever
+            # we find at the target path, no matter what it turns out to be at build time
+
+            self.digest = digest.hexdigest()[:12]
+        return self.digest
+
     def _make_internal_paths(self, ws: Workspace):
         class InternalPaths:
             pass
@@ -34,11 +50,12 @@ class LLVM(Recipe):
         res = InternalPaths()
         res.local_repo_path = ws.ws_path / self.name
         res.test_suite_path = res.local_repo_path / 'projects/test-suite'
-        res.build_path = ws.build_dir / self.name
+        res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self._compute_digest(ws)}'
         return res
 
     def build(self, ws: Workspace):
         internal_paths = self._make_internal_paths(ws)
+        self._compute_digest(ws)
 
         local_repo_path = internal_paths.local_repo_path
         if not local_repo_path.is_dir():

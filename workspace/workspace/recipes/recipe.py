@@ -5,6 +5,7 @@ from workspace.workspace import Workspace
 class Recipe:
     def __init__(self, name):
         self.name = name
+        self.digest = None
 
     def build(self, ws: Workspace):
         raise NotImplementedError
