@@ -63,7 +63,7 @@ class Workspace:
 
         return None
 
-    def reference_clone(self, repo_uri, target_path, branch, clone_args=[]):
+    def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
             name = re.sub("\.git$", "", name)
@@ -81,10 +81,20 @@ class Workspace:
             _run(["git", "clone", "--mirror", repo_uri, ref_path])
             _run(["git", "gc", "--aggressive"], cwd=ref_path)
 
-        _run([
+        clone_command = [
             "git", "clone", "--reference", ref_path, repo_uri, target_path,
             "--branch", branch
-        ] + clone_args)
+        ]
+        if checkout == False or sparse is not None:
+            clone_command += ["--no-checkout"]
+        _run(clone_command + clone_args)
+
+        if sparse is not None:
+            _run(["git", "-C", target_path, "config", "core.sparsecheckout", "true"])
+            with open(target_path / ".git/info/sparse-checkout", "wt") as f:
+                for line in sparse:
+                    print(line, file=f)
+            _run(["git", "-C", target_path, "checkout", branch])
 
     def apply_patches(self, name, target_path):
         for patch in (self.patch_dir / name).glob("*.patch"):
