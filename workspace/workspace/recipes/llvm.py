@@ -65,7 +65,6 @@ class LLVM(Recipe):
                 branch=self.branch,
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", local_repo_path)
-            os.symlink(local_repo_path / "clang", local_repo_path / "llvm/tools/clang")
 
         test_suite_path = internal_paths.test_suite_path
         if not test_suite_path.is_dir():
@@ -84,14 +83,23 @@ class LLVM(Recipe):
             os.makedirs(build_path)
 
             cmake_args = [
-                '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
-                '-DLLVM_ENABLE_ASSERTIONS=On', '-DLLVM_TARGETS_TO_BUILD=X86',
+                '-G', 'Ninja',
+                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=.',
+                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+                '-DLLVM_USE_LINKER=gold',
+                f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={local_repo_path / "clang"}',
+                '-DLLVM_TARGETS_TO_BUILD=X86',
+                '-DLLVM_INCLUDE_EXAMPLES=Off',
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
 
             if self.profile == "debug":
-                cmake_args += ["-DCMAKE_BUILD_TYPE=Debug"]
+                cmake_args += [
+                    "-DCMAKE_BUILD_TYPE=Debug",
+                    '-DLLVM_ENABLE_ASSERTIONS=On',
+                ]
                 avail_mem = psutil.virtual_memory().available
                 if avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                     print(
@@ -99,7 +107,10 @@ class LLVM(Recipe):
                     )
                     cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
             elif self.profile == "release":
-                cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
+                cmake_args += [
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    '-DLLVM_ENABLE_ASSERTIONS=On',
+                ]
             else:
                 raise RuntimeException(
                     f"[LLVM] unknown profile: '{self.profile}' (available: 'debug', 'release')"
