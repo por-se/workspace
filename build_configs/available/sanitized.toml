@@ -1,10 +1,5 @@
 [[LLVM]]
 branch = "llvmorg-7.0.1"
-profile = "release"
-
-[[LLVM]]
-name = "llvm-debug"
-branch = "llvmorg-7.0.1"
 profile = "debug"
 
 [[Z3]]
@@ -22,4 +17,4 @@ branch = "klee_0_9_29"
 
 [[KLEE]]
 branch = "master"
-profile = "release"
+profile = "sanitized"
