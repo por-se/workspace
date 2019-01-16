@@ -85,8 +85,8 @@ class LLVM(Recipe):
 
             cmake_args = [
                 '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
                 '-DLLVM_ENABLE_ASSERTIONS=On', '-DLLVM_TARGETS_TO_BUILD=X86',
-                '-DCMAKE_CXX_FLAGS=-std=c++11 -fuse-ld=gold -fdiagnostics-color=always',
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
 

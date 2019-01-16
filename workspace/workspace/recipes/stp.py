@@ -76,12 +76,12 @@ class STP(Recipe):
 
             cmake_args = [
                 '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
                 f'-DMINISAT_LIBRARY={minisat.build_output_path}/libminisat.a',
                 f'-DMINISAT_INCLUDE_DIR={minisat.include_path}',
                 '-DNOCRYPTOMINISAT=On', '-DBUILD_SHARED_LIBS=Off',
                 '-DENABLE_PYTHON_INTERFACE=Off', '-DENABLE_ASSERTIONS=On',
                 '-DSANITIZE=Off', '-DSTATICCOMPILE=On',
-                '-DCMAKE_CXX_FLAGS=-std=c++11 -fuse-ld=gold -fdiagnostics-color=always',
             ]
 
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)

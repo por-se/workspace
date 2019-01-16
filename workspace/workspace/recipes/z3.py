@@ -64,8 +64,8 @@ class Z3(Recipe):
 
             cmake_args = [
                 '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=.',
                 '-DBUILD_LIBZ3_SHARED=false', '-DUSE_OPENMP=0',
-                '-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always',
             ]
 
             if self.profile == "release":

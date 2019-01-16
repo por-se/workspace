@@ -15,19 +15,25 @@ class KLEE(Recipe):
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Release',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Release',
-            ]
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
         },
         "debug": {
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
-            ]
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
         },
         "sanitized": {
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Release',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
-            ]
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
         },
     }
 
@@ -126,9 +132,11 @@ class KLEE(Recipe):
             assert klee_uclibc, "klee requires klee_uclibc"
 
             cmake_args = [
-                '-G',
-                'Ninja',
+                '-G', 'Ninja',
+                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_C_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -fno-rtti {self.profiles[self.profile]["cxx_flags"]}',
                 '-DUSE_CMAKE_FIND_PACKAGE_LLVM=On',
                 f'-DLLVM_DIR={llvm.build_output_path}/lib/cmake/llvm/',
                 '-DENABLE_SOLVER_STP=On',
@@ -146,7 +154,6 @@ class KLEE(Recipe):
                 # https://github.com/klee/klee/pull/1005
                 '-DENABLE_UNIT_TESTS=Off',
                 '-DENABLE_TCMALLOC=On',
-                '-DCMAKE_CXX_FLAGS=-fno-rtti -fuse-ld=gold -fdiagnostics-color=always',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]

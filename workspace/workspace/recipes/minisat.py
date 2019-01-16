@@ -60,7 +60,10 @@ class MINISAT(Recipe):
 
         if not build_path.exists():
             os.makedirs(build_path)
-            cmake_args = adjusted_cmake_args(['-G', 'Ninja'], self.cmake_adjustments)
+            cmake_args = adjusted_cmake_args([
+                '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+            ], self.cmake_adjustments)
             _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
