@@ -1,19 +1,19 @@
-import os, multiprocessing, shutil
+import os, shutil
 
-from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads, adjusted_cmake_args
+from workspace.workspace import Workspace, _run
+from workspace.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
-from .llvm import LLVM
 
 from pathlib import Path
 
 
-class MINISAT(Recipe):
-    default_name = "minisat"
+class Z3(Recipe):
+    default_name = "z3"
 
-    def __init__(self, branch, name=default_name, repository="git@github.com:stp/minisat.git", cmake_adjustments=[]):
+    def __init__(self, branch, profile, repository="git@github.com:Z3Prover/z3.git", name=default_name, cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
+        self.profile = profile
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
@@ -35,17 +35,31 @@ class MINISAT(Recipe):
                 self.repository,
                 target_path=local_repo_path,
                 branch=self.branch)
-            ws.apply_patches("minisat", local_repo_path)
+            ws.apply_patches("z3", local_repo_path)
 
         build_path = int_paths.build_path
         if not build_path.exists():
             os.makedirs(build_path)
-            cmake_args = adjusted_cmake_args(['-G', 'Ninja'], self.cmake_adjustments)
+
+            cmake_args = [
+                '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                '-DBUILD_LIBZ3_SHARED=false', '-DUSE_OPENMP=0',
+                '-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always',
+            ]
+
+            if self.profile == "release":
+                cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
+            else:
+                raise RuntimeException(
+                    f"[Z3] unknown profile: '{self.profile}' (available: 'release')")
+
+            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+
             _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 
-        self.include_path = local_repo_path
+        self.z3_dir = local_repo_path
         self.build_output_path = build_path
 
     def clean(self, ws: Workspace):

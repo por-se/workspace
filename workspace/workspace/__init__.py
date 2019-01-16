@@ -5,8 +5,8 @@ from pprint import pprint
 import toml
 import shellingham
 
-import workspace_base.recipes
-from workspace_base.workspace import Workspace
+import workspace.recipes
+from workspace.workspace import Workspace
 from .workspace import Workspace
 
 def _get_all_recipes():
@@ -48,7 +48,7 @@ def ws_from_config(ws_path, config_path):
     for (target, variations) in config.items():
         if not target in recipes_to_list:
             raise RuntimeError(
-                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
+                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')"
             )
 
         seen_names = set()
@@ -122,7 +122,7 @@ def env_main():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)
 
-    ws = workspace_base.ws_from_config(ws_path, config_path)
+    ws = workspace.ws_from_config(ws_path, config_path)
     ws.add_to_env(env)
 
     # yes, the `str()` is actually necessary

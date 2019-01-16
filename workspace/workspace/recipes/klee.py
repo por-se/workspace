@@ -1,7 +1,7 @@
 import os, multiprocessing, shutil
 
-from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads, adjusted_cmake_args
+from workspace.workspace import Workspace, _run
+from workspace.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC
 
 from pathlib import Path

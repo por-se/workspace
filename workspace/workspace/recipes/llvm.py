@@ -2,8 +2,8 @@ import os, sys, shutil
 
 import psutil
 
-from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads, adjusted_cmake_args
+from workspace.workspace import Workspace, _run
+from workspace.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
 
 from pathlib import Path

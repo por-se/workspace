@@ -1,6 +1,6 @@
 import inspect
 
-from workspace_base.workspace import Workspace
+from workspace.workspace import Workspace
 
 class Recipe:
     def __init__(self, name):

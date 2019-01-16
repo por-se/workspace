@@ -1,7 +1,7 @@
 import os, sys, subprocess, re
 from pathlib import Path
 
-import workspace_base.util as util
+import workspace.util as util
 
 
 def _run(cmd, *args, **kwargs):
