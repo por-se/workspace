@@ -15,9 +15,8 @@ class LLVM(Recipe):
     def __init__(self,
                  branch,
                  profile,
-                 repository_llvm="https://llvm.org/git/llvm",
-                 repository_test_suite="https://llvm.org/git/test-suite",
-                 repository_clang="https://llvm.org/git/clang",
+                 repository_llvm="https://github.com/llvm/llvm-project.git",
+                 repository_test_suite="https://github.com/llvm/llvm-test-suite.git",
                  name=default_name,
                  cmake_adjustments=[]):
         """Build LLVM."""
@@ -26,7 +25,6 @@ class LLVM(Recipe):
         self.profile = profile
         self.repository_llvm = repository_llvm
         self.repository_test_suite = repository_test_suite
-        self.repository_clang = repository_clang
         self.cmake_adjustments = cmake_adjustments
 
     def _make_internal_paths(self, ws: Workspace):
@@ -36,7 +34,6 @@ class LLVM(Recipe):
         res = InternalPaths()
         res.local_repo_path = ws.ws_path / self.name
         res.test_suite_path = res.local_repo_path / 'projects/test-suite'
-        res.clang_path = res.local_repo_path / 'tools/clang'
         res.build_path = ws.build_dir / self.name
         return res
 
@@ -48,8 +45,10 @@ class LLVM(Recipe):
             ws.reference_clone(
                 self.repository_llvm,
                 target_path=local_repo_path,
-                branch=self.branch)
+                branch=self.branch,
+                sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", local_repo_path)
+            os.symlink(local_repo_path / "clang", local_repo_path / "llvm/tools/clang")
 
         test_suite_path = internal_paths.test_suite_path
         if not test_suite_path.is_dir():
@@ -58,14 +57,6 @@ class LLVM(Recipe):
                 target_path=test_suite_path,
                 branch=self.branch)
             ws.apply_patches("llvm-test-suite", test_suite_path)
-
-        clang_path = internal_paths.clang_path
-        if not clang_path.is_dir():
-            ws.reference_clone(
-                self.repository_clang,
-                target_path=clang_path,
-                branch=self.branch)
-            ws.apply_patches("clang", clang_path)
 
         build_path = internal_paths.build_path
         if not build_path.exists():
@@ -95,12 +86,9 @@ class LLVM(Recipe):
 
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
+            _run(["cmake"] + cmake_args + [local_repo_path / "llvm"], cwd=build_path)
 
-        _run(
-            ["cmake", "--build", "."] + j_from_num_threads(
-                ws.args.num_threads),
-            cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
 
         self.build_output_path = build_path
 

@@ -1,10 +1,10 @@
 [[LLVM]]
-branch = "release_70"
+branch = "llvmorg-7.0.1"
 profile = "release"
 
 [[LLVM]]
 name = "llvm-debug"
-branch = "release_70"
+branch = "llvmorg-7.0.1"
 profile = "debug"
 
 [[Z3]]
