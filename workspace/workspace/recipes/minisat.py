@@ -54,12 +54,16 @@ class MINISAT(Recipe):
             ws.apply_patches("minisat", local_repo_path)
 
         build_path = int_paths.build_path
+
+        env = os.environ
+        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+
         if not build_path.exists():
             os.makedirs(build_path)
             cmake_args = adjusted_cmake_args(['-G', 'Ninja'], self.cmake_adjustments)
-            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
         self.include_path = local_repo_path
         self.build_output_path = build_path

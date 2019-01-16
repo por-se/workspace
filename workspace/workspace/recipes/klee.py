@@ -107,6 +107,10 @@ class KLEE(Recipe):
             ws.apply_patches("klee", local_repo_path)
 
         build_path = int_paths.build_path
+
+        env = os.environ
+        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -150,9 +154,9 @@ class KLEE(Recipe):
 
             _run(
                 ["cmake"] + cmake_args + [local_repo_path],
-                cwd=build_path)
+                cwd=build_path, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
     def clean(self, ws: Workspace):
         int_paths = self._make_internal_paths(ws)

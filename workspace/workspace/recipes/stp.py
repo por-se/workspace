@@ -63,6 +63,10 @@ class STP(Recipe):
             ws.apply_patches("stp", local_repo_path)
 
         build_path = int_paths.build_path
+
+        env = os.environ
+        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+
         if not build_path.exists():
             os.makedirs(build_path)
 
@@ -82,9 +86,9 @@ class STP(Recipe):
 
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path)
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
         self.build_output_path = build_path
         self.stp_dir = local_repo_path
