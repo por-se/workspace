@@ -11,8 +11,8 @@ setup(
 		'console_scripts': [
 			"setup = workspace:setup_main",
 			"build = workspace:build_main",
-            # do NOT name this 'env', as it will override the shell-builtin 'env'!
-            "into_env = workspace:env_main",
+            "shell = workspace:shell_main",
+            "run = workspace:run_main",
             "list_options = workspace:list_options_main",
             "clean = workspace:clean_main",
 		],
