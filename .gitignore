@@ -6,16 +6,6 @@ __pycache__
 /.ref
 /.build
 
-# repositories
-/googletest
-/klee
-/klee-uclibc
-/llvm
-/minisat
-/stp
-/testsuite
-/z3
-
 # editor files
 .vscode
 
