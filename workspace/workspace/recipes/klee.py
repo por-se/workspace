@@ -15,6 +15,7 @@ class KLEE(Recipe):
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Release',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=On',
             ],
             "c_flags": "",
             "cxx_flags": "",
@@ -23,17 +24,19 @@ class KLEE(Recipe):
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
+                '-DENABLE_TCMALLOC=On',
             ],
             "c_flags": "",
             "cxx_flags": "",
         },
         "sanitized": {
             "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
+                '-DCMAKE_BUILD_TYPE=Debug',
+                '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=Off',
             ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "c_flags": "-fsanitize=address -fsanitize=undefined",
+            "cxx_flags": "-fsanitize=address -fsanitize=undefined",
         },
     }
 
@@ -154,7 +157,6 @@ class KLEE(Recipe):
                 # Waiting for this to be merged:
                 # https://github.com/klee/klee/pull/1005
                 '-DENABLE_UNIT_TESTS=Off',
-                '-DENABLE_TCMALLOC=On',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
