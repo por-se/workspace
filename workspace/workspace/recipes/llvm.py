@@ -28,8 +28,8 @@ class LLVM(Recipe):
         self.repository_test_suite = repository_test_suite
         self.cmake_adjustments = cmake_adjustments
 
-    def _compute_digest(self, ws: Workspace):
-        if self.digest is None:
+    def initialize(self, ws: Workspace):
+        def _compute_digest(self, ws: Workspace):
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
@@ -40,22 +40,23 @@ class LLVM(Recipe):
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            self.digest = digest.hexdigest()[:12]
-        return self.digest
+            return digest.hexdigest()[:12]
 
-    def _make_internal_paths(self, ws: Workspace):
-        class InternalPaths:
-            pass
+        def _make_internal_paths(self, ws: Workspace):
+            class InternalPaths:
+                pass
 
-        res = InternalPaths()
-        res.local_repo_path = ws.ws_path / self.name
-        res.test_suite_path = res.local_repo_path / 'projects/test-suite'
-        res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self._compute_digest(ws)}'
-        return res
+            res = InternalPaths()
+            res.local_repo_path = ws.ws_path / self.name
+            res.test_suite_path = res.local_repo_path / 'projects/test-suite'
+            res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            return res
+
+        self.digest = _compute_digest(self, ws)
+        self.paths = _make_internal_paths(self, ws)
 
     def build(self, ws: Workspace):
-        internal_paths = self._make_internal_paths(ws)
-        self._compute_digest(ws)
+        internal_paths = self.paths
 
         local_repo_path = internal_paths.local_repo_path
         if not local_repo_path.is_dir():
@@ -125,12 +126,12 @@ class LLVM(Recipe):
         self.build_output_path = build_path
 
     def clean(self, ws: Workspace):
-        int_paths = self._make_internal_paths(ws)
+        int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
         if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
             shutil.rmtree(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
-        build_path = self._make_internal_paths(ws).build_path
+        build_path = self.paths.build_path
         env["PATH"] = str(build_path / "bin") + ":" + env["PATH"]

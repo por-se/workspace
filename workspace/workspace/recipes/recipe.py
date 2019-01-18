@@ -7,6 +7,9 @@ class Recipe:
         self.name = name
         self.digest = None
 
+    def initialize(self, ws: Workspace):
+        raise NotImplementedError
+
     def build(self, ws: Workspace):
         raise NotImplementedError
 

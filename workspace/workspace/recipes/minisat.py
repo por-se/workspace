@@ -18,8 +18,8 @@ class MINISAT(Recipe):
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
-    def _compute_digest(self, ws: Workspace):
-        if self.digest is None:
+    def initialize(self, ws: Workspace):
+        def _compute_digest(self, ws: Workspace):
             digest = blake2s()
             digest.update(self.name.encode())
             for adjustment in self.cmake_adjustments:
@@ -29,21 +29,22 @@ class MINISAT(Recipe):
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            self.digest = digest.hexdigest()[:12]
-        return self.digest
+            return digest.hexdigest()[:12]
 
-    def _make_internal_paths(self, ws: Workspace):
-        class InternalPaths:
-            pass
+        def _make_internal_paths(self, ws: Workspace):
+            class InternalPaths:
+                pass
 
-        res = InternalPaths()
-        res.local_repo_path = ws.ws_path / self.name
-        res.build_path = ws.build_dir / f'{self.name}-{self._compute_digest(ws)}'
-        return res
+            res = InternalPaths()
+            res.local_repo_path = ws.ws_path / self.name
+            res.build_path = ws.build_dir / f'{self.name}-{self.digest}'
+            return res
+
+        self.digest = _compute_digest(self, ws)
+        self.paths = _make_internal_paths(self, ws)
 
     def build(self, ws: Workspace):
-        int_paths = self._make_internal_paths(ws)
-        self._compute_digest(ws)
+        int_paths = self.paths
 
         local_repo_path = int_paths.local_repo_path
         if not local_repo_path.is_dir():
@@ -72,7 +73,7 @@ class MINISAT(Recipe):
         self.build_output_path = build_path
 
     def clean(self, ws: Workspace):
-        int_paths = self._make_internal_paths(ws)
+        int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
         if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
