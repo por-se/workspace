@@ -1,5 +1,5 @@
 import os, sys, subprocess, re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import workspace.util as util
 
@@ -95,6 +95,40 @@ class Workspace:
                 for line in sparse:
                     print(line, file=f)
             _run(["git", "-C", target_path, "checkout", branch])
+
+    def git_add_exclude_path(self, path):
+        git_dir = self.ws_path / ".git"
+        assert git_dir.is_dir()
+
+        git_info_dir = git_dir / "info"
+        os.makedirs(git_info_dir, exist_ok=True)
+
+        with open(git_info_dir / "exclude", "a+t") as f:
+            has_line_end = True # empty file
+            for line in f.read().splitlines():
+                exclude = line.splitlines()[0]
+                has_line_end = (exclude != line)
+                if exclude == path:
+                    return # path already excluded
+            if not has_line_end:
+                f.write("\n")
+            path = PurePosixPath(path)
+            path = path.relative_to(self.ws_path)
+            f.write(f"/{path}\n")
+
+    def git_remove_exclude_path(self, path):
+        git_exclude_path = self.ws_path / ".git" / "info" / "exclude"
+        if not git_exclude_path.is_file():
+            return # nothing to un-exclude
+
+        lines = ""
+        with open(git_exclude_path, "rt") as f:
+            for line in f.read().splitlines():
+                exclude = line.splitlines()[0]
+                if exclude != path:
+                    lines += line
+        with open(git_exclude_path, "wt") as f:
+            f.write(lines)
 
     def apply_patches(self, name, target_path):
         for patch in (self.patch_dir / name).glob("*.patch"):
