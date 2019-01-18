@@ -100,23 +100,27 @@ class Workspace:
         for patch in (self.patch_dir / name).glob("*.patch"):
             _run(f"git apply < {patch}", shell=True, cwd=target_path)
 
-    def initialize_builds(self):
+    def _initialize_builds(self):
         for build in self.builds:
             build.initialize(self)
 
+    def setup(self):
+        self._initialize_builds()
+
+        for build in self.builds:
+            build.setup(self)
+
     def add_to_env(self, env):
-        self.initialize_builds()
+        self._initialize_builds()
 
         for build in self.builds:
             build.add_to_env(env, self)
 
     def build(self, num_threads):
-        self.initialize_builds()
+        self._initialize_builds()
+        self.setup()
 
-        class Args:
-            pass
-
-        self.args = Args()
+        self.args = util.EmptyClass()
         self.args.num_threads = num_threads
 
         self.__check_create_ref_dir()
@@ -125,12 +129,9 @@ class Workspace:
             build.build(self)
 
     def clean(self, dist_clean):
-        self.initialize_builds()
+        self._initialize_builds()
 
-        class Args:
-            pass
-
-        self.args = Args()
+        self.args = util.EmptyClass()
         self.args.dist_clean = dist_clean
 
         for build in self.builds:

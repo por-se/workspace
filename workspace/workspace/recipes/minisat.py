@@ -43,10 +43,8 @@ class MINISAT(Recipe):
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
-    def build(self, ws: Workspace):
-        int_paths = self.paths
-
-        local_repo_path = int_paths.local_repo_path
+    def setup(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
             ws.reference_clone(
                 self.repository,
@@ -54,7 +52,9 @@ class MINISAT(Recipe):
                 branch=self.branch)
             ws.apply_patches("minisat", local_repo_path)
 
-        build_path = int_paths.build_path
+    def build(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
+        build_path = self.paths.build_path
 
         env = os.environ
         env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())

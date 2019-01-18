@@ -55,10 +55,8 @@ class LLVM(Recipe):
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
-    def build(self, ws: Workspace):
-        internal_paths = self.paths
-
-        local_repo_path = internal_paths.local_repo_path
+    def setup(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
             ws.reference_clone(
                 self.repository_llvm,
@@ -67,7 +65,7 @@ class LLVM(Recipe):
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", local_repo_path)
 
-        test_suite_path = internal_paths.test_suite_path
+        test_suite_path = self.paths.test_suite_path
         if not test_suite_path.is_dir():
             ws.reference_clone(
                 self.repository_test_suite,
@@ -75,7 +73,9 @@ class LLVM(Recipe):
                 branch=self.branch)
             ws.apply_patches("llvm-test-suite", test_suite_path)
 
-        build_path = internal_paths.build_path
+    def build(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
+        build_path = self.paths.build_path
 
         env = os.environ
         env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())

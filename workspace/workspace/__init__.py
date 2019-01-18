@@ -101,6 +101,29 @@ def build_main():
         ws.build(num_threads = args.num_threads)
 
 
+def setup_main():
+    parser = argparse.ArgumentParser(
+        description=
+        "Setup (usually download sources) one or more configurations. By default, setups all configurations, or only the configuration of the current environment if one is active."
+    )
+
+    parser.add_argument(
+        'configs',
+        metavar='config',
+        type=str,
+        nargs='*',
+        help="The configurations to setup")
+
+    args = parser.parse_args()
+
+    ws_path = __ws_path_from_here()
+
+    configs = _resolve_or_default_configs(ws_path, args.configs)
+
+    for config in configs:
+        ws = ws_from_config(ws_path, config)
+        ws.setup()
+
 def env_main():
     cmd_name = Path(sys.argv[0]).name
     if len(sys.argv) != 2:

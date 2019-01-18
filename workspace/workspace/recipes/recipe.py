@@ -10,6 +10,9 @@ class Recipe:
     def initialize(self, ws: Workspace):
         raise NotImplementedError
 
+    def setup(self, ws: Workspace):
+        raise NotImplementedError
+
     def build(self, ws: Workspace):
         raise NotImplementedError
 

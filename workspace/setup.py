@@ -9,6 +9,7 @@ setup(
 	],
 	entry_points = {
 		'console_scripts': [
+			"setup = workspace:setup_main",
 			"build = workspace:build_main",
             # do NOT name this 'env', as it will override the shell-builtin 'env'!
             "into_env = workspace:env_main",
