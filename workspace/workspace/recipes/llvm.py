@@ -17,7 +17,6 @@ class LLVM(Recipe):
                  branch,
                  profile,
                  repository_llvm="https://github.com/llvm/llvm-project.git",
-                 repository_test_suite="https://github.com/llvm/llvm-test-suite.git",
                  name=default_name,
                  cmake_adjustments=[]):
         """Build LLVM."""
@@ -25,7 +24,6 @@ class LLVM(Recipe):
         self.branch = branch
         self.profile = profile
         self.repository_llvm = repository_llvm
-        self.repository_test_suite = repository_test_suite
         self.cmake_adjustments = cmake_adjustments
 
     def initialize(self, ws: Workspace):
@@ -48,7 +46,6 @@ class LLVM(Recipe):
 
             res = InternalPaths()
             res.local_repo_path = ws.ws_path / self.name
-            res.test_suite_path = res.local_repo_path / 'projects/test-suite'
             res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
             return res
 
@@ -64,14 +61,6 @@ class LLVM(Recipe):
                 branch=self.branch,
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", local_repo_path)
-
-        test_suite_path = self.paths.test_suite_path
-        if not test_suite_path.is_dir():
-            ws.reference_clone(
-                self.repository_test_suite,
-                target_path=test_suite_path,
-                branch=self.branch)
-            ws.apply_patches("llvm-test-suite", test_suite_path)
 
     def build(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
