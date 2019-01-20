@@ -5,8 +5,8 @@ from pprint import pprint
 import toml
 import shellingham
 
-import workspace_base.recipes
-from workspace_base.workspace import Workspace
+import workspace.recipes
+from workspace.workspace import Workspace
 from .workspace import Workspace
 
 def _get_all_recipes():
@@ -48,7 +48,7 @@ def ws_from_config(ws_path, config_path):
     for (target, variations) in config.items():
         if not target in recipes_to_list:
             raise RuntimeError(
-                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace_base.recipes')"
+                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')"
             )
 
         seen_names = set()
@@ -101,6 +101,29 @@ def build_main():
         ws.build(num_threads = args.num_threads)
 
 
+def setup_main():
+    parser = argparse.ArgumentParser(
+        description=
+        "Setup (usually download sources) one or more configurations. By default, setups all configurations, or only the configuration of the current environment if one is active."
+    )
+
+    parser.add_argument(
+        'configs',
+        metavar='config',
+        type=str,
+        nargs='*',
+        help="The configurations to setup")
+
+    args = parser.parse_args()
+
+    ws_path = __ws_path_from_here()
+
+    configs = _resolve_or_default_configs(ws_path, args.configs)
+
+    for config in configs:
+        ws = ws_from_config(ws_path, config)
+        ws.setup()
+
 def env_main():
     cmd_name = Path(sys.argv[0]).name
     if len(sys.argv) != 2:
@@ -122,7 +145,7 @@ def env_main():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)
 
-    ws = workspace_base.ws_from_config(ws_path, config_path)
+    ws = workspace.ws_from_config(ws_path, config_path)
     ws.add_to_env(env)
 
     # yes, the `str()` is actually necessary

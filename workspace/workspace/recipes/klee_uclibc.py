@@ -1,7 +1,8 @@
 import os, shutil
+from hashlib import blake2s
 
-from workspace_base.workspace import Workspace, _run
-from workspace_base.util import j_from_num_threads, adjusted_cmake_args
+from workspace.workspace import Workspace, _run
+from workspace.util import j_from_num_threads, adjusted_cmake_args
 from . import Recipe
 from .llvm import LLVM
 
@@ -21,18 +22,33 @@ class KLEE_UCLIBC(Recipe):
         self.llvm_name = llvm_name
         self.repository = repository
 
-    def _make_internal_paths(self, ws: Workspace):
-        class InternalPaths:
-            pass
+    def initialize(self, ws: Workspace):
+        def _compute_digest(self, ws: Workspace):
+            digest = blake2s()
+            digest.update(self.name.encode())
 
-        res = InternalPaths()
-        res.local_repo_path = ws.ws_path / self.name
-        return res
+            # branch and repository need not be part of the digest, as we will build whatever
+            # we find at the target path, no matter what it turns out to be at build time
 
-    def build(self, ws: Workspace):
-        int_paths = self._make_internal_paths(ws)
+            llvm = ws.find_build(build_name=self.llvm_name, before=self)
+            assert llvm, "klee_uclibc requires llvm"
+            digest.update(llvm.digest.encode())
 
-        local_repo_path = int_paths.local_repo_path
+            return digest.hexdigest()[:12]
+
+        def _make_internal_paths(self, ws: Workspace):
+            class InternalPaths:
+                pass
+
+            res = InternalPaths()
+            res.local_repo_path = ws.ws_path / self.name
+            return res
+
+        self.digest = _compute_digest(self, ws)
+        self.paths = _make_internal_paths(self, ws)
+
+    def setup(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
             ws.reference_clone(
                 self.repository,
@@ -40,8 +56,12 @@ class KLEE_UCLIBC(Recipe):
                 branch=self.branch)
             ws.apply_patches("klee-uclibc", local_repo_path)
 
+    def build(self, ws: Workspace):
+        local_repo_path = self.paths.local_repo_path
+
         if not (local_repo_path / '.config').exists():
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
+            assert llvm, "klee_uclibc requires llvm"
 
             _run([
                 "./configure", "--make-llvm-lib",
@@ -54,7 +74,7 @@ class KLEE_UCLIBC(Recipe):
         self.repo_path = local_repo_path
 
     def clean(self, ws: Workspace):
-        int_paths = self._make_internal_paths(ws)
+        int_paths = self.paths
         if int_paths.local_repo_path.is_dir():
             if ws.args.dist_clean:
                 shutil.rmtree(int_paths.local_repo_path)

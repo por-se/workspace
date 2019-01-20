@@ -1,10 +1,17 @@
 import inspect
 
-from workspace_base.workspace import Workspace
+from workspace.workspace import Workspace
 
 class Recipe:
     def __init__(self, name):
         self.name = name
+        self.digest = None
+
+    def initialize(self, ws: Workspace):
+        raise NotImplementedError
+
+    def setup(self, ws: Workspace):
+        raise NotImplementedError
 
     def build(self, ws: Workspace):
         raise NotImplementedError
