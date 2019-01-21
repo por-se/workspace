@@ -26,6 +26,8 @@ class LLVM(Recipe):
         self.repository_llvm = repository_llvm
         self.cmake_adjustments = cmake_adjustments
 
+        assert self.profile in {"debug", "release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
             digest = blake2s()
