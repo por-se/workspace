@@ -3,8 +3,7 @@ from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
 from workspace.util import j_from_num_threads, adjusted_cmake_args
-from . import Recipe
-from .llvm import LLVM
+from . import Recipe, LLVM
 
 from pathlib import Path
 
