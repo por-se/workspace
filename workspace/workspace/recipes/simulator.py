@@ -121,3 +121,6 @@ class SIMULATOR(Recipe):
             if int_paths.local_repo_path.is_dir():
                 shutil.rmtree(int_paths.local_repo_path)
             ws.git_remove_exclude_path(int_paths.local_repo_path)
+
+    def add_to_env(self, env, ws: Workspace):
+        Recipe._env_prepend_path(env, "PATH", self.paths.build_path / "bin/random-graph")
