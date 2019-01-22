@@ -55,6 +55,7 @@ class STP(Recipe):
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
+            ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
                 self.repository,
                 target_path=local_repo_path,
@@ -98,5 +99,7 @@ class STP(Recipe):
         int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
-        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
-            shutil.rmtree(int_paths.local_repo_path)
+        if ws.args.dist_clean:
+            if int_paths.local_repo_path.is_dir():
+                shutil.rmtree(int_paths.local_repo_path)
+            ws.git_remove_exclude_path(int_paths.local_repo_path)

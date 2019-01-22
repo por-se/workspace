@@ -15,6 +15,7 @@ class PORSE(Recipe):
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Release',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=On',
             ],
             "c_flags": "",
             "cxx_flags": "",
@@ -23,17 +24,19 @@ class PORSE(Recipe):
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
                 '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
+                '-DENABLE_TCMALLOC=On',
             ],
             "c_flags": "",
             "cxx_flags": "",
         },
         "sanitized": {
             "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DKLEE_RUNTIME_BUILD_TYPE=Debug',
+                '-DCMAKE_BUILD_TYPE=Debug',
+                '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=Off',
             ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "c_flags": "-fsanitize=address -fsanitize=undefined",
+            "cxx_flags": "-fsanitize=address -fsanitize=undefined",
         },
     }
 
@@ -61,6 +64,8 @@ class PORSE(Recipe):
         self.klee_uclibc_name = klee_uclibc_name
         self.simulator_name = simulator_name
         self.cmake_adjustments = cmake_adjustments
+
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -110,6 +115,7 @@ class PORSE(Recipe):
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
+            ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
                 self.repository,
                 target_path=local_repo_path,
@@ -156,13 +162,12 @@ class PORSE(Recipe):
                 '-DENABLE_POSIX_RUNTIME=On',
                 '-DENABLE_KLEE_UCLIBC=On',
                 f'-DKLEE_UCLIBC_PATH={klee_uclibc.repo_path}',
-                f'-DPOR_SIMULATOR_DIR={simulator.repo_path}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
                 # Waiting for this to be merged:
                 # https://github.com/klee/klee/pull/1005
                 '-DENABLE_UNIT_TESTS=Off',
-                '-DENABLE_TCMALLOC=On',
+                f'-DPOR_SIMULATOR_DIR={simulator.repo_path}',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
@@ -178,8 +183,10 @@ class PORSE(Recipe):
         int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
-        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
-            shutil.rmtree(int_paths.local_repo_path)
+        if ws.args.dist_clean:
+            if int_paths.local_repo_path.is_dir():
+                shutil.rmtree(int_paths.local_repo_path)
+            ws.git_remove_exclude_path(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
         build_path = self.paths.build_path

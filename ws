@@ -17,4 +17,4 @@ export PIPENV_VENV_IN_PROJECT=1
 if [[ ! -d .venv ]] ; then
 	pipenv update
 fi
-pipenv run "$@"
+exec pipenv run "$@"

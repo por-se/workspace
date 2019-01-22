@@ -18,6 +18,8 @@ class SIMULATOR(Recipe):
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
+        assert self.profile in {"release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
             digest = blake2s()
@@ -47,6 +49,7 @@ class SIMULATOR(Recipe):
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
+            ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
                 self.repository,
                 target_path=local_repo_path,
@@ -87,5 +90,7 @@ class SIMULATOR(Recipe):
         int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
-        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
-            shutil.rmtree(int_paths.local_repo_path)
+        if ws.args.dist_clean:
+            if int_paths.local_repo_path.is_dir():
+                shutil.rmtree(int_paths.local_repo_path)
+            ws.git_remove_exclude_path(int_paths.local_repo_path)

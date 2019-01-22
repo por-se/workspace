@@ -17,7 +17,6 @@ class LLVM(Recipe):
                  branch,
                  profile,
                  repository_llvm="https://github.com/llvm/llvm-project.git",
-                 repository_test_suite="https://github.com/llvm/llvm-test-suite.git",
                  name=default_name,
                  cmake_adjustments=[]):
         """Build LLVM."""
@@ -25,8 +24,9 @@ class LLVM(Recipe):
         self.branch = branch
         self.profile = profile
         self.repository_llvm = repository_llvm
-        self.repository_test_suite = repository_test_suite
         self.cmake_adjustments = cmake_adjustments
+
+        assert self.profile in {"debug", "release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -48,7 +48,6 @@ class LLVM(Recipe):
 
             res = InternalPaths()
             res.local_repo_path = ws.ws_path / self.name
-            res.test_suite_path = res.local_repo_path / 'projects/test-suite'
             res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
             return res
 
@@ -58,20 +57,13 @@ class LLVM(Recipe):
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
+            ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
                 self.repository_llvm,
                 target_path=local_repo_path,
                 branch=self.branch,
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", local_repo_path)
-
-        test_suite_path = self.paths.test_suite_path
-        if not test_suite_path.is_dir():
-            ws.reference_clone(
-                self.repository_test_suite,
-                target_path=test_suite_path,
-                branch=self.branch)
-            ws.apply_patches("llvm-test-suite", test_suite_path)
 
     def build(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
@@ -129,8 +121,10 @@ class LLVM(Recipe):
         int_paths = self.paths
         if int_paths.build_path.is_dir():
             shutil.rmtree(int_paths.build_path)
-        if ws.args.dist_clean and int_paths.local_repo_path.is_dir():
-            shutil.rmtree(int_paths.local_repo_path)
+        if ws.args.dist_clean:
+            if int_paths.local_repo_path.is_dir():
+                shutil.rmtree(int_paths.local_repo_path)
+            ws.git_remove_exclude_path(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
         build_path = self.paths.build_path

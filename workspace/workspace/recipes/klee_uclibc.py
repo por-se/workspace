@@ -50,6 +50,7 @@ class KLEE_UCLIBC(Recipe):
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
         if not local_repo_path.is_dir():
+            ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
                 self.repository,
                 target_path=local_repo_path,
@@ -75,8 +76,10 @@ class KLEE_UCLIBC(Recipe):
 
     def clean(self, ws: Workspace):
         int_paths = self.paths
-        if int_paths.local_repo_path.is_dir():
-            if ws.args.dist_clean:
+        if ws.args.dist_clean:
+            if int_paths.local_repo_path.is_dir():
                 shutil.rmtree(int_paths.local_repo_path)
-            else:
+            ws.git_remove_exclude_path(int_paths.local_repo_path)
+        else:
+            if int_paths.local_repo_path.is_dir():
                 _run(["make", "distclean"], cwd=int_paths.local_repo_path)
