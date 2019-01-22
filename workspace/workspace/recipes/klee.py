@@ -20,6 +20,15 @@ class KLEE(Recipe):
             "c_flags": "",
             "cxx_flags": "",
         },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+                '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=On',
+            ],
+            "c_flags": "-fno-omit-frame-pointer",
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
         "debug": {
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
