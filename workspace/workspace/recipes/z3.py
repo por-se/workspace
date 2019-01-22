@@ -10,15 +10,43 @@ from pathlib import Path
 
 class Z3(Recipe):
     default_name = "z3"
+    profiles = {
+        "release": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Release',
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
+        },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+            ],
+            "c_flags": "-fno-omit-frame-pointer",
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
+        "debug": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Debug',
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
+        },
+    }
 
-    def __init__(self, branch, profile, repository="git@github.com:Z3Prover/z3.git", name=default_name, cmake_adjustments=[]):
+    def __init__(self,
+                 branch,
+                 profile,
+                 repository="git@github.com:Z3Prover/z3.git",
+                 name=default_name,
+                 cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in {"release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -68,17 +96,16 @@ class Z3(Recipe):
             os.makedirs(build_path)
 
             cmake_args = [
-                '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=.',
-                '-DBUILD_LIBZ3_SHARED=false', '-DUSE_OPENMP=0',
+                '-G', 'Ninja',
+                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
+                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_C_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
+                '-DBUILD_LIBZ3_SHARED=false',
+                '-DUSE_OPENMP=0',
             ]
 
-            if self.profile == "release":
-                cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
-            else:
-                raise RuntimeException(
-                    f"[Z3] unknown profile: '{self.profile}' (available: 'release')")
-
+            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
