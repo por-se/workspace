@@ -12,6 +12,33 @@ from pathlib import Path
 
 class LLVM(Recipe):
     default_name = "llvm"
+    profiles = {
+        "release": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Release',
+                '-DLLVM_ENABLE_ASSERTIONS=On',
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
+        },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+                '-DLLVM_ENABLE_ASSERTIONS=On',
+            ],
+            "c_flags": "-fno-omit-frame-pointer",
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
+        "debug": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Debug',
+                '-DLLVM_ENABLE_ASSERTIONS=On',
+            ],
+            "c_flags": "",
+            "cxx_flags": "",
+        },
+    }
+
 
     def __init__(self,
                  branch,
@@ -26,7 +53,7 @@ class LLVM(Recipe):
         self.repository_llvm = repository_llvm
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in {"debug", "release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -78,9 +105,9 @@ class LLVM(Recipe):
             cmake_args = [
                 '-G', 'Ninja',
                 '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=.',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11 {self.profiles[self.profile]["cxx_flags"]}',
                 '-DLLVM_USE_LINKER=gold',
                 f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={local_repo_path / "clang"}',
                 '-DLLVM_TARGETS_TO_BUILD=X86',
@@ -88,27 +115,15 @@ class LLVM(Recipe):
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
 
-            if self.profile == "debug":
-                cmake_args += [
-                    "-DCMAKE_BUILD_TYPE=Debug",
-                    '-DLLVM_ENABLE_ASSERTIONS=On',
-                ]
-                avail_mem = psutil.virtual_memory().available
+            avail_mem = psutil.virtual_memory().available
+            if profile != "release":
                 if avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                     print(
-                        "[LLVM] less than 12G memory per thread (or 35G total) available during a debug build; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+                        "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
                     )
                     cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
-            elif self.profile == "release":
-                cmake_args += [
-                    "-DCMAKE_BUILD_TYPE=Release",
-                    '-DLLVM_ENABLE_ASSERTIONS=On',
-                ]
-            else:
-                raise RuntimeException(
-                    f"[LLVM] unknown profile: '{self.profile}' (available: 'debug', 'release')"
-                )
 
+            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [local_repo_path / "llvm"], cwd=build_path, env=env)
