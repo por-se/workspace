@@ -1,4 +1,4 @@
-import os, multiprocessing, shutil
+import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
@@ -70,7 +70,7 @@ class KLEE(Recipe):
         self.klee_uclibc_name = klee_uclibc_name
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -172,9 +172,7 @@ class KLEE(Recipe):
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(
-                ["cmake"] + cmake_args + [local_repo_path],
-                cwd=build_path, env=env)
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 

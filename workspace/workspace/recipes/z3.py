@@ -46,7 +46,7 @@ class Z3(Recipe):
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -73,7 +73,6 @@ class Z3(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
-
 
     def setup(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
@@ -112,8 +111,8 @@ class Z3(Recipe):
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
-        self.z3_dir = local_repo_path
         self.build_output_path = build_path
+        self.z3_dir = local_repo_path
 
     def clean(self, ws: Workspace):
         int_paths = self.paths

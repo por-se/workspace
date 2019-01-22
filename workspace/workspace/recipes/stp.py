@@ -1,4 +1,4 @@
-import os, multiprocessing, shutil
+import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
@@ -54,7 +54,7 @@ class STP(Recipe):
         self.minisat_name = minisat_name
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):

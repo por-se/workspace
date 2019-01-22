@@ -1,7 +1,5 @@
-import os, sys, shutil
+import os, shutil, psutil
 from hashlib import blake2s
-
-import psutil
 
 from workspace.workspace import Workspace, _run
 from workspace.util import j_from_num_threads, adjusted_cmake_args
@@ -43,14 +41,14 @@ class LLVM(Recipe):
     def __init__(self,
                  branch,
                  profile,
-                 repository_llvm="https://github.com/llvm/llvm-project.git",
+                 repository="https://github.com/llvm/llvm-project.git",
                  name=default_name,
                  cmake_adjustments=[]):
         """Build LLVM."""
         super().__init__(name)
         self.branch = branch
         self.profile = profile
-        self.repository_llvm = repository_llvm
+        self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
         assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
@@ -86,7 +84,7 @@ class LLVM(Recipe):
         if not local_repo_path.is_dir():
             ws.git_add_exclude_path(local_repo_path)
             ws.reference_clone(
-                self.repository_llvm,
+                self.repository,
                 target_path=local_repo_path,
                 branch=self.branch,
                 sparse=["/llvm", "/clang"])
