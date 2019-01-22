@@ -160,13 +160,12 @@ class PORSE(Recipe):
                 f'-DZ3_INCLUDE_DIRS={z3.z3_dir}/src/api/',
                 f'-DZ3_LIBRARIES={z3.build_output_path}/libz3.a',
                 '-DENABLE_POSIX_RUNTIME=On',
+                '-DENABLE_PTHREAD_RUNTIME=On',
                 '-DENABLE_KLEE_UCLIBC=On',
                 f'-DKLEE_UCLIBC_PATH={klee_uclibc.repo_path}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
-                # Waiting for this to be merged:
-                # https://github.com/klee/klee/pull/1005
-                '-DENABLE_UNIT_TESTS=Off',
+                '-DENABLE_UNIT_TESTS=On',
                 f'-DPOR_SIMULATOR_DIR={simulator.repo_path}',
             ]
 
