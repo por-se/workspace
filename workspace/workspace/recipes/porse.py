@@ -165,6 +165,7 @@ class PORSE(Recipe):
                 f'-DKLEE_UCLIBC_PATH={klee_uclibc.repo_path}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
+                # most essential parts of https://github.com/klee/klee/pull/1005 are merged in PORSE (enabling unittests)
                 '-DENABLE_UNIT_TESTS=On',
                 f'-DPOR_SIMULATOR_DIR={simulator.build_output_path}',
             ]
