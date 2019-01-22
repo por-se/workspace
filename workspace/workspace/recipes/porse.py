@@ -166,7 +166,7 @@ class PORSE(Recipe):
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
                 '-DENABLE_UNIT_TESTS=On',
-                f'-DPOR_SIMULATOR_DIR={simulator.repo_path}',
+                f'-DPOR_SIMULATOR_DIR={simulator.build_output_path}',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
