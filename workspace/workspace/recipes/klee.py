@@ -187,4 +187,6 @@ class KLEE(Recipe):
 
     def add_to_env(self, env, ws: Workspace):
         build_path = self.paths.build_path
+        repo_path = self.paths.local_repo_path
         env["PATH"] = str(build_path / "bin") + ":" + env["PATH"]
+        env["C_INCLUDE_PATH"] = str(repo_path / "include") + ":" + env["C_INCLUDE_PATH"]
