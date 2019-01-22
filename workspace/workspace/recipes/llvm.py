@@ -53,7 +53,7 @@ class LLVM(Recipe):
         self.repository_llvm = repository_llvm
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -116,7 +116,7 @@ class LLVM(Recipe):
             ]
 
             avail_mem = psutil.virtual_memory().available
-            if profile != "release":
+            if self.profile != "release":
                 if avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                     print(
                         "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
