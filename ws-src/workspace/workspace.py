@@ -19,7 +19,7 @@ class Workspace:
 
         self.ws_path = ws_path
         self.ref_dir = self.ws_path / '.ref'
-        self.patch_dir = self.ws_path / 'patch'
+        self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
         self.builds = []
 

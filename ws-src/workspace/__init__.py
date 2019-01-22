@@ -20,16 +20,16 @@ def _get_all_recipes():
 
 def _resolve_or_default_configs(ws_path, given_configs):
     if given_configs:
-        available_config_dir = ws_path / 'build_configs' / 'available'
+        available_config_dir = ws_path / 'ws-config' / 'available'
         configs = [available_config_dir / f"{config}.toml" for config in given_configs]
     else:
         if "WS_ENV_CONFIGURATION" in os.environ:
-            available_config_dir = ws_path / 'build_configs' / 'available'
+            available_config_dir = ws_path / 'ws-config' / 'available'
             configs = [
                 available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
             ]
         else:
-            active_config_dir = ws_path / 'build_configs' / 'active'
+            active_config_dir = ws_path / 'ws-config' / 'active'
             configs = active_config_dir.glob('*.toml')
     return configs
 
@@ -160,7 +160,7 @@ def shell_main():
 
     ws_path = __ws_path_from_here()
 
-    config_path = ws_path / 'build_configs' / 'available' / f"{config_name}.toml"
+    config_path = ws_path / 'ws-config' / 'available' / f"{config_name}.toml"
     if not config_path.exists():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)
@@ -200,7 +200,7 @@ def run_main():
 
     ws_path = __ws_path_from_here()
 
-    config_path = ws_path / 'build_configs' / 'available' / f"{config_name}.toml"
+    config_path = ws_path / 'ws-config' / 'available' / f"{config_name}.toml"
     if not config_path.exists():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)
@@ -281,10 +281,10 @@ def list_options_main():
     ws_path = __ws_path_from_here()
 
     if args.config:
-        available_config_dir = ws_path / 'build_configs' / 'available'
+        available_config_dir = ws_path / 'ws-config' / 'available'
         config = available_config_dir / f"{args.config}.toml"
     elif "WS_ENV_CONFIGURATION" in os.environ:
-        available_config_dir = ws_path / 'build_configs' / 'available'
+        available_config_dir = ws_path / 'ws-config' / 'available'
         config = available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
     else:
         config = None
