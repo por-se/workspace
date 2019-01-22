@@ -16,6 +16,10 @@ profile = "rel+debinfo"
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"
 
-[[KLEE]]
+[[SIMULATOR]]
+branch = "master"
+profile = "debug"
+
+[[PORSE]]
 branch = "master"
 profile = "debug"

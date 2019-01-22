@@ -10,15 +10,46 @@ from pathlib import Path
 
 class SIMULATOR(Recipe):
     default_name = "simulator"
+    profiles = {
+        "release": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Release',
+            ],
+            "cxx_flags": "",
+        },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+            ],
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
+        "debug": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Debug',
+            ],
+            "cxx_flags": "",
+        },
+        "sanitized": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=Asan',
+            ],
+            "cxx_flags": "",
+        },
+    }
 
-    def __init__(self, branch, profile, repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/simulator.git", name=default_name, cmake_adjustments=[]):
+    def __init__(self,
+                 branch,
+                 profile,
+                 repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/simulator.git",
+                 name=default_name,
+                 cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in {"release"}, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -67,24 +98,20 @@ class SIMULATOR(Recipe):
             os.makedirs(build_path)
 
             cmake_args = [
-                '-G', 'Ninja', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                '-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always',
+                '-G', 'Ninja',
+                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
             ]
 
-            if self.profile == "release":
-                cmake_args += ["-DCMAKE_BUILD_TYPE=Release"]
-            else:
-                raise RuntimeException(
-                    f"[{self.name}] unknown profile: '{self.profile}' (available: 'release')")
-
+            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
-        self.repo_path = local_repo_path
         self.build_output_path = build_path
+        self.repo_path = local_repo_path
 
     def clean(self, ws: Workspace):
         int_paths = self.paths

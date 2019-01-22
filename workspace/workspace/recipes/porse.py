@@ -1,4 +1,4 @@
-import os, multiprocessing, shutil
+import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
@@ -61,8 +61,6 @@ class PORSE(Recipe):
                  klee_uclibc_name=KLEE_UCLIBC.default_name,
                  simulator_name=SIMULATOR.default_name,
                  cmake_adjustments=[]):
-        if not profile in self.profiles:
-            raise RuntimeError
 
         super().__init__(name)
         self.branch = branch
@@ -76,7 +74,7 @@ class PORSE(Recipe):
         self.simulator_name = simulator_name
         self.cmake_adjustments = cmake_adjustments
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {name} does not contain a profile "{profile}"!'
+        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
     def initialize(self, ws: Workspace):
         def _compute_digest(self, ws: Workspace):
@@ -101,7 +99,7 @@ class PORSE(Recipe):
             assert z3, f"[{self.name}] klee requires z3"
             assert llvm, f"[{self.name}] klee requires llvm"
             assert klee_uclibc, f"[{self.name}] klee requires klee_uclibc"
-            assert simulator, f"[{self.name}] porse-klee requires porse-simulator"
+            assert simulator, f"[{self.name}] klee requires simulator"
 
             digest.update(stp.digest.encode())
             digest.update(z3.digest.encode())
@@ -158,7 +156,7 @@ class PORSE(Recipe):
             assert z3, f"[{self.name}] klee requires z3"
             assert llvm, f"[{self.name}] klee requires llvm"
             assert klee_uclibc, f"[{self.name}] klee requires klee_uclibc"
-            assert simulator, f"[{self.name}] porse-klee requires porse-simulator"
+            assert simulator, f"[{self.name}] klee requires simulator"
 
             cmake_args = [
                 '-G', 'Ninja',
@@ -188,9 +186,7 @@ class PORSE(Recipe):
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(
-                ["cmake"] + cmake_args + [local_repo_path],
-                cwd=build_path, env=env)
+            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
 
