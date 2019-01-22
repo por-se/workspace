@@ -33,6 +33,12 @@ def _resolve_or_default_configs(ws_path, given_configs):
             configs = active_config_dir.glob('*.toml')
     return configs
 
+
+def _available_configs(ws_path):
+    available_config_dir = ws_path / 'build_configs' / 'available'
+    configs = available_config_dir.glob('*.toml')
+    return configs
+
 def ws_from_config(ws_path, config_path):
     ws = Workspace(ws_path)
 
@@ -76,12 +82,19 @@ def build_main():
         "Build one or more configurations. By default, builds all configurations, or only the configuration of the current environment if one is active."
     )
 
-    parser.add_argument(
+    choice_group = parser.add_mutually_exclusive_group()
+    choice_group.add_argument(
         'configs',
-        metavar='config',
+        metavar='CONFIG',
         type=str,
         nargs='*',
+        default=False,
         help="The configurations to build")
+    choice_group.add_argument(
+        '-a',
+        '--all',
+        action='store_true',
+        help="build all available configs")
 
     parser.add_argument(
         '-j',
@@ -94,7 +107,7 @@ def build_main():
 
     ws_path = __ws_path_from_here()
 
-    configs = _resolve_or_default_configs(ws_path, args.configs)
+    configs = _available_configs(ws_path) if args.all else _resolve_or_default_configs(ws_path, args.configs)
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
@@ -107,18 +120,25 @@ def setup_main():
         "Setup (usually download sources) one or more configurations. By default, setups all configurations, or only the configuration of the current environment if one is active."
     )
 
-    parser.add_argument(
+    choice_group = parser.add_mutually_exclusive_group()
+    choice_group.add_argument(
         'configs',
-        metavar='config',
+        metavar='CONFIG',
         type=str,
         nargs='*',
-        help="The configurations to setup")
+        default=False,
+        help="The configurations to build")
+    choice_group.add_argument(
+        '-a',
+        '--all',
+        action='store_true',
+        help="build all available configs")
 
     args = parser.parse_args()
 
     ws_path = __ws_path_from_here()
 
-    configs = _resolve_or_default_configs(ws_path, args.configs)
+    configs = _available_configs(ws_path) if args.all else _resolve_or_default_configs(ws_path, args.configs)
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
@@ -205,12 +225,19 @@ def clean_main():
         "Clean one or more configurations. By default, cleans all configurations, or only the configuration of the current environment if one is active."
     )
 
-    parser.add_argument(
+    choice_group = parser.add_mutually_exclusive_group()
+    choice_group.add_argument(
         'configs',
-        metavar='config',
+        metavar='CONFIG',
         type=str,
         nargs='*',
-        help="The configurations to clean")
+        default=False,
+        help="The configurations to build")
+    choice_group.add_argument(
+        '-a',
+        '--all',
+        action='store_true',
+        help="build all available configs")
 
     parser.add_argument(
         "--dist-clean",
@@ -223,7 +250,7 @@ def clean_main():
 
     ws_path = __ws_path_from_here()
 
-    configs = _resolve_or_default_configs(ws_path, args.configs)
+    configs = _available_configs(ws_path) if args.all else _resolve_or_default_configs(ws_path, args.configs)
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
