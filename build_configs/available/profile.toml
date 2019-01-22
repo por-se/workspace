@@ -1,25 +1,21 @@
 [[LLVM]]
 branch = "llvmorg-7.0.1"
-profile = "release"
+profile = "rel+debinfo"
 
 [[Z3]]
 branch = "z3-4.8.4"
-profile = "release"
+profile = "rel+debinfo"
 
 [[MINISAT]]
 branch = "master"
 
 [[STP]]
 branch = "master"
-profile = "release"
+profile = "rel+debinfo"
 
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"
 
-[[SIMULATOR]]
+[[KLEE]]
 branch = "master"
-profile = "release"
-
-[[PORSE]]
-branch = "master"
-profile = "release"
+profile = "rel+debinfo"

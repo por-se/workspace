@@ -20,6 +20,15 @@ class KLEE(Recipe):
             "c_flags": "",
             "cxx_flags": "",
         },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+                '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=On',
+            ],
+            "c_flags": "-fno-omit-frame-pointer",
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
         "debug": {
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
@@ -50,8 +59,6 @@ class KLEE(Recipe):
                  llvm_name=LLVM.default_name,
                  klee_uclibc_name=KLEE_UCLIBC.default_name,
                  cmake_adjustments=[]):
-        if not profile in self.profiles:
-            raise RuntimeError
 
         super().__init__(name)
         self.branch = branch
