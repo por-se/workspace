@@ -20,6 +20,15 @@ class PORSE(Recipe):
             "c_flags": "",
             "cxx_flags": "",
         },
+        "rel+debinfo": {
+            "cmake_args": [
+                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+                '-DKLEE_RUNTIME_BUILD_TYPE=Release',
+                '-DENABLE_TCMALLOC=On',
+            ],
+            "c_flags": "-fno-omit-frame-pointer",
+            "cxx_flags": "-fno-omit-frame-pointer",
+        },
         "debug": {
             "cmake_args": [
                 '-DCMAKE_BUILD_TYPE=Debug',
@@ -44,7 +53,8 @@ class PORSE(Recipe):
                  branch,
                  profile,
                  name=default_name,
-                 repository="git@github.com:klee/klee.git",
+                 repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/klee.git",
+                 upstream_repository="git@github.com:klee/klee.git",
                  stp_name=STP.default_name,
                  z3_name=Z3.default_name,
                  llvm_name=LLVM.default_name,
@@ -58,6 +68,7 @@ class PORSE(Recipe):
         self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.upstream_repository = upstream_repository
         self.stp_name = stp_name
         self.z3_name = z3_name
         self.llvm_name = llvm_name
@@ -120,7 +131,11 @@ class PORSE(Recipe):
                 self.repository,
                 target_path=local_repo_path,
                 branch=self.branch)
-            ws.apply_patches("klee", local_repo_path)
+            ws.apply_patches("porse", local_repo_path)
+            _run([
+                "git", "remote", "add", "upstream", self.upstream_repository
+            ], cwd=local_repo_path)
+            _run(["git", "fetch", "--all", "--prune"], cwd=local_repo_path)
 
     def build(self, ws: Workspace):
         local_repo_path = self.paths.local_repo_path
