@@ -50,8 +50,6 @@ class KLEE(Recipe):
                  llvm_name=LLVM.default_name,
                  klee_uclibc_name=KLEE_UCLIBC.default_name,
                  cmake_adjustments=[]):
-        if not profile in self.profiles:
-            raise RuntimeError
 
         super().__init__(name)
         self.branch = branch
