@@ -4,13 +4,14 @@ profile = "debug"
 
 [[Z3]]
 branch = "z3-4.8.4"
-profile = "release"
+profile = "rel+debinfo"
 
 [[MINISAT]]
 branch = "master"
 
 [[STP]]
 branch = "master"
+profile = "rel+debinfo"
 
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"

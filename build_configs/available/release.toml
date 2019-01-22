@@ -11,6 +11,7 @@ branch = "master"
 
 [[STP]]
 branch = "master"
+profile = "release"
 
 [[KLEE_UCLIBC]]
 branch = "klee_0_9_29"
