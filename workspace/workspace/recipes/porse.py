@@ -200,5 +200,5 @@ class PORSE(Recipe):
             ws.git_remove_exclude_path(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
-        build_path = self.paths.build_path
-        env["PATH"] = str(build_path / "bin") + ":" + env["PATH"]
+        Recipe._env_prepend_path(env, "PATH", self.paths.build_path / "bin")
+        Recipe._env_prepend_path(env, "C_INCLUDE_PATH", self.paths.local_repo_path / "include")
