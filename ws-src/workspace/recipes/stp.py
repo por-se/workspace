@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads
 from . import Recipe, MINISAT
 
 from pathlib import Path
@@ -125,7 +125,7 @@ class STP(Recipe):
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
-            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
 

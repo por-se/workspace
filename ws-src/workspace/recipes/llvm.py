@@ -2,7 +2,7 @@ import os, shutil, psutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
 from pathlib import Path
@@ -122,7 +122,7 @@ class LLVM(Recipe):
                     cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
-            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [local_repo_path / "llvm"], cwd=build_path, env=env)
 
@@ -140,4 +140,4 @@ class LLVM(Recipe):
             ws.git_remove_exclude_path(int_paths.local_repo_path)
 
     def add_to_env(self, env, ws: Workspace):
-        Recipe._env_prepend_path(env, "PATH", self.paths.build_path / "bin")
+        env_prepend_path(env, "PATH", self.paths.build_path / "bin")

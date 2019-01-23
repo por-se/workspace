@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads
 from . import Recipe, LLVM
 
 from pathlib import Path

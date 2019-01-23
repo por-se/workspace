@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads
 from . import Recipe
 
 from pathlib import Path
@@ -65,7 +65,7 @@ class MINISAT(Recipe):
 
         if not build_path.exists():
             os.makedirs(build_path)
-            cmake_args = adjusted_cmake_args([
+            cmake_args = Recipe.adjusted_cmake_args([
                 '-G', 'Ninja',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
