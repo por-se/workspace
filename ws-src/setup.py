@@ -9,12 +9,12 @@ setup(
 	],
 	entry_points = {
 		'console_scripts': [
-			"setup = workspace:setup_main",
-			"build = workspace:build_main",
-            "shell = workspace:shell_main",
-            "run = workspace:run_main",
-            "list_options = workspace:list_options_main",
-            "clean = workspace:clean_main",
+			"setup        = workspace.bin.setup:main",
+            "build        = workspace.bin.build:main",
+            "shell        = workspace.bin.shell:main",
+            "run          = workspace.bin.run:main",
+            "list_options = workspace.bin.list_options:main",
+            "clean        = workspace.bin.clean:main",
 		],
 	},
 )

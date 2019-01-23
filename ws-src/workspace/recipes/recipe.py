@@ -1,4 +1,6 @@
 import inspect
+import enum
+from enum import Enum
 
 from workspace.workspace import Workspace
 
