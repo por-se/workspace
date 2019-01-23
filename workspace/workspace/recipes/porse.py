@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 class PORSE(Recipe):
-    default_name = "klee"
+    default_name = "porse"
     profiles = {
         "release": {
             "cmake_args": [
