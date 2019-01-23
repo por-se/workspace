@@ -1,0 +1,24 @@
+diff --git a/unittests/lit-unit-tests-common.site.cfg.in b/unittests/lit-unit-tests-common.site.cfg.in
+index 38626995..f89d61c9 100644
+--- a/unittests/lit-unit-tests-common.site.cfg.in
++++ b/unittests/lit-unit-tests-common.site.cfg.in
+@@ -7,5 +7,5 @@ config.unit_test_exe_suffix = "@UNIT_TEST_EXE_SUFFIX@"
+ 
+ # Let the main config do the real work.
+ lit_config.load_config(config, "@CMAKE_SOURCE_DIR@/unittests/lit-unit-tests-common.cfg")
+-config.environment['LSAN_OPTIONS'] = "suppressions=@KLEE_UTILS_DIR@/sanitizers/lsan.txt"
++config.environment['LSAN_OPTIONS'] = "suppressions=@KLEE_UTILS_DIR@/sanitizers/lsan.txt,print_suppressions=0"
+ config.environment['UBSAN_OPTIONS'] = "suppressions=@KLEE_UTILS_DIR@/sanitizers/ubsan.txt"
+diff --git a/utils/sanitizers/lsan.txt b/utils/sanitizers/lsan.txt
+index 45e4c3fd..68181f35 100644
+--- a/utils/sanitizers/lsan.txt
++++ b/utils/sanitizers/lsan.txt
+@@ -6,6 +6,8 @@
+ # The suppressions below are what's needed for ``make unittests`` and ``make check`` to not
+ # fail due to leaks.
+ 
++# Ignore RegisterHandlers
++leak:llvm/lib/Support/Unix/Signals.inc
+ # Ignore tcmalloc
+ leak:src/malloc_extension.cc
+ # Memory leak from klee_replay
