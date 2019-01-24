@@ -96,26 +96,36 @@ class Workspace:
             _run(["git", "-C", target_path, "checkout", branch])
 
     def git_add_exclude_path(self, path):
+        path = PurePosixPath(path)
+        path = path.relative_to(self.ws_path)
+
         git_dir = self.ws_path / ".git"
         assert git_dir.is_dir()
 
         git_info_dir = git_dir / "info"
         os.makedirs(git_info_dir, exist_ok=True)
 
-        with open(git_info_dir / "exclude", "a+t") as f:
-            has_line_end = True # empty file
-            for line in f.read().splitlines():
-                exclude = line.splitlines()[0]
-                has_line_end = (exclude != line)
-                if exclude == path:
-                    return # path already excluded
+        git_exclude_path = git_info_dir / "exclude"
+
+        has_line_end = True # empty file
+        if git_exclude_path.is_file():
+            with open(git_exclude_path, "rt") as f:
+                for line in f.read().splitlines():
+                    if line != "":
+                        exclude = line.splitlines()[0]
+                        has_line_end = (exclude != line)
+                        if exclude == f'/{path}':
+                            return # path already excluded
+
+        with open(git_info_dir / "exclude", "at") as f:
             if not has_line_end:
                 f.write("\n")
-            path = PurePosixPath(path)
-            path = path.relative_to(self.ws_path)
-            f.write(f"/{path}\n")
+            f.write(f'/{path}\n')
 
     def git_remove_exclude_path(self, path):
+        path = PurePosixPath(path)
+        path = path.relative_to(self.ws_path)
+
         git_exclude_path = self.ws_path / ".git" / "info" / "exclude"
         if not git_exclude_path.is_file():
             return # nothing to un-exclude
@@ -124,8 +134,8 @@ class Workspace:
         with open(git_exclude_path, "rt") as f:
             for line in f.read().splitlines():
                 exclude = line.splitlines()[0]
-                if exclude != path:
-                    lines += line
+                if exclude != f'/{path}':
+                    lines += f'{exclude}\n'
         with open(git_exclude_path, "wt") as f:
             f.write(lines)
 
