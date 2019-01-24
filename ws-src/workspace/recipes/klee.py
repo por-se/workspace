@@ -115,24 +115,19 @@ class KLEE(Recipe):
         self.paths = _make_internal_paths(self, ws)
 
     def setup(self, ws: Workspace):
-        src_dir = self.paths.src_dir
-        if not src_dir.is_dir():
-            ws.git_add_exclude_path(src_dir)
+        if not self.paths.src_dir.is_dir():
+            ws.git_add_exclude_path(self.paths.src_dir)
             ws.reference_clone(
                 self.repository,
-                target_path=src_dir,
+                target_path=self.paths.src_dir,
                 branch=self.branch)
-            ws.apply_patches("klee", src_dir)
+            ws.apply_patches("klee", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        src_dir = self.paths.src_dir
-        build_dir = self.paths.build_dir
-
         env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
 
-        if not build_dir.exists():
-            os.makedirs(build_dir)
+        if not self.paths.build_dir.exists():
+            os.makedirs(self.paths.build_dir)
 
             stp = ws.find_build(build_name=self.stp_name, before=self)
             z3 = ws.find_build(build_name=self.z3_name, before=self)
@@ -172,14 +167,13 @@ class KLEE(Recipe):
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(["cmake"] + cmake_args + [src_dir], cwd=build_dir, env=env)
+            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_dir, env=env)
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        int_paths = self.paths
-        if int_paths.build_dir.is_dir():
-            shutil.rmtree(int_paths.build_dir)
+        if self.paths.build_dir.is_dir():
+            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
             if int_paths.src_dir.is_dir():
                 shutil.rmtree(int_paths.src_dir)
