@@ -33,8 +33,7 @@ class Workspace:
             if self.ref_dir.is_symlink():
                 os.makedirs(self.ref_dir.resolve(), exist_ok=True)
             else:
-                ref_target_path = Path.home(
-                ) / '.cache/reference-repos'
+                ref_target_path = Path.home() / '.cache/reference-repos'
                 input_res = input(f"Where would you like to story reference repository data? [{ref_target_path}] ")
                 if input_res:
                     ref_target_path = Path(input_res)
