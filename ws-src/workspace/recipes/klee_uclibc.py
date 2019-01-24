@@ -39,9 +39,9 @@ class KLEE_UCLIBC(Recipe):
             class InternalPaths:
                 pass
 
-            res = InternalPaths()
-            res.src_dir = ws.ws_path / self.name
-            return res
+            paths = InternalPaths()
+            paths.src_dir = ws.ws_path / self.name
+            return paths
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)

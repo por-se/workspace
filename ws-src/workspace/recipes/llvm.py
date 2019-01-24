@@ -71,15 +71,23 @@ class LLVM(Recipe):
             class InternalPaths:
                 pass
 
-            res = InternalPaths()
-            res.src_dir = ws.ws_path / self.name
-            res.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            return res
+            paths = InternalPaths()
+            paths.src_dir = ws.ws_path / self.name
+            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
+            return paths
+
+        if self.profile != "release":
+            self._release_build = LLVM(self.branch, "release", self.repository, self.name, [])
+            self._release_build.initialize(ws)
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
     def setup(self, ws: Workspace):
+        if self.profile != "release":
+            self._release_build.setup(ws)
+
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
             ws.reference_clone(
@@ -89,7 +97,10 @@ class LLVM(Recipe):
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", self.paths.src_dir)
 
-    def build(self, ws: Workspace):
+    def build(self, ws: Workspace, target=None):
+        if self.profile != "release":
+            self._release_build.build(ws, target='bin/llvm-tblgen')
+
         env = os.environ
         env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
 
@@ -103,11 +114,17 @@ class LLVM(Recipe):
                 f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11 {self.profiles[self.profile]["cxx_flags"]}',
                 '-DLLVM_USE_LINKER=gold',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
+                f'-DLLVM_PARALLEL_LINK_JOBS={(ws.args.num_threads + 1)//2}',
                 f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={self.paths.src_dir / "clang"}',
                 '-DLLVM_TARGETS_TO_BUILD=X86',
                 '-DLLVM_INCLUDE_EXAMPLES=Off',
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
+            if self.profile != "release":
+                cmake_args += [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}']
 
             avail_mem = psutil.virtual_memory().available
             if self.profile != "release":
@@ -122,7 +139,10 @@ class LLVM(Recipe):
 
             _run(["cmake"] + cmake_args + [self.paths.src_dir / "llvm"], cwd=self.paths.build_dir, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+        build_call = ["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads)
+        if target is not None:
+            build_call += ['--target', target]
+        _run(build_call, cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
         if self.paths.build_dir.is_dir():

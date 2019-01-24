@@ -66,10 +66,10 @@ class Z3(Recipe):
             class InternalPaths:
                 pass
 
-            res = InternalPaths()
-            res.src_dir = ws.ws_path / self.name
-            res.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            return res
+            paths = InternalPaths()
+            paths.src_dir = ws.ws_path / self.name
+            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            return paths
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
