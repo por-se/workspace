@@ -67,32 +67,28 @@ class Z3(Recipe):
                 pass
 
             res = InternalPaths()
-            res.local_repo_path = ws.ws_path / self.name
-            res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            res.src_dir = ws.ws_path / self.name
+            res.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
             return res
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
     def setup(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-        if not local_repo_path.is_dir():
-            ws.git_add_exclude_path(local_repo_path)
+        if not self.paths.src_dir.is_dir():
+            ws.git_add_exclude_path(self.paths.src_dir)
             ws.reference_clone(
                 self.repository,
-                target_path=local_repo_path,
+                target_path=self.paths.src_dir,
                 branch=self.branch)
-            ws.apply_patches("z3", local_repo_path)
+            ws.apply_patches("z3", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-        build_path = self.paths.build_path
-
         env = os.environ
         env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
 
-        if not build_path.exists():
-            os.makedirs(build_path)
+        if not self.paths.build_dir.exists():
+            os.makedirs(self.paths.build_dir)
 
             cmake_args = [
                 '-G', 'Ninja',
@@ -107,18 +103,15 @@ class Z3(Recipe):
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
+            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
-
-        self.build_output_path = build_path
-        self.z3_dir = local_repo_path
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
         int_paths = self.paths
-        if int_paths.build_path.is_dir():
-            shutil.rmtree(int_paths.build_path)
+        if self.paths.build_dir.is_dir():
+            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
-            if int_paths.local_repo_path.is_dir():
-                shutil.rmtree(int_paths.local_repo_path)
-            ws.git_remove_exclude_path(int_paths.local_repo_path)
+            if self.paths.src_dir.is_dir():
+                shutil.rmtree(self.paths.src_dir)
+            ws.git_remove_exclude_path(self.paths.src_dir)
