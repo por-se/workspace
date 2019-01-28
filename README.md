@@ -10,11 +10,11 @@ $ ./ws clean --dist-clean   # completely remove all projects
 ```
 
 # Configurations
-Available configurations are stored as toml files in [`/build_configs/available/*.toml`](/build_configs/available). Generally speaking, configurations are a list of individual builds that are processed in order.
+Available configurations are stored as toml files in [`/ws-config/available/*.toml`](/ws-config/available). Generally speaking, configurations are a list of individual builds that are processed in order.
 
 To see all available recipes and their options, use `./ws list_options`.
 
-Configurations can also be *active*, which is achieved by symlinking them to [`/build_configs/active`](/build_configs/active).
+Configurations can also be *active*, which is achieved by symlinking them to [`/ws-config/active`](/ws-config/active).
 
 ## Default Configurations
 By default, 4 configurations are available:
