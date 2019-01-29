@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads
 from . import Recipe, LLVM
 
 from pathlib import Path
@@ -39,46 +39,39 @@ class KLEE_UCLIBC(Recipe):
             class InternalPaths:
                 pass
 
-            res = InternalPaths()
-            res.local_repo_path = ws.ws_path / self.name
-            return res
+            paths = InternalPaths()
+            paths.src_dir = ws.ws_path / self.name
+            return paths
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
     def setup(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-        if not local_repo_path.is_dir():
-            ws.git_add_exclude_path(local_repo_path)
+        if not self.paths.src_dir.is_dir():
+            ws.git_add_exclude_path(self.paths.src_dir)
             ws.reference_clone(
                 self.repository,
-                target_path=local_repo_path,
+                target_path=self.paths.src_dir,
                 branch=self.branch)
-            ws.apply_patches("klee-uclibc", local_repo_path)
+            ws.apply_patches("klee-uclibc", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-
-        if not (local_repo_path / '.config').exists():
+        if not (self.paths.src_dir / '.config').exists():
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
 
             _run([
                 "./configure", "--make-llvm-lib",
-                f"--with-llvm-config={llvm.build_output_path}/bin/llvm-config"
-            ],
-                 cwd=local_repo_path)
+                f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"
+            ], cwd=self.paths.src_dir)
 
-        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=local_repo_path)
-
-        self.repo_path = local_repo_path
+        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.src_dir)
 
     def clean(self, ws: Workspace):
-        int_paths = self.paths
         if ws.args.dist_clean:
-            if int_paths.local_repo_path.is_dir():
-                shutil.rmtree(int_paths.local_repo_path)
-            ws.git_remove_exclude_path(int_paths.local_repo_path)
+            if self.paths.src_dir.is_dir():
+                shutil.rmtree(self.paths.src_dir)
+            ws.git_remove_exclude_path(self.paths.src_dir)
         else:
-            if int_paths.local_repo_path.is_dir():
-                _run(["make", "distclean"], cwd=int_paths.local_repo_path)
+            if self.paths.src_dir.is_dir():
+                _run(["make", "distclean"], cwd=self.paths.src_dir)

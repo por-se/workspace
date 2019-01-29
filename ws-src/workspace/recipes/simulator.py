@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, adjusted_cmake_args
+from workspace.util import j_from_num_threads
 from . import Recipe
 
 from pathlib import Path
@@ -69,58 +69,53 @@ class SIMULATOR(Recipe):
             class InternalPaths:
                 pass
 
-            res = InternalPaths()
-            res.local_repo_path = ws.ws_path / self.name
-            res.build_path = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            return res
+            paths = InternalPaths()
+            paths.src_dir = ws.ws_path / self.name
+            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            return paths
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
 
     def setup(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-        if not local_repo_path.is_dir():
-            ws.git_add_exclude_path(local_repo_path)
+        if not self.paths.src_dir.is_dir():
+            ws.git_add_exclude_path(self.paths.src_dir)
             ws.reference_clone(
                 self.repository,
-                target_path=local_repo_path,
+                target_path=self.paths.src_dir,
                 branch=self.branch)
-            ws.apply_patches("simulator", local_repo_path)
+            ws.apply_patches("simulator", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        local_repo_path = self.paths.local_repo_path
-        build_path = self.paths.build_path
-
         env = os.environ
         env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
 
-        if not build_path.exists():
-            os.makedirs(build_path)
+        if not self.paths.build_dir.exists():
+            os.makedirs(self.paths.build_dir)
 
             cmake_args = [
                 '-G', 'Ninja',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
-            cmake_args = adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
-            _run(["cmake"] + cmake_args + [local_repo_path], cwd=build_path, env=env)
+            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=build_path, env=env)
-
-        self.build_output_path = build_path
-        self.repo_path = local_repo_path
+        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        int_paths = self.paths
-        if int_paths.build_path.is_dir():
-            shutil.rmtree(int_paths.build_path)
+        if self.paths.build_dir.is_dir():
+            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
-            if int_paths.local_repo_path.is_dir():
-                shutil.rmtree(int_paths.local_repo_path)
-            ws.git_remove_exclude_path(int_paths.local_repo_path)
+            if self.paths.src_dir.is_dir():
+                shutil.rmtree(self.paths.src_dir)
+            ws.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, ws: Workspace):
         Recipe._env_prepend_path(env, "PATH", self.paths.build_path / "bin/random-graph")

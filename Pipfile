@@ -8,7 +8,7 @@ lit = ">=0.6.0"
 tabulate = "*"
 wllvm = "*"
 toml = "*"
-workspace = { path = "workspace", editable = true }
+workspace = { path = "ws-src", editable = true }
 psutil = "*"
 shellingham = "*"
 
