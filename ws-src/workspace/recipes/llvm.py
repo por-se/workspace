@@ -117,7 +117,6 @@ class LLVM(Recipe):
                 f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
                 f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
                 f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
-                f'-DLLVM_PARALLEL_LINK_JOBS={(ws.args.num_threads + 1)//2}',
                 f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={self.paths.src_dir / "clang"}',
                 '-DLLVM_TARGETS_TO_BUILD=X86',
                 '-DLLVM_INCLUDE_EXAMPLES=Off',
@@ -127,12 +126,13 @@ class LLVM(Recipe):
                 cmake_args += [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}']
 
             avail_mem = psutil.virtual_memory().available
-            if self.profile != "release":
-                if avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
-                    print(
-                        "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
-                    )
-                    cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
+            if self.profile != "release" and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
+                print(
+                    "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+                )
+                cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
+            else:
+                cmake_args += [f'-DLLVM_PARALLEL_LINK_JOBS={(ws.args.num_threads + 1)//2}']
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
