@@ -94,8 +94,11 @@ class Z3(Recipe):
                 '-G', 'Ninja',
                 '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
+                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
                 '-DBUILD_LIBZ3_SHARED=false',
                 '-DUSE_OPENMP=0',
             ]

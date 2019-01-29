@@ -64,7 +64,10 @@ class MINISAT(Recipe):
             cmake_args = Recipe.adjusted_cmake_args([
                 '-G', 'Ninja',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fuse-ld=gold -fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
             ], self.cmake_adjustments)
             _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
 
