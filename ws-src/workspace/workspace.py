@@ -110,12 +110,11 @@ class Workspace:
         has_line_end = True # empty file
         if git_exclude_path.is_file():
             with open(git_exclude_path, "rt") as f:
-                for line in f.read().splitlines():
-                    if line != "":
-                        exclude = line.splitlines()[0]
-                        has_line_end = (exclude != line)
-                        if exclude == f'/{path}':
-                            return # path already excluded
+                lines = f.read()
+                has_line_end = (len(lines) == 0 or lines[-1] == "\n")
+                for line in lines.splitlines():
+                    if line == f'/{path}':
+                        return # path already excluded
 
         with open(git_info_dir / "exclude", "at") as f:
             if not has_line_end:
@@ -133,9 +132,8 @@ class Workspace:
         lines = ""
         with open(git_exclude_path, "rt") as f:
             for line in f.read().splitlines():
-                exclude = line.splitlines()[0]
-                if exclude != f'/{path}':
-                    lines += f'{exclude}\n'
+                if line != f'/{path}':
+                    lines += f'{line}\n'
         with open(git_exclude_path, "wt") as f:
             f.write(lines)
 
