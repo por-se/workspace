@@ -132,7 +132,6 @@ class STP(Recipe):
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        int_paths = self.paths
         if self.paths.build_dir.is_dir():
             shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:

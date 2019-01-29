@@ -68,11 +68,10 @@ class KLEE_UCLIBC(Recipe):
         _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.src_dir)
 
     def clean(self, ws: Workspace):
-        int_paths = self.paths
         if ws.args.dist_clean:
-            if int_paths.src_dir.is_dir():
-                shutil.rmtree(int_paths.src_dir)
-            ws.git_remove_exclude_path(int_paths.src_dir)
+            if self.paths.src_dir.is_dir():
+                shutil.rmtree(self.paths.src_dir)
+            ws.git_remove_exclude_path(self.paths.src_dir)
         else:
-            if int_paths.src_dir.is_dir():
-                _run(["make", "distclean"], cwd=int_paths.src_dir)
+            if self.paths.src_dir.is_dir():
+                _run(["make", "distclean"], cwd=self.paths.src_dir)

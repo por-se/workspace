@@ -178,9 +178,9 @@ class KLEE(Recipe):
         if self.paths.build_dir.is_dir():
             shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
-            if int_paths.src_dir.is_dir():
-                shutil.rmtree(int_paths.src_dir)
-            ws.git_remove_exclude_path(int_paths.src_dir)
+            if self.paths.src_dir.is_dir():
+                shutil.rmtree(self.paths.src_dir)
+            ws.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, ws: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
