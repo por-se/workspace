@@ -125,6 +125,7 @@ class KLEE(Recipe):
 
     def build(self, ws: Workspace):
         env = os.environ
+        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
