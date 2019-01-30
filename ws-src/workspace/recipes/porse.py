@@ -179,7 +179,7 @@ class PORSE(Recipe):
                 '-DENABLE_SYSTEM_TESTS=On',
                 # most essential parts of https://github.com/klee/klee/pull/1005 are merged in PORSE (enabling unittests)
                 '-DENABLE_UNIT_TESTS=On',
-                f'-DPOR_SIMULATOR_DIR={simulator.build_dir}',
+                f'-DPOR_SIMULATOR_DIR={simulator.paths.build_dir}',
             ]
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]

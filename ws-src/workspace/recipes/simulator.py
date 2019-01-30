@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
 from pathlib import Path
@@ -118,4 +118,4 @@ class SIMULATOR(Recipe):
             ws.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, ws: Workspace):
-        Recipe._env_prepend_path(env, "PATH", self.paths.build_path / "bin/random-graph")
+        env_prepend_path(env, "PATH", self.paths.build_dir / "bin/random-graph")
