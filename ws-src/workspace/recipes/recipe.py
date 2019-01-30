@@ -56,6 +56,9 @@ class Recipe:
         and '-U'-entries will be removed from the result, which otherwise is a copy of 'original_args'.
         """
 
+        if not isinstance(adjustments, list):
+            raise ValueError("adjusted_cmake_args: adjustments has to be a list")
+
         class Mode(enum.Enum):
             DEFINE = 1
             UNDEFINE = 2
@@ -71,7 +74,7 @@ class Recipe:
                 needle = "-D" + adj[2:] + "="
             else:
                 raise ValueError(
-                    f"adjust_cmake_args: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
+                    f"adjusted_cmake_args: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
                 )
 
             found = False
