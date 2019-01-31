@@ -133,8 +133,7 @@ class KLEE(Recipe):
             stp = ws.find_build(build_name=self.stp_name, before=self)
             z3 = ws.find_build(build_name=self.z3_name, before=self)
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
-            klee_uclibc = ws.find_build(
-                build_name=self.klee_uclibc_name, before=self)
+            klee_uclibc = ws.find_build(build_name=self.klee_uclibc_name, before=self)
 
             assert stp, "klee requires stp"
             assert z3, "klee requires z3"
@@ -160,7 +159,7 @@ class KLEE(Recipe):
                 f'-DZ3_LIBRARIES={z3.paths.build_dir}/libz3.a',
                 '-DENABLE_POSIX_RUNTIME=On',
                 '-DENABLE_KLEE_UCLIBC=On',
-                f'-DKLEE_UCLIBC_PATH={klee_uclibc.paths.src_dir}',
+                f'-DKLEE_UCLIBC_PATH={klee_uclibc.paths.build_dir}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
                 # Waiting for this to be merged:
