@@ -1,0 +1,27 @@
+[[LLVM]]
+branch = "llvmorg-7.0.1"
+profile = "rel+debinfo"
+
+[[Z3]]
+branch = "z3-4.8.4"
+profile = "rel+debinfo"
+
+[[MINISAT]]
+branch = "master"
+
+[[STP]]
+branch = "master"
+profile = "rel+debinfo"
+
+[[KLEE_UCLIBC]]
+branch = "klee_0_9_29"
+
+[[SIMULATOR]]
+branch = "master"
+profile = "rel+debinfo"
+
+[[PORSE]]
+branch = "master"
+profile = "rel+debinfo"
+# WARNING: this is very memory intensive, even for small example programs
+cmake_adjustments = ["-DVERIFIED_FINGERPRINTS=On"]
