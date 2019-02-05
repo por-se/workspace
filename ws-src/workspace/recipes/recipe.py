@@ -1,26 +1,31 @@
+import abc
 import inspect
 import enum
 from enum import Enum
 
 from workspace.workspace import Workspace
 
-class Recipe:
+class Recipe(abc.ABC):
     def __init__(self, name):
         self.name = name
         self.digest = None
 
+    @abc.abstractmethod
     def initialize(self, ws: Workspace):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def setup(self, ws: Workspace):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def build(self, ws: Workspace):
         raise NotImplementedError
 
     def add_to_env(self, env, ws: Workspace):
         pass
 
+    @abc.abstractmethod
     def clean(self, ws: Workspace):
         raise NotImplementedError
 
