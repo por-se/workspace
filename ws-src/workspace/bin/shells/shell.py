@@ -13,5 +13,9 @@ class Shell(abc.ABC):
         self.additional_commands += commands
 
     @abc.abstractmethod
+    def add_cd_build(self, builds):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def spawn(self, env):
         raise NotImplementedError

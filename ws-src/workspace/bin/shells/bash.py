@@ -5,6 +5,16 @@ from . import Shell
 
 
 class Bash(Shell):
+    def add_cd_build(self, builds):
+        cd_build = "# cd-build <build name>\n"
+        cd_build += "function cd-build { if [ \"$#\" -gt 0 ]; then\n case $@ in\n"
+        for build in builds:
+            cd_build += f"{build.name}) cd \"{build.paths.build_dir}\";;\n"
+        cd_build += "*) echo No build directory for \\\"$@\\\" found.;;\nesac\n"
+        cd_build += "else\necho 'Usage: cd-build <build name>'\nfi\n}\n"
+
+        self.add_additional_commands(cd_build)
+
     def spawn(self, env):
         with tempfile.NamedTemporaryFile(mode='w+') as file:
             file.write(f"""
