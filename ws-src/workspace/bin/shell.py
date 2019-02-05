@@ -1,9 +1,9 @@
 import argparse
-import os
 import sys
 
 import shellingham
 
+from workspace.bin.shells import Bash, Fish, Zsh
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
@@ -26,7 +26,6 @@ def main():
     workspace = ws_from_config_name(settings.config.value)
     env = workspace.get_env()
     workspace.add_to_env(env)
-    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     env["WS_CONFIG"] = config
     env["WS_CONFIGS"] = config
 
@@ -39,18 +38,14 @@ def main():
             sys.exit(1)
 
     if shell == "bash":
-        prompt_cmd = f"PS1=\"({settings.ws_path.name}) ({config}) $PS1\""
-    elif shell == "zsh":
-        prompt_cmd = f"PROMPT=\"({settings.ws_path.name}) ({config}) $PROMPT\""
+        shell_obj = Bash()
     elif shell == "fish":
-        prompt_cmd = f"functions -c fish_prompt _fish_nested_prompt ; function fish_prompt ; printf \"\\n%s\" \"({settings.ws_path.name}) ({config}) \" ; _fish_nested_prompt ; end"
+        shell_obj = Fish()
+    elif shell == "zsh":
+        shell_obj = Zsh()
     else:
         raise Exception(f'Unknown shell: "{shell}"')
 
-    # need "--anyway" as we are already running in a pipenv context, so pipenv believes it should not spawn a shell..
-    os.execvpe("pipenv", [
-        "pipenv",
-        "shell",
-        "--anyway",
-        prompt_cmd,
-    ], env)
+    prompt_prefix = f"({workspace.ws_path.name}: {settings.config.name}) "
+    shell_obj.set_prompt_prefix(prompt_prefix)
+    shell_obj.spawn(env)
