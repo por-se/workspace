@@ -101,8 +101,7 @@ class LLVM(Recipe):
         if self.profile != "release":
             self._release_build.build(ws, target='bin/llvm-tblgen')
 
-        env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+        env = ws.get_env()
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
@@ -113,10 +112,9 @@ class LLVM(Recipe):
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11 {self.profiles[self.profile]["cxx_flags"]}',
-                '-DLLVM_USE_LINKER=gold',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
                 f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={self.paths.src_dir / "clang"}',
                 '-DLLVM_TARGETS_TO_BUILD=X86',
                 '-DLLVM_INCLUDE_EXAMPLES=Off',
@@ -131,8 +129,6 @@ class LLVM(Recipe):
                     "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
                 )
                 cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
-            else:
-                cmake_args += [f'-DLLVM_PARALLEL_LINK_JOBS={(ws.args.num_threads + 1)//2}']
 
             cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)

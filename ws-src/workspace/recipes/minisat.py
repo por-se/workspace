@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
 from pathlib import Path
@@ -56,8 +56,7 @@ class MINISAT(Recipe):
             ws.apply_patches("minisat", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+        env = ws.get_env()
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
@@ -65,9 +64,9 @@ class MINISAT(Recipe):
                 '-G', 'Ninja',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
             ], self.cmake_adjustments)
             _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
 

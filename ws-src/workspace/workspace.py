@@ -1,5 +1,6 @@
 import os, sys, subprocess, re
 from pathlib import Path, PurePosixPath
+import shutil
 
 import workspace.util as util
 
@@ -177,3 +178,18 @@ class Workspace:
 
         for build in self.builds:
             build.clean(self)
+
+    def get_env(self):
+        bindir = self.ws_path/".bin"
+
+        if not bindir.is_dir():
+            os.makedirs(bindir)
+
+            ld = shutil.which('ld.lld')
+            if ld is not None:
+                os.symlink(ld, bindir/'ld')
+
+        env = os.environ
+        env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
+        util.env_prepend_path(env, "PATH", bindir.resolve())
+        return env

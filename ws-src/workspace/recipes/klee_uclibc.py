@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe, LLVM
 
 from pathlib import Path
@@ -59,6 +59,8 @@ class KLEE_UCLIBC(Recipe):
     def build(self, ws: Workspace):
         _run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir])
 
+        env = ws.get_env()
+
         if not (self.paths.build_dir / '.config').exists():
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
@@ -66,9 +68,9 @@ class KLEE_UCLIBC(Recipe):
             _run([
                 "./configure", "--make-llvm-lib",
                 f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"
-            ], cwd=self.paths.build_dir)
+            ], cwd=self.paths.build_dir, env=env)
 
-        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir)
+        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:
