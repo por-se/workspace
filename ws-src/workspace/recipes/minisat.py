@@ -64,6 +64,7 @@ class MINISAT(Recipe):
                 '-G', 'Ninja',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
+                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
                 f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
                 f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
                 f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
