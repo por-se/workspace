@@ -24,10 +24,10 @@ def main():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)
 
-    env = os.environ.copy()
-    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     ws = ws_from_config(ws_path, config_path)
+    env = ws.get_env()
     ws.add_to_env(env)
+    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
 
     # yes, the `str()` is actually necessary
     env["WS_ENV_CONFIGURATION"] = str(config_name)

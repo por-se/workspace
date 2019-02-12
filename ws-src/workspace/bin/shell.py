@@ -17,9 +17,6 @@ def main():
 
     config_name = sys.argv[1]
 
-    env = os.environ.copy()
-    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
-
     ws_path = ws_path_from_here()
 
     config_path = ws_path / 'ws-config' / 'available' / f"{config_name}.toml"
@@ -28,7 +25,9 @@ def main():
         sys.exit(1)
 
     ws = ws_from_config(ws_path, config_path)
+    env = ws.get_env()
     ws.add_to_env(env)
+    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
 
     # yes, the `str()` is actually necessary
     env["WS_ENV_CONFIGURATION"] = str(config_name)
