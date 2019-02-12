@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
 from pathlib import Path
@@ -84,8 +84,7 @@ class Z3(Recipe):
             ws.apply_patches("z3", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+        env = ws.get_env()
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
@@ -96,9 +95,10 @@ class Z3(Recipe):
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
+                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
                 '-DBUILD_LIBZ3_SHARED=false',
                 '-DUSE_OPENMP=0',
             ]
@@ -111,8 +111,6 @@ class Z3(Recipe):
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        if self.paths.build_dir.is_dir():
-            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)

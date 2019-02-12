@@ -1,5 +1,6 @@
 import os, sys, subprocess, re
 from pathlib import Path, PurePosixPath
+import shutil
 
 import workspace.util as util
 
@@ -21,6 +22,7 @@ class Workspace:
         self.ref_dir = self.ws_path / '.ref'
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
+        self._bin_dir = self.ws_path / '.bin'
         self.builds = []
 
     def __check_create_ref_dir(self):
@@ -177,3 +179,35 @@ class Workspace:
 
         for build in self.builds:
             build.clean(self)
+
+        if self._bin_dir.exists():
+            shutil.rmtree(self._bin_dir)
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
+
+        if dist_clean:
+            if self.ref_dir.exists():
+                os.unlink(self.ref_dir)
+
+            pipfile = self.ws_path/"Pipfile.lock"
+            if pipfile.exists():
+                os.remove(pipfile)
+            egg_dir = self.ws_path/"ws-src"/"workspace.egg-info"
+            if egg_dir.exists():
+                shutil.rmtree(egg_dir)
+            venv_dir = self.ws_path/".venv"
+            if venv_dir.exists():
+                shutil.rmtree(venv_dir)
+
+    def get_env(self):
+        if not self._bin_dir.is_dir():
+            ld = shutil.which('ld.lld')
+            assert ld is not None, "Felix says: Install lld!"
+
+            os.makedirs(self._bin_dir)
+            os.symlink(ld, self._bin_dir/'ld')
+
+        env = os.environ.copy()
+        env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
+        util.env_prepend_path(env, "PATH", self._bin_dir.resolve())
+        return env

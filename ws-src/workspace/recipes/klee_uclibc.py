@@ -2,7 +2,7 @@ import os, shutil
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads
+from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe, LLVM
 
 from pathlib import Path
@@ -41,6 +41,7 @@ class KLEE_UCLIBC(Recipe):
 
             paths = InternalPaths()
             paths.src_dir = ws.ws_path / self.name
+            paths.build_dir = ws.build_dir / f'{self.name}-{self.digest}'
             return paths
 
         self.digest = _compute_digest(self, ws)
@@ -56,22 +57,23 @@ class KLEE_UCLIBC(Recipe):
             ws.apply_patches("klee-uclibc", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        if not (self.paths.src_dir / '.config').exists():
+        _run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir])
+
+        env = ws.get_env()
+
+        if not (self.paths.build_dir / '.config').exists():
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
 
             _run([
                 "./configure", "--make-llvm-lib",
                 f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"
-            ], cwd=self.paths.src_dir)
+            ], cwd=self.paths.build_dir, env=env)
 
-        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.src_dir)
+        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
             ws.git_remove_exclude_path(self.paths.src_dir)
-        else:
-            if self.paths.src_dir.is_dir():
-                _run(["make", "distclean"], cwd=self.paths.src_dir)

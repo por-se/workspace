@@ -36,9 +36,9 @@ Basically, delete everything and clone the workspace new. `ccache` has your back
 
 ```bash
 $ git clean -xdff
+$ git checkout .
 $ rm -f .git/info/exclude
 $ git pull --ff-only
-$ git checkout .
 ```
 
 ## Keeping Repositories (Slightly Unsafe)

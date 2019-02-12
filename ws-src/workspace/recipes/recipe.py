@@ -1,26 +1,31 @@
+import abc
 import inspect
 import enum
 from enum import Enum
 
 from workspace.workspace import Workspace
 
-class Recipe:
+class Recipe(abc.ABC):
     def __init__(self, name):
         self.name = name
         self.digest = None
 
+    @abc.abstractmethod
     def initialize(self, ws: Workspace):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def setup(self, ws: Workspace):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def build(self, ws: Workspace):
         raise NotImplementedError
 
     def add_to_env(self, env, ws: Workspace):
         pass
 
+    @abc.abstractmethod
     def clean(self, ws: Workspace):
         raise NotImplementedError
 
@@ -56,6 +61,9 @@ class Recipe:
         and '-U'-entries will be removed from the result, which otherwise is a copy of 'original_args'.
         """
 
+        if not isinstance(adjustments, list):
+            raise ValueError("adjusted_cmake_args: adjustments has to be a list")
+
         class Mode(enum.Enum):
             DEFINE = 1
             UNDEFINE = 2
@@ -71,7 +79,7 @@ class Recipe:
                 needle = "-D" + adj[2:] + "="
             else:
                 raise ValueError(
-                    f"adjust_cmake_args: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
+                    f"adjusted_cmake_args: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
                 )
 
             found = False

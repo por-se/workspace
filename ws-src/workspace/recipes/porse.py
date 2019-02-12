@@ -135,8 +135,7 @@ class PORSE(Recipe):
             _run(["git", "fetch", "--all", "--prune"], cwd=self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+        env = ws.get_env()
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
@@ -144,8 +143,7 @@ class PORSE(Recipe):
             stp = ws.find_build(build_name=self.stp_name, before=self)
             z3 = ws.find_build(build_name=self.z3_name, before=self)
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
-            klee_uclibc = ws.find_build(
-                build_name=self.klee_uclibc_name, before=self)
+            klee_uclibc = ws.find_build(build_name=self.klee_uclibc_name, before=self)
             simulator = ws.find_build(build_name=self.simulator_name, before=self)
 
             assert stp, f"[{self.name}] klee requires stp"
@@ -160,9 +158,10 @@ class PORSE(Recipe):
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
                 f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -fno-rtti {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
+                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
+                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
+                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
                 '-DUSE_CMAKE_FIND_PACKAGE_LLVM=On',
                 f'-DLLVM_DIR={llvm.paths.build_dir}/lib/cmake/llvm/',
                 '-DENABLE_SOLVER_STP=On',
@@ -174,7 +173,7 @@ class PORSE(Recipe):
                 '-DENABLE_POSIX_RUNTIME=On',
                 '-DENABLE_PTHREAD_RUNTIME=On',
                 '-DENABLE_KLEE_UCLIBC=On',
-                f'-DKLEE_UCLIBC_PATH={klee_uclibc.paths.src_dir}',
+                f'-DKLEE_UCLIBC_PATH={klee_uclibc.paths.build_dir}',
                 f'-DLIT_TOOL={shutil.which("lit")}',
                 '-DENABLE_SYSTEM_TESTS=On',
                 # most essential parts of https://github.com/klee/klee/pull/1005 are merged in PORSE (enabling unittests)
@@ -190,8 +189,6 @@ class PORSE(Recipe):
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        if self.paths.build_dir.is_dir():
-            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
