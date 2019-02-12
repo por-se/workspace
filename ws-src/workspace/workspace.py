@@ -207,7 +207,7 @@ class Workspace:
             os.makedirs(self._bin_dir)
             os.symlink(ld, self._bin_dir/'ld')
 
-        env = os.environ
+        env = os.environ.copy()
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
         util.env_prepend_path(env, "PATH", self._bin_dir.resolve())
         return env
