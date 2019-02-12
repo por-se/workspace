@@ -201,11 +201,11 @@ class Workspace:
 
     def get_env(self):
         if not self._bin_dir.is_dir():
-            os.makedirs(self._bin_dir)
-
             ld = shutil.which('ld.lld')
-            if ld is not None:
-                os.symlink(ld, self._bin_dir/'ld')
+            assert ld is not None, "Felix says: Install lld!"
+
+            os.makedirs(self._bin_dir)
+            os.symlink(ld, self._bin_dir/'ld')
 
         env = os.environ
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
