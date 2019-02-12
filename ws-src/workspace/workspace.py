@@ -22,6 +22,7 @@ class Workspace:
         self.ref_dir = self.ws_path / '.ref'
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
+        self._bin_dir = self.ws_path / '.bin'
         self.builds = []
 
     def __check_create_ref_dir(self):
@@ -179,17 +180,34 @@ class Workspace:
         for build in self.builds:
             build.clean(self)
 
-    def get_env(self):
-        bindir = self.ws_path/".bin"
+        if self._bin_dir.exists():
+            shutil.rmtree(self._bin_dir)
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
 
-        if not bindir.is_dir():
-            os.makedirs(bindir)
+        if dist_clean:
+            if self.ref_dir.exists():
+                os.unlink(self.ref_dir)
+
+            pipfile = self.ws_path/"Pipfile.lock"
+            if pipfile.exists():
+                os.remove(pipfile)
+            egg_dir = self.ws_path/"ws-src"/"workspace.egg-info"
+            if egg_dir.exists():
+                shutil.rmtree(egg_dir)
+            venv_dir = self.ws_path/".venv"
+            if venv_dir.exists():
+                shutil.rmtree(venv_dir)
+
+    def get_env(self):
+        if not self._bin_dir.is_dir():
+            os.makedirs(self._bin_dir)
 
             ld = shutil.which('ld.lld')
             if ld is not None:
-                os.symlink(ld, bindir/'ld')
+                os.symlink(ld, self._bin_dir/'ld')
 
         env = os.environ
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
-        util.env_prepend_path(env, "PATH", bindir.resolve())
+        util.env_prepend_path(env, "PATH", self._bin_dir.resolve())
         return env

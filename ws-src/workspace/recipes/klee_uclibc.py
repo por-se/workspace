@@ -77,6 +77,3 @@ class KLEE_UCLIBC(Recipe):
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
             ws.git_remove_exclude_path(self.paths.src_dir)
-        else:
-            if self.paths.src_dir.is_dir():
-                _run(["make", "distclean"], cwd=self.paths.src_dir)
