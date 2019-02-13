@@ -5,8 +5,8 @@ $ ./ws build                # build all active configurations
 $ ./ws build debug release  # build only debug and release
 $ ./ws shell debug          # start a shell with the environment (paths, etc.) set up for use of the debug configuration
 $ ./ws run debug gdb klee   # run a single command (`gdb klee`) with the environment (paths, etc.) set up for use of the debug configuration
-$ ./ws clean                # clean each project
-$ ./ws clean --dist-clean   # completely remove all projects
+$ ./ws clean                # clean workspace
+$ ./ws clean --dist-clean   # completely remove all projects - WILL NUKE YOUR CHANGES!
 ```
 
 # Configurations
@@ -26,28 +26,39 @@ By default, 4 configurations are available:
 And one is active:
 - release
 
-# Updating (a.k.a. Something Weird Has Happened)
-Generally speaking, updating the workspace can be done simply by checking out the newest revision. However, every one in a while there may be breaking changes to the workspace. *Breaking changes may happen at any time.*
-
-Should something have gone wrong during an update, save all changes you may have performed and do a full cleanse.
-
-## Full Cleanse (Safe)
-Basically, delete everything and clone the workspace new. `ccache` has your back :).
+# Updating
+Generally speaking, updating the workspace can be done simply by cleaning the workspace and checking out the newest revision. Most of the time, it should be safe to keep the checked out sources, as they are:
 
 ```bash
-$ git clean -xdff
-$ git checkout .
-$ rm -f .git/info/exclude
-$ git pull --ff-only
+$ ./ws clean         # always clean at least the build artifacts
+$ git pull --ff-only # get updates
 ```
 
-## Keeping Repositories (Slightly Unsafe)
-Basically, delete all object files. `ccache` has your back :).
+However, *breaking changes may happen at any time*. If you are in doubt, store all your changes in a safe place and nuke the workspace.
 
-Most of the time it should be OK to keep most of the repositories around.
+# Cleaning (a.k.a. "Help Me, Something Weird Has Happened")
+
+A misconfigured workspace (e.g., due to a breaking change introduced during updating the workspace) may cause arbitrarily weird effects. Additionally, some subprojects (e.g., klee-uclibc) are built using build systems that can get confused, even during what may seem to be innocuous usage.
+
+## Just Delete Build Artefacts (Often Good Enough)
+Basically, delete all object files without touching the sources. `ccache` has your back :).
 
 ```bash
-$ rm -rf klee-uclibc # we do not support shadow builds for klee-uclibc
-$ rm -rf .build
-$ git pull --ff-only
+$ ./ws clean
+```
+
+## Delete Build Artefacts and Sources (Good Enough Unless You Broke the Workspace)
+Basically, delete all object files and checked out sources. ***This will undo any changes you may have stored in the checked out repositories!***
+
+```bash
+$ ./ws clean --dist-clean
+```
+
+## Nuke Everything (Last Resort)
+Basically, delete everything and clone the workspace new. ***This will undo any changes you may have stored in the workspace!***
+
+```bash
+$ git clean -xdff         # nuke everything
+$ rm -f .git/info/exclude # including in the git folder
+$ git checkout .          # including changes to the workspace scripts
 ```
