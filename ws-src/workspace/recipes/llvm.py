@@ -122,16 +122,16 @@ class LLVM(Recipe):
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
             if self.profile != "release":
-                cmake_args += [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}']
+                cmake_args = Recipe.adjusted_cmake_args(cmake_args, [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}'])
 
             avail_mem = psutil.virtual_memory().available
             if self.profile != "release" and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                 print(
                     "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
                 )
-                cmake_args += ["-DLLVM_PARALLEL_LINK_JOBS=1"]
+                cmake_args = Recipe.adjusted_cmake_args(cmake_args, ["-DLLVM_PARALLEL_LINK_JOBS=1"])
 
-            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [self.paths.src_dir / "llvm"], cwd=self.paths.build_dir, env=env)

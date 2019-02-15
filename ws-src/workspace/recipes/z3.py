@@ -103,7 +103,7 @@ class Z3(Recipe):
                 '-DUSE_OPENMP=0',
             ]
 
-            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
