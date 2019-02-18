@@ -2,6 +2,8 @@
 
 ```bash
 $ ./ws build                # build all active configurations
+$ ./ws activate-cfg debug   # activate the debug configuration
+$ ./ws deactivate-cfg debug # deactivate the debug configuration again
 $ ./ws build debug release  # build only debug and release
 $ ./ws shell debug          # start a shell with the environment (paths, etc.) set up for use of the debug configuration
 $ ./ws run debug gdb klee   # run a single command (`gdb klee`) with the environment (paths, etc.) set up for use of the debug configuration
