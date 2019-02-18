@@ -5,12 +5,15 @@ name = "pypi"
 
 [packages]
 lit = ">=0.6.0"
-tabulate = "*"
 wllvm = "*"
-toml = "*"
-workspace = { path = "ws-src", editable = true }
+
 psutil = "*"
+schema = "*"
 shellingham = "*"
+tabulate = "*"
+toml = "*"
+
+workspace = { path = "ws-src", editable = true }
 
 [requires]
 python_version = "3.7"

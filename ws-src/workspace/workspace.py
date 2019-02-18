@@ -2,6 +2,8 @@ import os, sys, subprocess, re
 from pathlib import Path, PurePosixPath
 import shutil
 
+import schema, toml
+
 import workspace.util as util
 
 
@@ -18,34 +20,47 @@ class Workspace:
         # make sure we have a Path, Path(Path()) is just Path()
         ws_path = Path(ws_path)
 
+        try:
+            with open(ws_path/'.ws-config.toml') as f:
+                config = toml.load(f)
+        except FileNotFoundError:
+            config = {}
+
+        self._config = schema.Schema({
+            schema.Optional('reference'): schema.And(str, len),
+        }).validate(config)
+
         self.ws_path = ws_path
-        self.ref_dir = self.ws_path / '.ref'
+        self.ref_dir = Path(self._config['reference']) if 'reference' in self._config else None
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
         self.builds = []
 
     def __check_create_ref_dir(self):
+        if self.ref_dir is None:
+            ref_target_path = Path.home()/'.cache'/'reference-repos'
+            input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
+            if input_res:
+                ref_target_path = Path(input_res)
+
+            ref_target_path = ref_target_path.resolve()
+
+            os.makedirs(ref_target_path, exist_ok=True)
+
+            self.ref_dir = ref_target_path
+            self._config["reference"] = str(ref_target_path)
+
+            with open(self.ws_path/'.ws-config.toml', 'wt') as f:
+                toml.dump(self._config, f)
+
         if not self.ref_dir.is_dir():
             if self.ref_dir.exists():
                 raise RuntimeError(
                     f"reference-repository path '{self.ref_dir}' exists but is not a directory"
                 )
-
-            if self.ref_dir.is_symlink():
-                os.makedirs(self.ref_dir.resolve(), exist_ok=True)
             else:
-                ref_target_path = Path.home() / '.cache/reference-repos'
-                input_res = input(f"Where would you like to story reference repository data? [{ref_target_path}] ")
-                if input_res:
-                    ref_target_path = Path(input_res)
-
-                ref_target_path = ref_target_path.resolve()
-
-                os.makedirs(ref_target_path, exist_ok=True)
-
-                if ref_target_path != self.ref_dir:
-                    self.ref_dir.symlink_to(ref_target_path)
+                os.makedirs(self.ref_dir.resolve(), exist_ok=True)
 
     def set_builds(self, builds):
         self.builds = builds
@@ -65,6 +80,8 @@ class Workspace:
         return None
 
     def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
+        self.__check_create_ref_dir()
+
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
             name = re.sub("\.git$", "", name)
@@ -72,8 +89,6 @@ class Workspace:
             return self.ref_dir / "v1" / name
 
         ref_path = make_ref_path(repo_uri)
-
-        self.__check_create_ref_dir()
 
         if ref_path.is_dir():
             _run(["git", "remote", "update", "--prune"], cwd=ref_path)
@@ -186,8 +201,9 @@ class Workspace:
             shutil.rmtree(self.build_dir)
 
         if dist_clean:
-            if self.ref_dir.exists():
-                os.unlink(self.ref_dir)
+            config_file = self.ws_path/".ws-config.toml"
+            if config_file.exists():
+                os.remove(config_file)
 
             pipfile = self.ws_path/"Pipfile.lock"
             if pipfile.exists():
