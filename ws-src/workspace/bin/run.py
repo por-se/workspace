@@ -19,7 +19,7 @@ def main():
 
     ws_path = ws_path_from_here()
 
-    config_path = ws_path / 'ws-config' / 'available' / f"{config_name}.toml"
+    config_path = ws_path/'ws-config'/f"{config_name}.toml"
     if not config_path.exists():
         print(f"configuration '{config_name}' not found at '{config_path}'")
         sys.exit(1)

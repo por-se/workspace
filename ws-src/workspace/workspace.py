@@ -19,25 +19,50 @@ class Workspace:
 
         # make sure we have a Path, Path(Path()) is just Path()
         ws_path = Path(ws_path)
-
-        try:
-            with open(ws_path/'.ws-config.toml') as f:
-                config = toml.load(f)
-        except FileNotFoundError:
-            config = {}
-
-        self._config = schema.Schema({
-            schema.Optional('reference'): schema.And(str, len),
-        }).validate(config)
-
         self.ws_path = ws_path
+        self._load_config()
+
         self.ref_dir = Path(self._config['reference']) if 'reference' in self._config else None
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
         self.builds = []
 
-    def __check_create_ref_dir(self):
+    def _load_config(self):
+        try:
+            with open(self.ws_path/'.ws-config.toml') as f:
+                config = toml.load(f)
+
+            self._config = schema.Schema({
+                schema.Optional('reference'): schema.And(str, len),
+                'active configs': schema.And(schema.Use(set), {
+                    schema.And(str, len),
+                }),
+            }).validate(config)
+        except FileNotFoundError:
+            self._config = {
+                'active configs': {
+                    'release'
+                },
+            }
+            self._store_config()
+
+    def _store_config(self):
+        with open(self.ws_path/'.ws-config.toml', 'wt') as f:
+            toml.dump(self._config, f)
+
+    def activate_config(self, config: str):
+        self._config['active configs'].add(config)
+        self._store_config()
+
+    def deactivate_config(self, config: str):
+        self._config['active configs'].remove(config)
+        self._store_config()
+
+    def active_configs(self):
+        return self._config['active configs']
+
+    def _check_create_ref_dir(self):
         if self.ref_dir is None:
             ref_target_path = Path.home()/'.cache'/'reference-repos'
             input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
@@ -50,9 +75,7 @@ class Workspace:
 
             self.ref_dir = ref_target_path
             self._config["reference"] = str(ref_target_path)
-
-            with open(self.ws_path/'.ws-config.toml', 'wt') as f:
-                toml.dump(self._config, f)
+            self._store_config()
 
         if not self.ref_dir.is_dir():
             if self.ref_dir.exists():
@@ -80,7 +103,7 @@ class Workspace:
         return None
 
     def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
-        self.__check_create_ref_dir()
+        self._check_create_ref_dir()
 
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
@@ -181,7 +204,7 @@ class Workspace:
         self.args = util.EmptyClass()
         self.args.num_threads = num_threads
 
-        self.__check_create_ref_dir()
+        self._check_create_ref_dir()
 
         for build in self.builds:
             build.build(self)
