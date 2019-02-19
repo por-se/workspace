@@ -111,7 +111,7 @@ class LLVM(Recipe):
                 '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
                 '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
                 f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11 {self.profiles[self.profile]["cxx_flags"]}',
+                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
                 f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
                 f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
                 f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
