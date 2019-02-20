@@ -6,6 +6,7 @@ __pycache__
 /.ref
 /.bin
 /.build
+/.ws-config.toml
 
 # editor files
 .vscode

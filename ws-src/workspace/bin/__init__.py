@@ -15,23 +15,21 @@ def get_all_recipes():
     }
 
 def available_configs(ws_path):
-    available_config_dir = ws_path / 'ws-config' / 'available'
+    available_config_dir = ws_path / 'ws-config'
     configs = available_config_dir.glob('*.toml')
     return configs
 
 def resolve_or_default_configs(ws_path, given_configs):
+    available_config_dir = ws_path / 'ws-config'
     if given_configs:
-        available_config_dir = ws_path / 'ws-config' / 'available'
-        configs = [available_config_dir / f"{config}.toml" for config in given_configs]
+        configs = [available_config_dir/f"{config}.toml" for config in given_configs]
     else:
         if "WS_ENV_CONFIGURATION" in os.environ:
-            available_config_dir = ws_path / 'ws-config' / 'available'
             configs = [
                 available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
             ]
         else:
-            active_config_dir = ws_path / 'ws-config' / 'active'
-            configs = active_config_dir.glob('*.toml')
+            configs = [available_config_dir/f"{config}.toml" for config in Workspace(ws_path).active_configs()]
     return configs
 
 def ws_path_from_here():

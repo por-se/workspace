@@ -26,10 +26,10 @@ def main():
     ws_path = ws_path_from_here()
 
     if args.config:
-        available_config_dir = ws_path / 'ws-config' / 'available'
+        available_config_dir = ws_path / 'ws-config'
         config = available_config_dir / f"{args.config}.toml"
     elif "WS_ENV_CONFIGURATION" in os.environ:
-        available_config_dir = ws_path / 'ws-config' / 'available'
+        available_config_dir = ws_path / 'ws-config'
         config = available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
     else:
         config = None
