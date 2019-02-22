@@ -37,7 +37,7 @@ class Z3(Recipe):
     def __init__(self,
                  branch,
                  profile,
-                 repository="git@github.com:Z3Prover/z3.git",
+                 repository="github://Z3Prover/z3.git",
                  name=default_name,
                  cmake_adjustments=[]):
         super().__init__(name)
@@ -73,6 +73,7 @@ class Z3(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():

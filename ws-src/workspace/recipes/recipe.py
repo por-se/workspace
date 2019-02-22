@@ -54,6 +54,13 @@ class Recipe(abc.ABC):
             print(s)
 
     @staticmethod
+    def concretize_repo_uri(repo_uri, ws: Workspace):
+        for (prefix,replacement) in ws.get_repository_prefixes().items():
+            if repo_uri.startswith(prefix):
+                repo_uri = replacement + repo_uri[len(prefix):]
+        return repo_uri
+
+    @staticmethod
     def adjusted_cmake_args(original_args, adjustments):
         """
         Adjust a list of cmake arguments 'original_args', e.g., ['-DFOO=bar', '-DBAR=foo'] with a list of adjustments 'adjustments', e.g., ['-DFOO=BLUB', '-UBAR', '-DNEW=VAL'].
