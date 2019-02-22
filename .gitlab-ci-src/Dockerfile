@@ -17,4 +17,6 @@ WORKDIR /workspace
 
 RUN ln -s .gitlab-ci-src/.ws-config.toml
 
+RUN git config --global pack.threads "8"
+
 # RUN ./ws build

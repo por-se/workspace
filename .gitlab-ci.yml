@@ -34,4 +34,4 @@ build:
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
     - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
-    - docker run --name ci-building ci-image /usr/bin/bash -c "./ws build"
+    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ccache -s; ./ws build -j8'
