@@ -15,13 +15,13 @@ index d3e91331..ce8c7b55 100644
 -        if (NOT ONLY_SIMPLE)
 -            ADD_CUSTOM_TARGET(man_stp
 -                ALL
--                DEPENDS stp
+-                DEPENDS stp-bin
 -            )
 -
 -            ADD_CUSTOM_COMMAND(
 -                TARGET man_stp
 -                COMMAND help2man
--                ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
+-                ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp-bin> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
 -            )
 -
 -            INSTALL(
