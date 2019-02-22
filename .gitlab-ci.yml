@@ -29,5 +29,9 @@ before_script:
 build:
   stage: build
   script:
-    - docker build -f .gitlab-ci-src/Dockerfile -t my-docker-image .
-    - docker run my-docker-image /usr/bin/bash -c "echo Hello from dind!"
+    - echo "$CI_PROJECT_NAME"
+    - echo "$CI_PROJECT_NAMESPACE"
+    - echo "$CI_PROJECT_PATH"
+    - echo "$CI_PROJECT_PATH_SLUG"
+    - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
+    - docker run --name ci-building ci-image /usr/bin/bash -c "./ws build"

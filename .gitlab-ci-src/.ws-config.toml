@@ -1,2 +1,6 @@
 "active configs" = ["release",]
 reference = "/cache/reference-repos"
+
+[repository_prefixes]
+"github://" = "https://github.com/"
+"laboratory://" = "https://laboratory.comsys.rwth-aachen.de/"
