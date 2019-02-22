@@ -14,7 +14,7 @@ WORKSPACE="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$WORKSPACE"
 
 export PIPENV_VENV_IN_PROJECT=1
-if [[ ! -d .venv ]] ; then
+if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] ; then
 	pipenv update
 fi
 exec pipenv run "$@"
