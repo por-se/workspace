@@ -1,15 +1,4 @@
 variables:
-  # When using dind service we need to instruct docker, to talk with the
-  # daemon started inside of the service. The daemon is available with
-  # a network connection instead of the default /var/run/docker.sock socket.
-  #
-  # The 'docker' hostname is the alias of the service container as described at
-  # https://docs.gitlab.com/ee/ci/docker/using_docker_images.html#accessing-the-services
-  #
-  # Note that if you're using Kubernetes executor, the variable should be set to
-  # tcp://localhost:2375 because of how Kubernetes executor connects services
-  # to the job container
-  # DOCKER_HOST: tcp://docker:2375/
   # When using dind, it's wise to use the overlayfs driver for
   # improved performance.
   DOCKER_DRIVER: overlay2
@@ -18,15 +7,15 @@ variables:
 image: docker:dind
 
 before_script:
-  # - ls /
-  # - ls /cache
-  # - ls /ccache
-  # - echo $CI_JOB_ID
-  # - echo $CI_RUNNER_ID
-  # - echo $CI_RUNNER_REVISION
-  # - echo $CI_RUNNER_TAGS
-  # - echo $CI_RUNNER_VERSION
-  # - echo $CI_RUNNER_DESCRIPTION
+  - ls /
+  - ls /cache
+  - ls /ccache
+  - echo $CI_JOB_ID
+  - echo $CI_RUNNER_ID
+  - echo $CI_RUNNER_REVISION
+  - echo $CI_RUNNER_TAGS
+  - echo $CI_RUNNER_VERSION
+  - echo $CI_RUNNER_DESCRIPTION
   - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
   - 'DOCKERD_PID="$(jobs -l -p)"'
   - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
@@ -46,4 +35,6 @@ build:
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
     - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
-    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ccache -s; ./ws build -j8'
+    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ccache -s; ./ws build -j8'
+    # - docker run --rm --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s;'
+    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
