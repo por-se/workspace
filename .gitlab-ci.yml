@@ -1,6 +1,3 @@
-# from https://docs.gitlab.com/ee/ci/docker/using_docker_build.html
-image: docker:stable
-
 variables:
   # When using dind service we need to instruct docker, to talk with the
   # daemon started inside of the service. The daemon is available with
@@ -12,23 +9,38 @@ variables:
   # Note that if you're using Kubernetes executor, the variable should be set to
   # tcp://localhost:2375 because of how Kubernetes executor connects services
   # to the job container
-  DOCKER_HOST: tcp://docker:2375/
+  # DOCKER_HOST: tcp://docker:2375/
   # When using dind, it's wise to use the overlayfs driver for
   # improved performance.
   DOCKER_DRIVER: overlay2
   DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
 
-services:
-  - docker:dind
+image: docker:dind
 
 before_script:
-  - docker info
-  - ls /
-  - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+  # - ls /
+  # - ls /cache
+  # - ls /ccache
+  # - echo $CI_JOB_ID
+  # - echo $CI_RUNNER_ID
+  # - echo $CI_RUNNER_REVISION
+  # - echo $CI_RUNNER_TAGS
+  # - echo $CI_RUNNER_VERSION
+  # - echo $CI_RUNNER_DESCRIPTION
+  - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
+  - 'DOCKERD_PID="$(jobs -l -p)"'
+  - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
+  - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
+  - 'trap kill_and_wait_for_docker EXIT'
+  - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
 
 build:
   stage: build
   script:
+    - docker info
+    - docker ps -a
+    - docker ps -q -f "label=com.gitlab.gitlab-runner.job.id=$CI_JOB_ID" -f "label=com.gitlab.gitlab-runner.type=build"
+    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - echo "$CI_PROJECT_NAME"
     - echo "$CI_PROJECT_NAMESPACE"
     - echo "$CI_PROJECT_PATH"
