@@ -8,7 +8,7 @@ VOLUME /cache
 RUN mkdir /ccache
 VOLUME /ccache
 
-RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools
+RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils
 #  - apt-get update && apt-get install -y bash python3 git g++ ninja-build binutils-gold make cmake ccache zlib1g-dev libboost-program-options-dev bison flex perl python3-distutils libncurses-dev wget python3-pip libcrypto++-dev libgoogle-perftools-dev
 
 COPY . /workspace
