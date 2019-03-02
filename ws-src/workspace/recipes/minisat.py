@@ -14,7 +14,7 @@ class MINISAT(Recipe):
     def __init__(self,
                  branch,
                  name=default_name,
-                 repository="git@github.com:stp/minisat.git",
+                 repository="github://stp/minisat.git",
                  cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
@@ -45,6 +45,7 @@ class MINISAT(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():

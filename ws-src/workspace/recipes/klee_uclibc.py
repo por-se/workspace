@@ -13,7 +13,7 @@ class KLEE_UCLIBC(Recipe):
 
     def __init__(self,
                  branch,
-                 repository="git@github.com:klee/klee-uclibc.git",
+                 repository="github://klee/klee-uclibc.git",
                  name=default_name,
                  llvm_name=LLVM.default_name):
         super().__init__(name)
@@ -46,6 +46,7 @@ class KLEE_UCLIBC(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():

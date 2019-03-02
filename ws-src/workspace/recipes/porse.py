@@ -54,7 +54,7 @@ class PORSE(Recipe):
                  profile,
                  name=default_name,
                  repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/klee.git",
-                 upstream_repository="git@github.com:klee/klee.git",
+                 upstream_repository="github://klee/klee.git",
                  stp_name=STP.default_name,
                  z3_name=Z3.default_name,
                  llvm_name=LLVM.default_name,
@@ -120,6 +120,8 @@ class PORSE(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.upstream_repository = Recipe.concretize_repo_uri(self.upstream_repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
@@ -181,7 +183,7 @@ class PORSE(Recipe):
                 f'-DPOR_SIMULATOR_DIR={simulator.paths.build_dir}',
             ]
 
-            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)

@@ -44,7 +44,7 @@ class STP(Recipe):
                  branch,
                  profile,
                  name=default_name,
-                 repository="git@github.com:stp/stp.git",
+                 repository="github://stp/stp.git",
                  minisat_name=MINISAT.default_name,
                  cmake_adjustments=[]):
         super().__init__(name)
@@ -85,6 +85,7 @@ class STP(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         src_dir = self.paths.src_dir

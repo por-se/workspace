@@ -41,7 +41,7 @@ class LLVM(Recipe):
     def __init__(self,
                  branch,
                  profile,
-                 repository="https://github.com/llvm/llvm-project.git",
+                 repository="github://llvm/llvm-project.git",
                  name=default_name,
                  cmake_adjustments=[]):
         """Build LLVM."""
@@ -83,6 +83,7 @@ class LLVM(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if self.profile != "release":

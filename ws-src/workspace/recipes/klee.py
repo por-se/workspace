@@ -53,7 +53,7 @@ class KLEE(Recipe):
                  branch,
                  profile,
                  name=default_name,
-                 repository="git@github.com:klee/klee.git",
+                 repository="github://klee/klee.git",
                  stp_name=STP.default_name,
                  z3_name=Z3.default_name,
                  llvm_name=LLVM.default_name,
@@ -113,6 +113,7 @@ class KLEE(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():

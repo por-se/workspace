@@ -40,7 +40,7 @@ class SIMULATOR(Recipe):
     def __init__(self,
                  branch,
                  profile,
-                 repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/simulator.git",
+                 repository="laboratory://concurrent-symbolic-execution/simulator.git",
                  name=default_name,
                  cmake_adjustments=[]):
         super().__init__(name)
@@ -76,6 +76,7 @@ class SIMULATOR(Recipe):
 
         self.digest = _compute_digest(self, ws)
         self.paths = _make_internal_paths(self, ws)
+        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
@@ -87,8 +88,7 @@ class SIMULATOR(Recipe):
             ws.apply_patches("simulator", self.paths.src_dir)
 
     def build(self, ws: Workspace):
-        env = os.environ
-        env["CCACHE_BASEDIR"] = str(ws.ws_path.resolve())
+        env = ws.get_env()
 
         if not self.paths.build_dir.exists():
             os.makedirs(self.paths.build_dir)
@@ -102,7 +102,7 @@ class SIMULATOR(Recipe):
                 f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
             ]
 
-            cmake_args = cmake_args + self.profiles[self.profile]["cmake_args"]
+            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
             cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
 
             _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
@@ -110,8 +110,6 @@ class SIMULATOR(Recipe):
         _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 
     def clean(self, ws: Workspace):
-        if self.paths.build_dir.is_dir():
-            shutil.rmtree(self.paths.build_dir)
         if ws.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)

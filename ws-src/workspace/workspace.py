@@ -38,11 +38,16 @@ class Workspace:
                 'active configs': schema.And(schema.Use(set), {
                     schema.And(str, len),
                 }),
+                'repository_prefixes': schema.Schema({str: str})
             }).validate(config)
         except FileNotFoundError:
             self._config = {
                 'active configs': {
                     'release'
+                },
+                'repository_prefixes': {
+                    'github://': "ssh://git@github.com/",
+                    'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
                 },
             }
             self._store_config()
@@ -61,6 +66,9 @@ class Workspace:
 
     def active_configs(self):
         return self._config['active configs']
+
+    def get_repository_prefixes(self):
+        return self._config['repository_prefixes']
 
     def _check_create_ref_dir(self):
         if self.ref_dir is None:
@@ -106,7 +114,7 @@ class Workspace:
         self._check_create_ref_dir()
 
         def make_ref_path(git_path):
-            name = re.sub("^https://|^ssh://|^[^/]+@", "", str(git_path))
+            name = re.sub("^https://|^ssh://([^/]+@)?|^[^/]+@", "", str(git_path))
             name = re.sub("\.git$", "", name)
             name = re.sub(":", "/", name)
             return self.ref_dir / "v1" / name

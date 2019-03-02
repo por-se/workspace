@@ -10,7 +10,7 @@ profile = "rel+debinfo"
 branch = "master"
 
 [[STP]]
-branch = "master"
+branch = "2.3.2"
 profile = "rel+debinfo"
 
 [[KLEE_UCLIBC]]
