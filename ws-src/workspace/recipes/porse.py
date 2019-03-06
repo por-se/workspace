@@ -53,7 +53,7 @@ class PORSE(Recipe):
                  branch,
                  profile,
                  name=default_name,
-                 repository="git@laboratory.comsys.rwth-aachen.de:concurrent-symbolic-execution/klee.git",
+                 repository="laboratory://concurrent-symbolic-execution/klee.git",
                  upstream_repository="github://klee/klee.git",
                  stp_name=STP.default_name,
                  z3_name=Z3.default_name,
