@@ -10,7 +10,7 @@ profile = "release"
 branch = "master"
 
 [[STP]]
-branch = "2.3.2"
+branch = "2.3.3"
 profile = "release"
 
 [[KLEE_UCLIBC]]
