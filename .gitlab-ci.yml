@@ -23,18 +23,27 @@ before_script:
   - 'trap kill_and_wait_for_docker EXIT'
   - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
 
-build:
-  stage: build
+stages:
+  - build-image
+  - build-ws
+
+build-image:
+  stage: build-image
   script:
-    - docker info
-    - docker ps -a
-    - docker ps -q -f "label=com.gitlab.gitlab-runner.job.id=$CI_JOB_ID" -f "label=com.gitlab.gitlab-runner.type=build"
-    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
-    - echo "$CI_PROJECT_NAME"
-    - echo "$CI_PROJECT_NAMESPACE"
-    - echo "$CI_PROJECT_PATH"
-    - echo "$CI_PROJECT_PATH_SLUG"
+    # - docker info
+    # - docker ps -a
+    # - docker ps -q -f "label=com.gitlab.gitlab-runner.job.id=$CI_JOB_ID" -f "label=com.gitlab.gitlab-runner.type=build"
+    # - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+    # - echo "$CI_PROJECT_NAME"
+    # - echo "$CI_PROJECT_NAMESPACE"
+    # - echo "$CI_PROJECT_PATH"
+    # - echo "$CI_PROJECT_PATH_SLUG"
     - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
-    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ccache -s; ./ws build -j8'
-    # - docker run --rm --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s;'
+    - docker images
+    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
+
+build-ws:
+  stage: build-ws
+  script:
+    - docker images
     - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
