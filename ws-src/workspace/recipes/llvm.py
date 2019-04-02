@@ -128,7 +128,7 @@ class LLVM(Recipe):
             avail_mem = psutil.virtual_memory().available
             if self.profile != "release" and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                 print(
-                    "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+                    f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
                 )
                 cmake_args = Recipe.adjusted_cmake_args(cmake_args, ["-DLLVM_PARALLEL_LINK_JOBS=1"])
 
