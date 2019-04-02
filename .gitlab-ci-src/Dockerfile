@@ -8,7 +8,7 @@ VOLUME /cache
 RUN mkdir /ccache
 VOLUME /ccache
 
-RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils
+RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils pbzip2
 
 COPY . /workspace
 

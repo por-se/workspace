@@ -29,6 +29,10 @@ stages:
 
 build-image:
   stage: build-image
+  artifacts:
+    paths:
+      - ci-image.tar.bz2
+    expire_in: 1 hour
   script:
     # - docker info
     # - docker ps -a
@@ -38,12 +42,18 @@ build-image:
     # - echo "$CI_PROJECT_NAMESPACE"
     # - echo "$CI_PROJECT_PATH"
     # - echo "$CI_PROJECT_PATH_SLUG"
+    - uname -a
+    - exit
     - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
     - docker images
+    - docker export ci-image:latest | pbzip2 -p8 > ci-image.tar.bz2
     # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
 
 build-ws:
   stage: build-ws
+  dependencies:
+    - build-image
   script:
+    - pbzip2 -p8 -d ci-image.tar.bz2 | docker import ci-image:latest
     - docker images
     - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
