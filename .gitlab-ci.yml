@@ -7,9 +7,6 @@ variables:
 image: docker:dind
 
 before_script:
-  - ls /
-  - ls /cache
-  - ls /ccache
   - echo $CI_JOB_ID
   - echo $CI_RUNNER_ID
   - echo $CI_RUNNER_REVISION
@@ -29,33 +26,31 @@ stages:
 
 build-image:
   stage: build-image
-  artifacts:
-    paths:
-      - ci-image.tar.bz2
-    expire_in: 1 hour
+  # artifacts:
+  #   paths:
+  #     - ci-image.tar.bz2
+  #   expire_in: 1 hour
   script:
     - docker info
-    - docker ps -a
-    - docker ps -q -f "label=com.gitlab.gitlab-runner.job.id=$CI_JOB_ID" -f "label=com.gitlab.gitlab-runner.type=build"
-    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - echo "$CI_PROJECT_NAME"
     - echo "$CI_PROJECT_NAMESPACE"
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
-    - uname -a
-    - exit 1
     - apk add bzip2
     - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
-    - docker images
-    - docker save ci-image:latest | bzip2 > ci-image.tar.bz2
-    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
+    # - docker save ci-image:latest | bzip2 > ci-image.tar.bz2
+    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
+    - docker commit ci-building symbiosis/workspace_base-ci:latest
+    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+    - docker push symbiosis/workspace_base-ci:latest
 
-build-ws:
-  stage: build-ws
-  dependencies:
-    - build-image
-  script:
-    - ls
-    - bunzip2 -c ci-image.tar.bz2 | docker load
-    - docker images
-    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c 'echo $CCACHE_DIR; ls $CCACHE_DIR; ccache -s; ./ws build -j8'
+# build-ws:
+#   stage: build-ws
+#   dependencies:
+#     - build-image
+#   script:
+#     - bunzip2 -c ci-image.tar.bz2 | docker load
+#     - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
+#     - docker commit ci-building symbiosis/workspace_base-ci:latest
+#     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+#     - docker push symbiosis/workspace_base-ci:latest

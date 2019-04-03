@@ -1,3 +1,5 @@
+# see ttps://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+
 FROM archlinux/base
 
 ENV CCACHE_DIR=/ccache
@@ -10,10 +12,10 @@ VOLUME /ccache
 
 RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils
 
-COPY . /workspace
-
 WORKDIR /workspace
 
 RUN ln -s .gitlab-ci-src/.ws-config.toml
 
 RUN git config --global pack.threads "8"
+
+COPY . /workspace
