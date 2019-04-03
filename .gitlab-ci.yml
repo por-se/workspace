@@ -37,7 +37,8 @@ build-image:
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
     - apk add bzip2
-    - docker build -f .gitlab-ci-src/Dockerfile -t ci-image .
+    - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
+    - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
     # - docker save ci-image:latest | bzip2 > ci-image.tar.bz2
     - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
     - docker commit ci-building $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
