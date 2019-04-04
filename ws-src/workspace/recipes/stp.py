@@ -137,3 +137,6 @@ class STP(Recipe):
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
             ws.git_remove_exclude_path(self.paths.src_dir)
+
+    def add_to_env(self, env, ws: Workspace):
+        env_prepend_path(env, "PATH", self.paths.build_dir)
