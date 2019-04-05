@@ -38,18 +38,7 @@ build-master:
   only:
     refs:
       - master
-  # artifacts:
-  #   paths:
-  #     - ci-image.tar.bz2
-  #   expire_in: 1 hour
   script:
-    # - apk add bzip2
-    # - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
-    # - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
-    # - docker save ci-image:latest | bzip2 > ci-image.tar.bz2
-    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
-    # - docker commit ci-building $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
-    # - docker images
     - set +e
     - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
     - RES=$?
@@ -57,7 +46,6 @@ build-master:
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - exit $RES
-    # - docker push $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
 
 build-other:
   stage: build
@@ -73,14 +61,3 @@ build-other:
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - exit $RES
-
-# build-ws:
-#   stage: build-ws
-#   dependencies:
-#     - build-image
-#   script:
-#     - bunzip2 -c ci-image.tar.bz2 | docker load
-#     - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
-#     - docker commit ci-building symbiosis/workspace_base-ci:latest
-#     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
-#     - docker push symbiosis/workspace_base-ci:latest
