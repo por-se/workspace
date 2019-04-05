@@ -31,19 +31,27 @@ build-image:
   #     - ci-image.tar.bz2
   #   expire_in: 1 hour
   script:
+    - apk add python3
     - docker info
     - echo "$CI_PROJECT_NAME"
     - echo "$CI_PROJECT_NAMESPACE"
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
-    - apk add bzip2
-    - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
-    - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
+    # - apk add bzip2
+    # - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
+    # - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
     # - docker save ci-image:latest | bzip2 > ci-image.tar.bz2
-    - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
-    - docker commit ci-building $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
+    # - docker run --name ci-building -v /ccache:/ccache -v /cache:/cache ci-image /usr/bin/bash -c './ws build -j8'
+    # - docker commit ci-building $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
+    # - docker images
+    - set +e
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=ci-release --final-image-name=ci-final
+    - RES=$?
+    - set -e
+    - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
-    - docker push $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
+    - exit $RES
+    # - docker push $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
 
 # build-ws:
 #   stage: build-ws
