@@ -37,6 +37,10 @@ build-image:
     - echo "$CI_PROJECT_NAMESPACE"
     - echo "$CI_PROJECT_PATH"
     - echo "$CI_PROJECT_PATH_SLUG"
+    - echo "$CI_COMMIT_REF_NAME"
+    - echo "$CI_COMMIT_REF_SLUG"
+    - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+    - echo "$CI_MERGE_REQUEST_TITLE"
     # - apk add bzip2
     # - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
     # - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
