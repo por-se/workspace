@@ -13,34 +13,36 @@ before_script:
   - echo $CI_RUNNER_TAGS
   - echo $CI_RUNNER_VERSION
   - echo $CI_RUNNER_DESCRIPTION
+  - echo "$CI_PROJECT_NAME"
+  - echo "$CI_PROJECT_NAMESPACE"
+  - echo "$CI_PROJECT_PATH"
+  - echo "$CI_PROJECT_PATH_SLUG"
+  - echo "$CI_COMMIT_REF_NAME"
+  - echo "$CI_COMMIT_REF_SLUG"
+  - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+  - echo "$CI_MERGE_REQUEST_TITLE"
   - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
   - 'DOCKERD_PID="$(jobs -l -p)"'
   - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
   - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
   - 'trap kill_and_wait_for_docker EXIT'
   - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
+  - docker info
+  - apk add python3
 
 stages:
-  - build-image
-  - build-ws
+  - build
 
-build-image:
-  stage: build-image
+build-master:
+  stage: build
+  only:
+    refs:
+      - master
   # artifacts:
   #   paths:
   #     - ci-image.tar.bz2
   #   expire_in: 1 hour
   script:
-    - apk add python3
-    - docker info
-    - echo "$CI_PROJECT_NAME"
-    - echo "$CI_PROJECT_NAMESPACE"
-    - echo "$CI_PROJECT_PATH"
-    - echo "$CI_PROJECT_PATH_SLUG"
-    - echo "$CI_COMMIT_REF_NAME"
-    - echo "$CI_COMMIT_REF_SLUG"
-    - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-    - echo "$CI_MERGE_REQUEST_TITLE"
     # - apk add bzip2
     # - docker pull kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest
     # - docker build --cache-from kleenet.comsys.rwth-aachen.de/symbiosys-workspace_base-ci:latest -f .gitlab-ci-src/Dockerfile -t ci-image .
@@ -49,13 +51,28 @@ build-image:
     # - docker commit ci-building $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
     # - docker images
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=ci-release --final-image-name=ci-final
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
     - RES=$?
     - set -e
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - exit $RES
     # - docker push $DOCKER_REGISTRY/symbiosys-workspace_base-ci:latest
+
+build-other:
+  stage: build
+  except:
+    refs:
+      - master
+  script:
+    - echo "$CI_PROJECT_PATH_SLUG"
+    - set +e
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --final-image=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
+    - RES=$?
+    - set -e
+    - docker images
+    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+    - exit $RES
 
 # build-ws:
 #   stage: build-ws
