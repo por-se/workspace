@@ -18,6 +18,8 @@ class LLVM(Recipe):
             ],
             "c_flags": "",
             "cxx_flags": "",
+            "is_performance_build": True,
+            "has_debug_info": False,
         },
         "rel+debinfo": {
             "cmake_args": [
@@ -26,6 +28,8 @@ class LLVM(Recipe):
             ],
             "c_flags": "-fno-omit-frame-pointer",
             "cxx_flags": "-fno-omit-frame-pointer",
+            "is_performance_build": True,
+            "has_debug_info": True,
         },
         "debug": {
             "cmake_args": [
@@ -34,6 +38,8 @@ class LLVM(Recipe):
             ],
             "c_flags": "",
             "cxx_flags": "",
+            "is_performance_build": False,
+            "has_debug_info": True,
         },
     }
 
@@ -122,13 +128,13 @@ class LLVM(Recipe):
                 '-DLLVM_INCLUDE_EXAMPLES=Off',
                 '-DHAVE_VALGRIND_VALGRIND_H=0',
             ]
-            if self.profile != "release":
+            if not self.profiles[self.profile]["is_performance_build"]:
                 cmake_args = Recipe.adjusted_cmake_args(cmake_args, [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}'])
 
             avail_mem = psutil.virtual_memory().available
-            if self.profile != "release" and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
+            if self.profiles[self.profile]["has_debug_info"] and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
                 print(
-                    "[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+                    f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
                 )
                 cmake_args = Recipe.adjusted_cmake_args(cmake_args, ["-DLLVM_PARALLEL_LINK_JOBS=1"])
 

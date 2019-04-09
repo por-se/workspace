@@ -1,5 +1,5 @@
 [[LLVM]]
-branch = "llvmorg-7.0.1"
+branch = "llvmorg-8.0.0"
 profile = "rel+debinfo"
 
 [[Z3]]
@@ -10,7 +10,7 @@ profile = "rel+debinfo"
 branch = "master"
 
 [[STP]]
-branch = "2.3.2"
+branch = "2.3.3"
 profile = "rel+debinfo"
 
 [[KLEE_UCLIBC]]
