@@ -104,7 +104,7 @@ def main():
         if args.cache_dir:
             cache_arg = f"-v {args.cache_dir}:/cache"
 
-        do_continue &= run(
+        do_continue = run(
             f"docker run --name ci-building {ccache_arg} {cache_arg} ci-image /usr/bin/bash -c"
             .split() + [f"./ws setup --git-clone-args=\"--dissociate --depth=1\" && ./ws build -j{args.num_threads}"],
             check=False).returncode == 0

@@ -41,9 +41,9 @@ build-master:
   script:
     - RELEASE_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=$RELEASE_IMAGE_NAME
-    - RES=$?
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --release-image=pre-build --release-image-name=$RELEASE_IMAGE_NAME; RES=$?
     - set -e
+    - echo $RES
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - docker push $RELEASE_IMAGE_NAME || true
@@ -57,9 +57,9 @@ build-not-master:
   script:
     - FINAL_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --final-image=$FINAL_IMAGE_NAME
-    - RES=$?
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --final-image=$FINAL_IMAGE_NAME; RES=$?
     - set -e
+    - echo $RES
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - docker push $FINAL_IMAGE_NAME || true
