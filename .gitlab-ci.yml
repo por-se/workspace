@@ -53,7 +53,6 @@ build-not-master:
     refs:
       - master
   script:
-    - echo "$CI_PROJECT_PATH_SLUG"
     - set +e
     - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads 8 --final-image=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
     - RES=$?

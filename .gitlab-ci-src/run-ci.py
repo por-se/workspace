@@ -106,7 +106,7 @@ def main():
 
         do_continue &= run(
             f"docker run --name ci-building {ccache_arg} {cache_arg} ci-image /usr/bin/bash -c"
-            .split() + [f"./ws setup --dissociate && ./ws build -j{args.num_threads}"],
+            .split() + [f"./ws setup --git-clone-args=\"--dissociate --depth=1\" && ./ws build -j{args.num_threads}"],
             check=False).returncode == 0
 
     # check if this is supposed to be the release-image

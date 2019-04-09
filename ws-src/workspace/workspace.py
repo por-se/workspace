@@ -27,7 +27,7 @@ class Workspace:
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
         self.builds = []
-        self.setup_git_dissociate = False
+        self.git_clone_args = []
 
     def _load_config(self):
         try:
@@ -136,8 +136,7 @@ class Workspace:
             "git", "clone", "--reference", ref_path, repo_uri, target_path,
             "--branch", branch
         ]
-        if self.setup_git_dissociate:
-            clone_command += ["--dissociate"]
+        clone_command += self.git_clone_args
         if checkout == False or sparse is not None:
             clone_command += ["--no-checkout"]
         _run(clone_command + clone_args)
@@ -199,8 +198,9 @@ class Workspace:
         for build in self.builds:
             build.initialize(self)
 
-    def setup(self):
+    def setup(self, git_clone_args=[]):
         self._initialize_builds()
+        self.git_clone_args = git_clone_args
 
         for build in self.builds:
             build.setup(self)
