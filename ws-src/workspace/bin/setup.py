@@ -20,6 +20,12 @@ def main():
         '--all',
         action='store_true',
         help="build all available configs")
+    parser.add_argument(
+        '--dissociate',
+        action='store_true',
+        default=False,
+        help="clone git repos dissociated. this way they will not depend on the reference repos anymore."
+    )
 
     args = parser.parse_args()
 
@@ -29,4 +35,5 @@ def main():
 
     for config in configs:
         ws = ws_from_config(ws_path, config)
+        ws.setup_git_dissociate = args.dissociate
         ws.setup()

@@ -27,6 +27,7 @@ class Workspace:
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
         self.builds = []
+        self.setup_git_dissociate = False
 
     def _load_config(self):
         try:
@@ -38,7 +39,7 @@ class Workspace:
                 'active configs': schema.And(schema.Use(set), {
                     schema.And(str, len),
                 }),
-                'repository_prefixes': schema.Schema({str: str})
+                'repository_prefixes': schema.Schema({str: str}),
             }).validate(config)
         except FileNotFoundError:
             self._config = {
@@ -135,6 +136,8 @@ class Workspace:
             "git", "clone", "--reference", ref_path, repo_uri, target_path,
             "--branch", branch
         ]
+        if self.setup_git_dissociate:
+            clone_command += ["--dissociate"]
         if checkout == False or sparse is not None:
             clone_command += ["--no-checkout"]
         _run(clone_command + clone_args)
