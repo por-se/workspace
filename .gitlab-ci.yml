@@ -47,7 +47,7 @@ build-master:
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
     - exit $RES
 
-build-other:
+build-not-master:
   stage: build
   except:
     refs:
