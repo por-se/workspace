@@ -45,8 +45,8 @@ class LLVM(Recipe):
 
 
     def __init__(self,
-                 branch,
                  profile,
+                 branch=None,
                  repository="github://llvm/llvm-project.git",
                  name=default_name,
                  cmake_adjustments=[]):
@@ -84,7 +84,11 @@ class LLVM(Recipe):
             return paths
 
         if self.profile != "release":
-            self._release_build = LLVM(self.branch, "release", self.repository, self.name, [])
+            self._release_build = LLVM(profile = "release",
+                                       branch = self.branch,
+                                       repository = self.repository,
+                                       name = self.name,
+                                       cmake_adjustments = [])
             self._release_build.initialize(ws)
 
         self.digest = _compute_digest(self, ws)

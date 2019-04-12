@@ -41,8 +41,8 @@ class STP(Recipe):
     }
 
     def __init__(self,
-                 branch,
                  profile,
+                 branch=None,
                  name=default_name,
                  repository="github://stp/stp.git",
                  minisat_name=MINISAT.default_name,

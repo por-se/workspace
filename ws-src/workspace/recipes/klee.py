@@ -50,8 +50,8 @@ class KLEE(Recipe):
     }
 
     def __init__(self,
-                 branch,
                  profile,
+                 branch=None,
                  name=default_name,
                  repository="github://klee/klee.git",
                  stp_name=STP.default_name,

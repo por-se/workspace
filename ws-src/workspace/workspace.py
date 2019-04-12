@@ -111,6 +111,9 @@ class Workspace:
         return None
 
     def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
+        if not branch:
+            raise ValueError("'branch' is required bot not given")
+
         self._check_create_ref_dir()
 
         def make_ref_path(git_path):

@@ -35,8 +35,8 @@ class Z3(Recipe):
     }
 
     def __init__(self,
-                 branch,
                  profile,
+                 branch=None,
                  repository="github://Z3Prover/z3.git",
                  name=default_name,
                  cmake_adjustments=[]):

@@ -12,7 +12,7 @@ class MINISAT(Recipe):
     default_name = "minisat"
 
     def __init__(self,
-                 branch,
+                 branch=None,
                  name=default_name,
                  repository="github://stp/minisat.git",
                  cmake_adjustments=[]):

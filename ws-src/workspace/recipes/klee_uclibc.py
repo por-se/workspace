@@ -12,7 +12,7 @@ class KLEE_UCLIBC(Recipe):
     default_name = "klee-uclibc"
 
     def __init__(self,
-                 branch,
+                 branch=None,
                  repository="github://klee/klee-uclibc.git",
                  name=default_name,
                  llvm_name=LLVM.default_name):
