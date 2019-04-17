@@ -4,10 +4,8 @@ FROM archlinux/base
 
 RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils && pacman -Scc --noconfirm
 
-RUN mkdir /cache
 VOLUME /ccache
 
-RUN mkdir /ccache
 VOLUME /cache
 
 ENV CCACHE_DIR=/ccache
