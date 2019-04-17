@@ -12,10 +12,10 @@ VOLUME /ccache
 
 RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils
 
-WORKDIR /workspace
-
-RUN ln -s .gitlab-ci-src/.ws-config.toml
-
 RUN git config --global pack.threads "8"
 
 COPY . /workspace
+
+WORKDIR /workspace
+
+RUN cp .gitlab-ci-src/.ws-config.toml .
