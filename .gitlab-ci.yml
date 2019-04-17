@@ -29,6 +29,7 @@ before_script:
   - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
   - docker info
   - apk add python3
+  - echo "$CUSTOM_CI_NUMTHREADS"
   - LOCAL_NUM_THREADS=${CUSTOM_CI_NUMTHREADS:-$(nproc)}
   - echo "$LOCAL_NUM_THREADS"
 
