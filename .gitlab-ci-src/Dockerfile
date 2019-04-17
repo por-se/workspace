@@ -1,4 +1,4 @@
-# see ttps://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+# see https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 FROM archlinux/base
 
