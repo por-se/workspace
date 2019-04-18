@@ -21,6 +21,9 @@ before_script:
   - echo "$CI_COMMIT_REF_SLUG"
   - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
   - echo "$CI_MERGE_REQUEST_TITLE"
+  - echo "$CUSTOM_CI_NUMTHREADS"
+  - LOCAL_NUM_THREADS=${CUSTOM_CI_NUMTHREADS:-$(nproc)}
+  - echo "$LOCAL_NUM_THREADS"
   - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
   - 'DOCKERD_PID="$(jobs -l -p)"'
   - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
@@ -28,10 +31,6 @@ before_script:
   - 'trap kill_and_wait_for_docker EXIT'
   - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
   - docker info
-  - apk add python3
-  - echo "$CUSTOM_CI_NUMTHREADS"
-  - LOCAL_NUM_THREADS=${CUSTOM_CI_NUMTHREADS:-$(nproc)}
-  - echo "$LOCAL_NUM_THREADS"
 
 stages:
   - build
@@ -42,6 +41,7 @@ build-master:
     refs:
       - master
   script:
+    - apk add python3
     - RELEASE_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
     - set +e
     - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$RELEASE_IMAGE_NAME; RES=$?
@@ -58,6 +58,7 @@ build-not-master:
     refs:
       - master
   script:
+    - apk add python3
     - FINAL_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
     - set +e
     - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS  --final-image=$FINAL_IMAGE_NAME; RES=$?
