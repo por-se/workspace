@@ -1,4 +1,5 @@
 import os, shutil
+from dataclasses import dataclass
 from hashlib import blake2s
 
 from workspace.workspace import Workspace, _run
@@ -103,12 +104,15 @@ class KLEE(Recipe):
             return digest.hexdigest()[:12]
 
         def _make_internal_paths(self, ws: Workspace):
+            @dataclass
             class InternalPaths:
-                pass
+                src_dir: Path
+                build_dir: Path
 
-            paths = InternalPaths()
-            paths.src_dir = ws.ws_path / self.name
-            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            paths = InternalPaths(
+                src_dir=ws.ws_path / self.name,
+                build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            )
             return paths
 
         self.digest = _compute_digest(self, ws)

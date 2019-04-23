@@ -1,5 +1,7 @@
 import os, shutil, psutil
+from dataclasses import dataclass
 from hashlib import blake2s
+from typing import Optional
 
 from workspace.workspace import Workspace, _run
 from workspace.util import j_from_num_threads, env_prepend_path
@@ -74,12 +76,16 @@ class LLVM(Recipe):
             return digest.hexdigest()[:12]
 
         def _make_internal_paths(self, ws: Workspace):
+            @dataclass
             class InternalPaths:
-                pass
+                src_dir: Path
+                build_dir: Path
+                tablegen: Optional[Path] = None
 
-            paths = InternalPaths()
-            paths.src_dir = ws.ws_path / self.name
-            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            paths = InternalPaths(
+                src_dir=ws.ws_path / self.name,
+                build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            )
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths
 
