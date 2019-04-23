@@ -1,6 +1,6 @@
 import multiprocessing
 from workspace.workspace import util
-from workspace.bin import available_configs, resolve_or_default_configs, ws_path_from_here, ws_from_config
+from workspace.bin.util import available_configs, resolve_or_default_configs, ws_path_from_here, ws_from_config
 
 def main():
     parser = util.EnvVarArgumentParser(

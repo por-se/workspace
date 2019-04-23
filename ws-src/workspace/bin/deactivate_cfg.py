@@ -1,5 +1,5 @@
 import argparse
-from workspace.bin import ws_path_from_here
+from workspace.bin.util import ws_path_from_here
 from workspace.workspace import Workspace
 
 def main():

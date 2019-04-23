@@ -1,5 +1,5 @@
 import argparse, os
-from workspace.bin import get_all_recipes, ws_path_from_here, ws_from_config
+from workspace.bin.util import get_all_recipes, ws_path_from_here, ws_from_config
 
 def main():
     parser = argparse.ArgumentParser(

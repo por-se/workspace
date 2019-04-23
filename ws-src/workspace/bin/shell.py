@@ -4,7 +4,8 @@ import shutil
 
 import shellingham
 
-from workspace.bin import ws_path_from_here, ws_from_config
+from workspace.bin.util import ws_path_from_here, ws_from_config
+
 
 def main():
     cmd_name = Path(sys.argv[0]).name
