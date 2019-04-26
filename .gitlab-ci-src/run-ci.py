@@ -80,63 +80,45 @@ def main():
     # set global logging behavior
     print_run_commands = args.verbose
 
-    # -- start building --
+    # -- build --
 
-    # build base docker-image first
-    do_continue = run(
-        f"docker build -f {args.dockerfile} -t ci-image {script_dir.parent}".
-        split(),
-        check=False).returncode == 0
+    build_success = True
+    try:
+        # build base docker-image first
+        run(["docker", "build", "-f", str(args.dockerfile), "-t", "ci-image", str(script_dir.parent)])
 
-    # check if this is supposed to be the release-image
-    if do_continue and args.release_image == "pre-build":
-        do_continue = run(
-            f"docker tag ci-image:latest {args.release_image_name}".split(),
-            check=False).returncode == 0
+        # check if this is supposed to be the release-image
+        if args.release_image == "pre-build":
+            run(["docker", "tag", "ci-image:latest", str(args.release_image_name)])
 
-    # run ./ws build
-    if do_continue:
-        ccache_arg = ""
-        if args.ccache_dir:
-            ccache_arg = f"-v {args.ccache_dir}:/ccache"
+        # run ./ws build
+        ccache_arg = ["-v", f"{args.ccache_dir}:/ccache"] if args.ccache_dir else []
+        cache_arg = ["-v", f"{args.cache_dir}:/cache"] if args.cache_dir else []
+        run(["docker", "run", "--name", "ci-building"] + ccache_arg + cache_arg + ["ci-image", "/usr/bin/bash", "-c",
+            f"./ws setup --git-clone-args=\"--dissociate --depth=1 -c pack.threads={args.num_threads}\" && ./ws build -j{args.num_threads}"])
 
-        cache_arg = ""
-        if args.cache_dir:
-            cache_arg = f"-v {args.cache_dir}:/cache"
+        # check if this is supposed to be the release-image
+        if args.release_image == "post-build":
+            run(["docker", "commit", "ci-building", str(args.release_image_name)])
 
-        do_continue = run(
-            f"docker run --name ci-building {ccache_arg} {cache_arg} ci-image /usr/bin/bash -c"
-            .split() + [f"./ws setup --git-clone-args=\"--dissociate --depth=1 -c pack.threads={args.num_threads}\" && ./ws build -j{args.num_threads}"],
-            check=False).returncode == 0
+    except subprocess.CalledProcessError:
+        build_success = False
 
-    # check if this is supposed to be the release-image
-    if do_continue and args.release_image == "post-build":
-        do_continue = run(
-            f"docker commit ci-building {args.release_image_name}".split(),
-            check=False).returncode == 0
-
-    # if the build failed, untag the release-image
-    if not do_continue and args.release_image_name:
-        run(f"docker rmi {args.release_image_name}".split(), check=False)
+        # if the build failed, untag the release-image
+        run(["docker", "rmi", str(args.release_image_name)], check=False)
 
     # check if a final image is supposed to be tagged, and if so, also add an expiration date
     if args.final_image_name:
         expire_date = datetime.utcnow() + timedelta(days=1)
         expire_date_formatted = expire_date.isoformat(timespec='seconds') + 'Z'
-        run([
-            "docker", "commit", "--change",
-            f"LABEL comsys.ExpireDate={expire_date_formatted}", "ci-building",
-            args.final_image_name
-        ],
-            check=False)
+        run(["docker", "commit", "--change", f"LABEL comsys.ExpireDate={expire_date_formatted}", "ci-building", args.final_image_name], check=False)
 
     # remove intermediary containers & images
-    run(f"docker rm ci-building".split(), check=False)
-    run(f"docker rmi ci-image".split(), check=False)
+    run(["docker", "rm", "ci-building"], check=False)
+    run(["docker", "rmi", "ci-image"], check=False)
 
     # check if building succeeded, and exit with the corresponding exit code
-    retval = 0 if do_continue else 1
-    sys.exit(retval)
+    sys.exit(0 if build_success else 1)
 
 
 if __name__ == "__main__":
