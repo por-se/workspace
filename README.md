@@ -64,3 +64,16 @@ $ git clean -xdff         # nuke everything
 $ rm -f .git/info/exclude # including in the git folder
 $ git checkout .          # including changes to the workspace scripts
 ```
+
+## Contributing
+Install development dependencies with:
+
+```bash
+$ pipenv install --dev
+```
+
+Run the static type checker before submitting changes:
+
+```bash
+$ ws-src/run_mypy.sh
+```
