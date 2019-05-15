@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 print_run_commands = False
+script_dir = Path(__file__).resolve().parent
 
 
 def run(cmd, *args, **kwargs):
@@ -16,7 +17,7 @@ def run(cmd, *args, **kwargs):
     return subprocess.run(cmd, *args, **kwargs)
 
 def setup_and_parse_args():
-    script_dir = Path(__file__).resolve().parent
+    global script_dir
 
     parser = argparse.ArgumentParser(description="Run CI.")
     parser.add_argument(
@@ -79,7 +80,7 @@ def setup_and_parse_args():
 
 
 def main():
-    global print_run_commands
+    global print_run_commands, script_dir
 
     args = setup_and_parse_args()
 
