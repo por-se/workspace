@@ -55,21 +55,21 @@ def main():
         type=str,
         default=None,
         help=
-        "which phase to use for the release image (if desired): pre-build,post-build,final"
+        "which phase to use for the release image (if desired): pre-build,post-build,final. See --release-image-name for more information."
     )
     parser.add_argument(
         '--release-image-name',
         type=str,
         default=None,
         help=
-        "full name for the release image (e.g., 'kleenet.comsys.rwth-aachen.de/my-project:latest')"
+        "full name for the release image. This image is only tagged if all stages (e.g., build, test, etc.) succeeded, and will not have an expiration date. (e.g., 'kleenet.comsys.rwth-aachen.de/my-project:latest')"
     )
     parser.add_argument(
         '--final-image-name',
         type=str,
         default=None,
         help=
-        "full name for the final image (e.g., 'kleenet.comsys.rwth-aachen.de/my-project-ci:latest')"
+        "full name for the final image. This image is always tagged (if a container could be created), and will contain the final state of the CI-process. This image will also have an expiration date. (e.g., 'kleenet.comsys.rwth-aachen.de/my-project-ci:latest')"
     )
     args = parser.parse_args()
 
