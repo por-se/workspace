@@ -43,7 +43,7 @@ build-master:
   script:
     - apk add python3
     - RELEASE_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
-    - RELEASE_IMAGE_2_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
+    - RELEASE_IMAGE_2_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA
     - set +e
     - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$RELEASE_IMAGE_NAME; RES=$?
     - set -e
