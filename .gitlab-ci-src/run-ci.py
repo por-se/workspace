@@ -15,10 +15,7 @@ def run(cmd, *args, **kwargs):
         print(f"[{script_name}]: {cmd} {args} {kwargs}")
     return subprocess.run(cmd, *args, **kwargs)
 
-
-def main():
-    global print_run_commands
-
+def setup_and_parse_args():
     script_dir = Path(__file__).resolve().parent
 
     parser = argparse.ArgumentParser(description="Run CI.")
@@ -71,17 +68,25 @@ def main():
         help=
         "full name for the final image. This image is always tagged (if a container could be created), and will contain the final state of the CI-process. This image will also have an expiration date. (e.g., 'kleenet.comsys.rwth-aachen.de/my-project-ci:latest')"
     )
+
     args = parser.parse_args()
 
     # validate arguments
     if args.release_image or args.release_image_name:
         assert args.release_image and args.release_image_name, "--release-image and --release-image-name need to be specified together"
 
+    return args
+
+
+def main():
+    global print_run_commands
+
+    args = setup_and_parse_args()
+
     # set global logging behavior
     print_run_commands = args.verbose
 
     # -- build --
-
     build_success = True
     try:
         # build base docker-image first
