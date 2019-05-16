@@ -3,6 +3,11 @@ variables:
   # improved performance.
   DOCKER_DRIVER: overlay2
   DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
+  # Release image names for builds on master:
+  MASTER_RELEASE_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
+  MASTER_RELEASE_IMAGE_2_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA
+  # Final image name for builds on other branches:
+  NOT_MASTER_FINAL_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
 
 image: docker:dind
 
@@ -42,17 +47,15 @@ build-master:
       - master
   script:
     - apk add python3
-    - RELEASE_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
-    - RELEASE_IMAGE_2_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$RELEASE_IMAGE_NAME; RES=$?
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$MASTER_RELEASE_IMAGE_NAME; RES=$?
     - set -e
     - echo $RES
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
-    - docker tag $RELEASE_IMAGE_NAME $RELEASE_IMAGE_2_NAME || true
-    - docker push $RELEASE_IMAGE_NAME || true
-    - docker push $RELEASE_IMAGE_2_NAME || true
+    - docker tag $MASTER_RELEASE_IMAGE_NAME $MASTER_RELEASE_IMAGE_2_NAME || true
+    - docker push $MASTER_RELEASE_IMAGE_NAME || true
+    - docker push $MASTER_RELEASE_IMAGE_2_NAME || true
     - exit $RES
 
 build-not-master:
@@ -62,12 +65,11 @@ build-not-master:
       - master
   script:
     - apk add python3
-    - FINAL_IMAGE_NAME=$DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS  --final-image=$FINAL_IMAGE_NAME; RES=$?
+    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS  --final-image=$NOT_MASTER_FINAL_IMAGE_NAME; RES=$?
     - set -e
     - echo $RES
     - docker images
     - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
-    - docker push $FINAL_IMAGE_NAME || true
+    - docker push $NOT_MASTER_FINAL_IMAGE_NAME || true
     - exit $RES
