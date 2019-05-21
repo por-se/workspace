@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import subprocess, sys, argparse, os
+import subprocess, sys, argparse, os, tempfile
 
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -25,6 +25,12 @@ def setup_and_parse_args():
         action='store_true',
         default=False,
         help="print verbose information (e.g., all run commands, etc.)",
+    )
+    parser.add_argument(
+        '--forward-gitlab-ci-token',
+        action='store_true',
+        default=False,
+        help="forward the gitlab ci-token to command being executed inside the docker container. this is for example required when gitlab-local repositories are cloned as part of the build (inside the container).",
     )
     parser.add_argument(
         '--dockerfile',
@@ -93,19 +99,41 @@ def main():
         # build base docker-image first
         run(["docker", "build", "-f", str(args.dockerfile), "-t", "ci-image", str(script_dir.parent)])
 
+        # helper function to run a command with options in the docker container and to commit the result
+        def docker_run_and_commit(run_options, command, commit_options=[], check=True):
+            run(["docker", "run", "--name", "ci-temp"] + run_options + ["ci-image:latest"] + command, check=check)
+            run(["docker", "commit"] + commit_options + ["ci-temp", "ci-image:latest"], check=check)
+            run(["docker", "rm", "ci-temp"], check=check)
+
         # check if this is supposed to be the release-image
         if args.release_image == "pre-build":
             run(["docker", "tag", "ci-image:latest", str(args.release_image_name)])
 
+        # if requested, forward the gitlab-ci-token by writing it to a file that we mount into the container
+        gitlab_ci_token_args = []
+        ci_token_temp_dir = None
+        if args.forward_gitlab_ci_token:
+            token = os.environ['CI_JOB_TOKEN']
+            ci_token_temp_dir = tempfile.TemporaryDirectory() # will be cleaned up by the destructor when the script exits (or sooner)
+            with open(Path(ci_token_temp_dir.name) / 'netrc', "w") as f:
+                f.write(f"machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword {token}\n")
+            gitlab_ci_token_args = ["-v", f"{ci_token_temp_dir.name}:/ci-token-dir"]
+
         # run ./ws build
         ccache_arg = ["-v", f"{args.ccache_dir}:/ccache"] if args.ccache_dir else []
         cache_arg = ["-v", f"{args.cache_dir}:/cache"] if args.cache_dir else []
-        run(["docker", "run", "--name", "ci-building"] + ccache_arg + cache_arg + ["ci-image", "/usr/bin/bash", "-c",
-            f"./ws setup --git-clone-args=\"--dissociate --depth=1 -c pack.threads={args.num_threads}\" && ./ws build -j{args.num_threads}"])
+        docker_run_and_commit(run_options = ccache_arg + cache_arg + gitlab_ci_token_args,
+            command = ["/usr/bin/bash", "-c",
+             f"""\
+            export PATH=\"/usr/share/git/credential/netrc:$PATH\" &&
+            git config --global credential.helper 'netrc -k -v -f /ci-token-dir/netrc' &&
+            ./ws setup --git-clone-args=\"--dissociate --depth=1 -c pack.threads={args.num_threads}\" &&
+            ./ws build -j{args.num_threads} &&
+            git config --global --unset credential.helper"""])
 
         # check if this is supposed to be the release-image
         if args.release_image == "post-build":
-            run(["docker", "commit", "ci-building", str(args.release_image_name)])
+            run(["docker", "tag", "ci-image:latest", str(args.release_image_name)])
 
     except subprocess.CalledProcessError:
         build_success = False
@@ -117,10 +145,11 @@ def main():
     if args.final_image_name:
         expire_date = datetime.utcnow() + timedelta(days=1)
         expire_date_formatted = expire_date.isoformat(timespec='seconds') + 'Z'
-        run(["docker", "commit", "--change", f"LABEL comsys.ExpireDate={expire_date_formatted}", "ci-building", args.final_image_name], check=False)
+        docker_run_and_commit(run_options=[], command=["/usr/bin/bash", "-c", "exit"], commit_options=["--change", f"LABEL comsys.ExpireDate={expire_date_formatted}"], check=False)
+        run(["docker", "tag", "ci-image:latest", str(args.final_image_name)], check=False)
 
     # remove intermediary containers & images
-    run(["docker", "rm", "ci-building"], check=False)
+    run(["docker", "rm", "ci-temp"], check=False)
     run(["docker", "rmi", "ci-image"], check=False)
 
     # check if building succeeded, and exit with the corresponding exit code

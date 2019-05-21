@@ -48,7 +48,8 @@ build-master:
   script:
     - apk add python3
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$MASTER_RELEASE_IMAGE_NAME; RES=$?
+    - export PYTHONUNBUFFERED=1
+    - .gitlab-ci-src/run-ci.py --verbose --forward-gitlab-ci-token --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS --release-image=pre-build --release-image-name=$MASTER_RELEASE_IMAGE_NAME; RES=$?
     - set -e
     - echo $RES
     - docker images
@@ -66,7 +67,8 @@ build-not-master:
   script:
     - apk add python3
     - set +e
-    - .gitlab-ci-src/run-ci.py --verbose --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS  --final-image=$NOT_MASTER_FINAL_IMAGE_NAME; RES=$?
+    - export PYTHONUNBUFFERED=1
+    - .gitlab-ci-src/run-ci.py --verbose --forward-gitlab-ci-token --ccache-dir "/ccache" --cache-dir "/cache" --num-threads $LOCAL_NUM_THREADS  --final-image=$NOT_MASTER_FINAL_IMAGE_NAME; RES=$?
     - set -e
     - echo $RES
     - docker images
