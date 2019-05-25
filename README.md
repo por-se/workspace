@@ -77,3 +77,23 @@ Run the static type checker before submitting changes:
 ```bash
 $ ws-src/run_mypy.sh
 ```
+
+# Workspace Settings
+
+The workspace saves its settings in the `.ws-config.toml` file, located in the base directory of the workspace. This file is created upon starting ws for the first time and deleted on `./ws clean --dist-clean`. It stores the currently active building configurations as well as the reference repository path (if already set) and the pull URLs for git.
+## Pull via HTTPS or SSH
+If you prefer pulling the git sources via HTTPS, rather than SSH as by default, you have to modify the pull URLs via the configuration file.
+SSH clone (default):
+```
+[repository_prefixes]
+"github://" = "ssh://git@github.com/"
+"laboratory://" = "ssh://git@laboratory.comsys.rwth-aachen.de/"
+```
+HTTPS clone:
+```
+[repository_prefixes]
+"github://" = "https://github.com/"
+"laboratory://" = "https://laboratory.comsys.rwth-aachen.de/"
+```
+As after every `--dist-clean` the current config is deleted, the URLs will be reset and any changes have to be applied again.
+Also, before the first execution the settings file is not written, so in order to check out via HTTPS, you have to create the file first. With `./ws reset-settings` the settings file will be reset to the default settings, if no file exists, a new one with the default settings will be created. To use HTTPS from the get go, all you need to do is initially run `reset-settings` at first, edit the newly created file as described above and then execute the workspace with `build` or `setup`.
