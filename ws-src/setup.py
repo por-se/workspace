@@ -10,6 +10,7 @@ setup(
 	entry_points = {
 		'console_scripts': [
 			"setup          = workspace.bin.setup:main",
+            "reset-settings = workspace.bin.reset_settings:main",
             "build          = workspace.bin.build:main",
             "activate-cfg   = workspace.bin.activate_cfg:main",
             "deactivate-cfg = workspace.bin.deactivate_cfg:main",

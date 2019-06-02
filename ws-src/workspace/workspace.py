@@ -42,20 +42,23 @@ class Workspace:
                 'repository_prefixes': schema.Schema({str: str}),
             }).validate(config)
         except FileNotFoundError:
-            self._config = {
-                'active configs': {
-                    'release'
-                },
-                'repository_prefixes': {
-                    'github://': "ssh://git@github.com/",
-                    'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
-                },
-            }
-            self._store_config()
+            self.reset_config()
 
     def _store_config(self):
         with open(self.ws_path/'.ws-config.toml', 'wt') as f:
             toml.dump(self._config, f)
+
+    def reset_config(self):
+        self._config = {
+            'active configs': {
+                'release'
+            },
+            'repository_prefixes': {
+                'github://': "ssh://git@github.com/",
+                'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
+            },
+        }
+        self._store_config()
 
     def activate_config(self, config: str):
         self._config['active configs'].add(config)
