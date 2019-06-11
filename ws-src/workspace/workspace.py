@@ -6,6 +6,7 @@ import shutil
 import schema, toml
 
 import workspace.util as util
+import workspace.build_systems as build_systems
 
 
 def _run(cmd, *args, **kwargs):
@@ -27,15 +28,18 @@ class Workspace:
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
+        self._linker_dirs = {}
         self.builds = []
         self.git_clone_args = []
 
     def _apply_config(self, config):
         remove_duplicates = lambda lst: list(OrderedDict.fromkeys(lst))
+        is_valid_linker = lambda name: any(name == linker.value for linker in build_systems.Linker)
 
         self._config = schema.Schema({
             schema.Optional('reference'): schema.And(str, len),
             schema.Optional('active configs', default=['release']): schema.Use(remove_duplicates, [schema.And(str, len)]),
+            schema.Optional('default_linker', default=build_systems.Linker.GOLD.value): is_valid_linker,
             schema.Optional('repository_prefixes', default={
                 'github://': "ssh://git@github.com/",
                 'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
@@ -75,6 +79,12 @@ class Workspace:
 
     def get_repository_prefixes(self):
         return self._config['repository_prefixes']
+
+    def get_default_linker(self):
+        if 'default_linker' in self._config:
+            return build_systems.Linker(self._config['default_linker'])
+        else:
+            return None
 
     def _check_create_ref_dir(self):
         if self.ref_dir is None:
@@ -269,3 +279,20 @@ class Workspace:
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
         util.env_prepend_path(env, "PATH", self._bin_dir.resolve())
         return env
+
+    def get_linker_dir(self, linker):
+        if not linker in self._linker_dirs:
+            linker_name = linker.value
+            main_linker_dir = self._bin_dir / "linkers"
+            linker_dir = main_linker_dir / linker_name
+            if not linker_dir.exists():
+                linker_dir.mkdir(parents=True)
+                if linker == build_systems.Linker.LD:
+                    ld_frontend = "ld"
+                else:
+                    ld_frontend = f"ld.{linker_name}"
+                linker_path = shutil.which(ld_frontend)
+                assert linker_path is not None, f"Didn't find linker {linker_name}"
+                os.symlink(linker_path, linker_dir / "ld")
+            self._linker_dirs[linker] = linker_dir
+        return self._linker_dirs[linker]
