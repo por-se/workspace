@@ -1,8 +1,10 @@
 import os, shutil
 from dataclasses import dataclass
 from hashlib import blake2s
+from typing import cast, List, Dict
 
 from workspace.workspace import Workspace, _run
+from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe, MINISAT
 
@@ -13,31 +15,31 @@ class STP(Recipe):
     default_name = "stp"
     profiles = {
         "release": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DENABLE_ASSERTIONS=On',
-                '-DSANITIZE=Off',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+                'ENABLE_ASSERTIONS': True,
+                'SANITIZE': False,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
         },
         "rel+debinfo": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
-                '-DENABLE_ASSERTIONS=On',
-                '-DSANITIZE=Off',
-            ],
-            "c_flags": "-fno-omit-frame-pointer",
-            "cxx_flags": "-fno-omit-frame-pointer",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+                'ENABLE_ASSERTIONS': True,
+                'SANITIZE': False,
+            },
+            "c_flags": ["-fno-omit-frame-pointer"],
+            "cxx_flags": ["-fno-omit-frame-pointer"],
         },
         "debug": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Debug',
-                '-DENABLE_ASSERTIONS=On',
-                '-DSANITIZE=Off',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+                'ENABLE_ASSERTIONS': True,
+                'SANITIZE': False,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
         },
     }
 
@@ -91,6 +93,9 @@ class STP(Recipe):
         self.paths = _make_internal_paths(self, ws)
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
+        self.cmake = CMakeConfig(ws, self.paths.src_dir, self.paths.build_dir)
+        self.cmake.use_linker(Linker.LLD)
+
     def setup(self, ws: Workspace):
         src_dir = self.paths.src_dir
         if not src_dir.is_dir():
@@ -101,40 +106,32 @@ class STP(Recipe):
                 branch=self.branch)
             ws.apply_patches("stp", src_dir)
 
+    def _configure(self, ws: Workspace):
+        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
+        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        self.cmake.set_extra_c_flags(c_flags)
+        self.cmake.set_extra_cxx_flags(cxx_flags)
+
+        minisat = ws.find_build(build_name=self.minisat_name, before=self)
+        assert minisat, "STP requires minisat"
+        self.cmake.set_flag("MINISAT_LIBRARY", f"{minisat.paths.build_dir}/libminisat.a")
+        self.cmake.set_flag("MINISAT_INCLUDE_DIR", str(minisat.paths.src_dir))
+
+        self.cmake.set_flag("NOCRYPTOMINISAT", True)
+        self.cmake.set_flag("STATICCOMPILE", True)
+        self.cmake.set_flag("BUILD_SHARED_LIBS", False)
+        self.cmake.set_flag("ENABLE_PYTHON_INTERFACE", False)
+
+        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+            self.cmake.set_flag(name, value)
+        self.cmake.adjust_flags(self.cmake_adjustments)
+
+        self.cmake.configure()
+
     def build(self, ws: Workspace):
-        env = ws.get_env()
-
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
-
-            minisat = ws.find_build(build_name=self.minisat_name, before=self)
-
-            assert minisat, "STP requires minisat"
-
-            cmake_args = [
-                '-G', 'Ninja',
-                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11 {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-                f'-DMINISAT_LIBRARY={minisat.paths.build_dir}/libminisat.a',
-                f'-DMINISAT_INCLUDE_DIR={minisat.paths.src_dir}',
-                '-DNOCRYPTOMINISAT=On',
-                '-DSTATICCOMPILE=On',
-                '-DBUILD_SHARED_LIBS=Off',
-                '-DENABLE_PYTHON_INTERFACE=Off',
-            ]
-
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
-
-            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
-
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+        if not self.cmake.is_configured():
+            self._configure(ws)
+        self.cmake.build()
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:

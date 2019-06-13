@@ -1,8 +1,10 @@
 import os, shutil
 from dataclasses import dataclass
 from hashlib import blake2s
+from typing import cast, List, Dict
 
 from workspace.workspace import Workspace, _run
+from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
@@ -13,25 +15,25 @@ class Z3(Recipe):
     default_name = "z3"
     profiles = {
         "release": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+            },
+            "c_flags": [],
+            "cxx_flags": [],
         },
         "rel+debinfo": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
-            ],
-            "c_flags": "-fno-omit-frame-pointer",
-            "cxx_flags": "-fno-omit-frame-pointer",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+            },
+            "c_flags": ["-fno-omit-frame-pointer"],
+            "cxx_flags": ["-fno-omit-frame-pointer"],
         },
         "debug": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Debug',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+            },
+            "c_flags": [],
+            "cxx_flags": [],
         },
     }
 
@@ -79,6 +81,9 @@ class Z3(Recipe):
         self.paths = _make_internal_paths(self, ws)
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
+        self.cmake = CMakeConfig(ws, self.paths.src_dir, self.paths.build_dir)
+        self.cmake.use_linker(Linker.LLD)
+
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
@@ -88,32 +93,25 @@ class Z3(Recipe):
                 branch=self.branch)
             ws.apply_patches("z3", self.paths.src_dir)
 
+    def _configure(self, ws: Workspace):
+        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
+        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        self.cmake.set_extra_c_flags(c_flags)
+        self.cmake.set_extra_cxx_flags(cxx_flags)
+
+        self.cmake.set_flag("BUILD_LIBZ3_SHARED", False)
+        self.cmake.set_flag("USE_OPENMP", False)
+
+        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+            self.cmake.set_flag(name, value)
+        self.cmake.adjust_flags(self.cmake_adjustments)
+
+        self.cmake.configure()
+
     def build(self, ws: Workspace):
-        env = ws.get_env()
-
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
-
-            cmake_args = [
-                '-G', 'Ninja',
-                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-                '-DBUILD_LIBZ3_SHARED=false',
-                '-DUSE_OPENMP=0',
-            ]
-
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
-
-            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
-
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+        if not self.cmake.is_configured():
+            self._configure(ws)
+        self.cmake.build()
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:

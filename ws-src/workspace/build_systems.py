@@ -21,11 +21,7 @@ class Linker(enum.Enum):
 class BuildSystemConfig(abc.ABC):
     def __init__(self, ws):
         self._ws = ws
-        linker = ws.get_default_linker()
-        if linker is None:
-            self._linker = Linker.GOLD
-        else:
-            self._linker = linker
+        self._linker = ws.get_default_linker()
 
     def use_linker(self, linker: Linker):
         self._linker = linker

@@ -1,8 +1,10 @@
 import os, shutil
 from dataclasses import dataclass
 from hashlib import blake2s
+from typing import cast, List, Dict
 
 from workspace.workspace import Workspace, _run
+from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
@@ -51,6 +53,9 @@ class MINISAT(Recipe):
         self.paths = _make_internal_paths(self, ws)
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
+        self.cmake = CMakeConfig(ws, self.paths.src_dir, self.paths.build_dir)
+        self.cmake.use_linker(Linker.LLD)
+
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
@@ -60,23 +65,16 @@ class MINISAT(Recipe):
                 branch=self.branch)
             ws.apply_patches("minisat", self.paths.src_dir)
 
+    def _configure(self, ws: Workspace):
+        self.cmake.set_extra_cxx_flags(["-std=c++11"])
+        self.cmake.adjust_flags(self.cmake_adjustments)
+
+        self.cmake.configure()
+
     def build(self, ws: Workspace):
-        env = ws.get_env()
-
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
-            cmake_args = Recipe.adjusted_cmake_args([
-                '-G', 'Ninja',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-            ], self.cmake_adjustments)
-            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
-
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+        if not self.cmake.is_configured():
+            self._configure(ws)
+        self.cmake.build()
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:

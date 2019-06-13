@@ -1,9 +1,10 @@
 import os, shutil, psutil
 from dataclasses import dataclass
 from hashlib import blake2s
-from typing import Optional
+from typing import Dict, List, Optional, cast
 
 from workspace.workspace import Workspace, _run
+from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import j_from_num_threads, env_prepend_path
 from . import Recipe
 
@@ -14,32 +15,32 @@ class LLVM(Recipe):
     default_name = "llvm"
     profiles = {
         "release": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
             "is_performance_build": True,
             "has_debug_info": False,
         },
         "rel+debinfo": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "-fno-omit-frame-pointer",
-            "cxx_flags": "-fno-omit-frame-pointer",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": ["-fno-omit-frame-pointer"],
+            "cxx_flags": ["-fno-omit-frame-pointer"],
             "is_performance_build": True,
             "has_debug_info": True,
         },
         "debug": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Debug',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
             "is_performance_build": False,
             "has_debug_info": True,
         },
@@ -101,6 +102,9 @@ class LLVM(Recipe):
         self.paths = _make_internal_paths(self, ws)
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
+        self.cmake = CMakeConfig(ws, self.paths.src_dir / "llvm", self.paths.build_dir)
+        self.cmake.use_linker(Linker.LLD)
+
     def setup(self, ws: Workspace):
         if self.profile != "release":
             self._release_build.setup(ws)
@@ -114,49 +118,40 @@ class LLVM(Recipe):
                 sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", self.paths.src_dir)
 
+    def _configure(self, ws: Workspace):
+        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
+        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        self.cmake.set_extra_c_flags(c_flags)
+        self.cmake.set_extra_cxx_flags(cxx_flags)
+
+        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths.src_dir / "clang"))
+        self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
+        self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
+        self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
+
+        if not self.profiles[self.profile]["is_performance_build"]:
+            self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
+
+        avail_mem = psutil.virtual_memory().available
+        if self.profiles[self.profile]["has_debug_info"] and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
+            print(
+                f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+            )
+            self.cmake.set_flag("LLVM_PARALLEL_LINK_JOBS", 1)
+
+        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+            self.cmake.set_flag(name, value)
+        self.cmake.adjust_flags(self.cmake_adjustments)
+
+        self.cmake.configure()
+
     def build(self, ws: Workspace, target=None):
         if self.profile != "release":
             self._release_build.build(ws, target='bin/llvm-tblgen')
 
-        env = ws.get_env()
-
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
-
-            cmake_args = [
-                '-G', 'Ninja',
-                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-                f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={self.paths.src_dir / "clang"}',
-                '-DLLVM_TARGETS_TO_BUILD=X86',
-                '-DLLVM_INCLUDE_EXAMPLES=Off',
-                '-DHAVE_VALGRIND_VALGRIND_H=0',
-            ]
-            if not self.profiles[self.profile]["is_performance_build"]:
-                cmake_args = Recipe.adjusted_cmake_args(cmake_args, [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}'])
-
-            avail_mem = psutil.virtual_memory().available
-            if self.profiles[self.profile]["has_debug_info"] and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
-                print(
-                    f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
-                )
-                cmake_args = Recipe.adjusted_cmake_args(cmake_args, ["-DLLVM_PARALLEL_LINK_JOBS=1"])
-
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
-
-            _run(["cmake"] + cmake_args + [self.paths.src_dir / "llvm"], cwd=self.paths.build_dir, env=env)
-
-        build_call = ["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads)
-        if target is not None:
-            build_call += ['--target', target]
-        _run(build_call, cwd=self.paths.build_dir, env=env)
+        if not self.cmake.is_configured():
+            self._configure(ws)
+        self.cmake.build(target=target)
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:

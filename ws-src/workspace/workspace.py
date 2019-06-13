@@ -81,10 +81,7 @@ class Workspace:
         return self._config['repository_prefixes']
 
     def get_default_linker(self):
-        if 'default_linker' in self._config:
-            return build_systems.Linker(self._config['default_linker'])
-        else:
-            return None
+        return build_systems.Linker(self._config['default_linker'])
 
     def _check_create_ref_dir(self):
         if self.ref_dir is None:
