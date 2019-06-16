@@ -199,4 +199,4 @@ class PORSE(Recipe):
     def add_to_env(self, env, ws: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
         env_prepend_path(env, "C_INCLUDE_PATH", self.paths.src_dir / "include")
-        env_prepend_path(env, "C_INCLUDE_PATH", self.paths.src_dir / "include/klee/runtime")
+        env_prepend_path(env, "C_INCLUDE_PATH", self.paths.src_dir / "include" / "klee" / "runtime")
