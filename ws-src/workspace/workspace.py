@@ -205,6 +205,8 @@ class Workspace:
         for build in self.builds:
             build.add_to_env(env, self)
 
+        env["WS_HOME"] = self.ws_path
+
     def build(self, num_threads):
         self._initialize_builds()
         self.setup()
