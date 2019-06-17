@@ -265,16 +265,8 @@ class Workspace:
                 shutil.rmtree(venv_dir)
 
     def get_env(self):
-        if not self._bin_dir.is_dir():
-            ld = shutil.which('ld.lld')
-            assert ld is not None, "Felix says: Install lld!"
-
-            os.makedirs(self._bin_dir)
-            os.symlink(ld, self._bin_dir/'ld')
-
         env = os.environ.copy()
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
-        util.env_prepend_path(env, "PATH", self._bin_dir.resolve())
         return env
 
     def get_linker_dir(self, linker):
