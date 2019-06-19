@@ -102,7 +102,7 @@ class LLVM(Recipe):
         self.paths = _make_internal_paths(self, ws)
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
-        self.cmake = CMakeConfig(ws, self.paths.src_dir / "llvm", self.paths.build_dir)
+        self.cmake = CMakeConfig(ws)
         self.cmake.use_linker(Linker.LLD)
 
     def setup(self, ws: Workspace):
@@ -143,15 +143,15 @@ class LLVM(Recipe):
             self.cmake.set_flag(name, value)
         self.cmake.adjust_flags(self.cmake_adjustments)
 
-        self.cmake.configure()
+        self.cmake.configure(ws, self.paths.src_dir / "llvm", self.paths.build_dir)
 
     def build(self, ws: Workspace, target=None):
         if self.profile != "release":
             self._release_build.build(ws, target='bin/llvm-tblgen')
 
-        if not self.cmake.is_configured():
+        if not self.cmake.is_configured(ws, self.paths.src_dir / "llvm", self.paths.build_dir):
             self._configure(ws)
-        self.cmake.build(target=target)
+        self.cmake.build(ws, self.paths.src_dir / "llvm", self.paths.build_dir, target=target)
 
     def clean(self, ws: Workspace):
         if ws.args.dist_clean:

@@ -20,22 +20,21 @@ class Linker(enum.Enum):
 
 class BuildSystemConfig(abc.ABC):
     def __init__(self, ws):
-        self._ws = ws
         self._linker = ws.get_default_linker()
 
     def use_linker(self, linker: Linker):
         self._linker = linker
 
     @abc.abstractmethod
-    def is_configured(self):
+    def is_configured(self, ws, source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self):
+    def configure(self, ws, source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, target=None):
+    def build(self, ws, source_dir: Path, build_dir: Path, target=None):
         raise NotImplementedError
 
 
@@ -88,24 +87,22 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-    def __init__(self, ws, source_dir: Path, build_dir: Path):
+    def __init__(self, ws):
         super().__init__(ws)
-        self._source_dir = source_dir
-        self._build_dir = build_dir
         self._cmake_flags = CMakeConfig.CMakeFlags()
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
 
-    def is_configured(self):
-        return self._build_dir.exists()
+    def is_configured(self, ws, source_dir: Path, build_dir: Path):
+        return build_dir.exists()
 
-    def configure(self):
-        assert not self.is_configured()
+    def configure(self, ws, source_dir: Path, build_dir: Path):
+        assert not self.is_configured(ws, source_dir, build_dir)
 
         config_call = ["cmake"]
-        config_call += ["-S", str(self._source_dir.resolve()),
-                        "-B", str(self._build_dir.resolve()),
+        config_call += ["-S", str(source_dir),
+                        "-B", str(build_dir),
                         "-G", "Ninja"]
 
         cmake_flags = self._cmake_flags.copy()
@@ -117,7 +114,7 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache")
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache")
 
-        c_flags   = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(self._ws.ws_path.resolve())}=."]
+        c_flags   = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(ws.ws_path.resolve())}=."]
         cxx_flags = c_flags.copy()
         c_flags   += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
@@ -126,23 +123,23 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        env = self._ws.get_env()
-        linker_dir = self._ws.get_linker_dir(self._linker)
+        env = ws.get_env()
+        linker_dir = ws.get_linker_dir(self._linker)
         util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
         workspace._run(config_call, env=env)
 
-    def build(self, target=None):
-        assert self.is_configured()
+    def build(self, ws, source_dir: Path, build_dir: Path, target=None):
+        assert self.is_configured(ws, source_dir, build_dir)
 
         build_call = ["cmake"]
-        build_call += ["--build", str(self._build_dir.resolve())]
+        build_call += ["--build", str(build_dir.resolve())]
         if target is not None:
             build_call += ['--target', target]
-        build_call += util.j_from_num_threads(self._ws.args.num_threads)
+        build_call += util.j_from_num_threads(ws.args.num_threads)
 
-        env = self._ws.get_env()
-        linker_dir = self._ws.get_linker_dir(self._linker)
+        env = ws.get_env()
+        linker_dir = ws.get_linker_dir(self._linker)
         util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
         workspace._run(build_call, env=env)
