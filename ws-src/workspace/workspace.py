@@ -1,4 +1,5 @@
 import os, sys, subprocess, re
+from collections import OrderedDict
 from pathlib import Path, PurePosixPath
 import shutil
 
@@ -29,36 +30,40 @@ class Workspace:
         self.builds = []
         self.git_clone_args = []
 
+    def _apply_config(self, config):
+        remove_duplicates = lambda lst: list(OrderedDict.fromkeys(lst))
+
+        validated_config = schema.Schema({
+            schema.Optional('reference'): schema.And(str, len),
+            schema.Optional('active configs', default=['release']): schema.Use(remove_duplicates, [schema.And(str, len)]),
+            schema.Optional('repository_prefixes', default={
+                'github://': "ssh://git@github.com/",
+                'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
+            }): schema.Schema({str: str}),
+        }).validate(config)
+
+        self._config = schema.Schema({
+            'active configs': schema.Use(set),
+            object: object # just keep all other keys as they are
+        }).validate(validated_config)
+
+        if validated_config != config:
+            self._store_config()
+
     def _load_config(self):
         try:
             with open(self.ws_path/'.ws-config.toml') as f:
                 config = toml.load(f)
-
-            self._config = schema.Schema({
-                schema.Optional('reference'): schema.And(str, len),
-                'active configs': schema.And(schema.Use(set), {
-                    schema.And(str, len),
-                }),
-                'repository_prefixes': schema.Schema({str: str}),
-            }).validate(config)
         except FileNotFoundError:
-            self.reset_config()
+            config = {}
+        self._apply_config(config)
 
     def _store_config(self):
         with open(self.ws_path/'.ws-config.toml', 'wt') as f:
             toml.dump(self._config, f)
 
     def reset_config(self):
-        self._config = {
-            'active configs': {
-                'release'
-            },
-            'repository_prefixes': {
-                'github://': "ssh://git@github.com/",
-                'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
-            },
-        }
-        self._store_config()
+        self._apply_config({})
 
     def activate_config(self, config: str):
         self._config['active configs'].add(config)
