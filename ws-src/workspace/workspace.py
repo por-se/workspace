@@ -33,7 +33,7 @@ class Workspace:
     def _apply_config(self, config):
         remove_duplicates = lambda lst: list(OrderedDict.fromkeys(lst))
 
-        validated_config = schema.Schema({
+        self._config = schema.Schema({
             schema.Optional('reference'): schema.And(str, len),
             schema.Optional('active configs', default=['release']): schema.Use(remove_duplicates, [schema.And(str, len)]),
             schema.Optional('repository_prefixes', default={
@@ -42,12 +42,7 @@ class Workspace:
             }): schema.Schema({str: str}),
         }).validate(config)
 
-        self._config = schema.Schema({
-            'active configs': schema.Use(set),
-            object: object # just keep all other keys as they are
-        }).validate(validated_config)
-
-        if validated_config != config:
+        if self._config != config:
             self._store_config()
 
     def _load_config(self):
@@ -66,12 +61,14 @@ class Workspace:
         self._apply_config({})
 
     def activate_config(self, config: str):
-        self._config['active configs'].add(config)
-        self._store_config()
+        if not config in self._config['active configs']:
+            self._config['active configs'].append(config)
+            self._store_config()
 
     def deactivate_config(self, config: str):
-        self._config['active configs'].remove(config)
-        self._store_config()
+        if config in self._config['active configs']:
+            self._config['active configs'].remove(config)
+            self._store_config()
 
     def active_configs(self):
         return self._config['active configs']
