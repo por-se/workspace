@@ -48,8 +48,9 @@ class CMakeConfig(BuildSystemConfig):
             other._flags = self._flags.copy()
             return other
 
-        def set(self, name: str, value: Union[str, bool, int]):
-            self._flags[name] = value
+        def set(self, name: str, value: Union[str, bool, int], override=True):
+            if override or not name in self._flags:
+                self._flags[name] = value
         def unset(self, name: str):
             del self._flags[name]
 
@@ -111,15 +112,15 @@ class CMakeConfig(BuildSystemConfig):
         for flags_type, flags in linker_flags.items():
             cmake_flags.set(flags_type, ' '.join(_quote_sequence(flags)))
 
-        cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache")
-        cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache")
+        cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
+        cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
         c_flags   = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(ws.ws_path.resolve())}=."]
         cxx_flags = c_flags.copy()
         c_flags   += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
-        cmake_flags.set("CMAKE_C_FLAGS", ' '.join(_quote_sequence(c_flags)))
-        cmake_flags.set("CMAKE_CXX_FLAGS", ' '.join(_quote_sequence(cxx_flags)))
+        cmake_flags.set("CMAKE_C_FLAGS", ' '.join(_quote_sequence(c_flags)), override=False)
+        cmake_flags.set("CMAKE_CXX_FLAGS", ' '.join(_quote_sequence(cxx_flags)), override=False)
 
         config_call += cmake_flags.generate()
 
