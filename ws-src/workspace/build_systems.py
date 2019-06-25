@@ -123,9 +123,7 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        env = ws.get_env()
-        linker_dir = ws.get_linker_dir(self._linker)
-        util.env_prepend_path(env, "PATH", linker_dir.resolve())
+        env = ws.get_env(linker=self._linker)
 
         workspace._run(config_call, env=env)
 
@@ -138,9 +136,7 @@ class CMakeConfig(BuildSystemConfig):
             build_call += ['--target', target]
         build_call += util.j_from_num_threads(ws.args.num_threads)
 
-        env = ws.get_env()
-        linker_dir = ws.get_linker_dir(self._linker)
-        util.env_prepend_path(env, "PATH", linker_dir.resolve())
+        env = ws.get_env(linker=self._linker)
 
         workspace._run(build_call, env=env)
 
