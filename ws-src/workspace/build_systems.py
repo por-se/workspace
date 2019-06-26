@@ -37,15 +37,18 @@ class BuildSystemConfig(abc.ABC):
 
 class CMakeConfig(BuildSystemConfig):
     class CMakeFlags:
-        def __init__(self):
+        def __init__(self, illegal_flags=set()):
             self._flags = {}
+            self.illegal_flags = illegal_flags
 
         def copy(self):
-            other = CMakeConfig.CMakeFlags()
+            other = CMakeConfig.CMakeFlags(illegal_flags=self.illegal_flags.copy())
             other._flags = self._flags.copy()
             return other
 
         def set(self, name: str, value: Union[str, bool, int], override=True):
+            if name in self.illegal_flags:
+                raise ValueError(f"changing cmake flag {name} is illegal")
             if override or not name in self._flags:
                 self._flags[name] = value
 
@@ -89,7 +92,7 @@ class CMakeConfig(BuildSystemConfig):
 
     def __init__(self, ws: "workspace.Workspace"):
         super().__init__(ws)
-        self._cmake_flags = CMakeConfig.CMakeFlags()
+        self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
@@ -106,6 +109,7 @@ class CMakeConfig(BuildSystemConfig):
                         "-G", "Ninja"]
 
         cmake_flags = self._cmake_flags.copy()
+        cmake_flags.illegal_flags = set()
 
         linker_flags = self.get_linker_flags()
         for flags_type, flags in linker_flags.items():
