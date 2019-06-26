@@ -20,10 +20,7 @@ class Linker(enum.Enum):
 
 class BuildSystemConfig(abc.ABC):
     def __init__(self, ws: "workspace.Workspace"):
-        self._linker = ws.get_default_linker()
-
-    def use_linker(self, linker: Linker):
-        self._linker = linker
+        self.linker = ws.get_default_linker()
 
     @abc.abstractmethod
     def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
@@ -126,7 +123,7 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        env = ws.get_env(linker=self._linker)
+        env = ws.get_env(linker=self.linker)
 
         workspace._run(config_call, env=env)
 
@@ -139,7 +136,7 @@ class CMakeConfig(BuildSystemConfig):
             build_call += ['--target', target]
         build_call += util.j_from_num_threads(ws.args.num_threads)
 
-        env = ws.get_env(linker=self._linker)
+        env = ws.get_env(linker=self.linker)
 
         workspace._run(build_call, env=env)
 
@@ -164,14 +161,14 @@ class CMakeConfig(BuildSystemConfig):
     def get_linker_flags(self):
         if self._linker_flags is not None:
             return self._linker_flags
-        elif self._linker in [Linker.GOLD, Linker.LLD]:
+        elif self.linker in [Linker.GOLD, Linker.LLD]:
             return {
                 "CMAKE_STATIC_LINKER_FLAGS": ["-T"],
                 "CMAKE_MODULE_LINKER_FLAGS": ["-Xlinker", "--no-threads"],
                 "CMAKE_SHARED_LINKER_FLAGS": ["-Xlinker", "--no-threads"],
                 "CMAKE_EXE_LINKER_FLAGS": ["-Xlinker", "--no-threads", "-Xlinker", "--gdb-index"]
             }
-        elif self._linker == Linker.LD:
+        elif self.linker == Linker.LD:
             return {
                 "CMAKE_STATIC_LINKER_FLAGS": ["-T"],
                 "CMAKE_MODULE_LINKER_FLAGS": [],
@@ -179,5 +176,5 @@ class CMakeConfig(BuildSystemConfig):
                 "CMAKE_EXE_LINKER_FLAGS": []
             }
         else:
-            raise NotImplementedError(str(self._linker))
+            raise NotImplementedError(str(self.linker))
 
