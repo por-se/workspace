@@ -51,6 +51,7 @@ class CMakeConfig(BuildSystemConfig):
         def set(self, name: str, value: Union[str, bool, int], override=True):
             if override or not name in self._flags:
                 self._flags[name] = value
+
         def unset(self, name: str):
             del self._flags[name]
 
@@ -87,6 +88,7 @@ class CMakeConfig(BuildSystemConfig):
                     raise NotImplementedError(str(type(value)))
                 output.append(f"-D{name}={value_str}")
             return output
+
 
     def __init__(self, ws):
         super().__init__(ws)
@@ -155,7 +157,6 @@ class CMakeConfig(BuildSystemConfig):
 
     def set_extra_cxx_flags(self, flags: List[str]):
         self._extra_cxx_flags = flags
-
 
     def force_linker_flags(self, flags: Optional[Dict[str, List[str]]]):
         self._linker_flags = flags
