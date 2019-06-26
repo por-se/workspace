@@ -122,7 +122,6 @@ class KLEE(Recipe):
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
         self.cmake = CMakeConfig(ws)
-        self.cmake.use_linker(Linker.LLD)
 
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():

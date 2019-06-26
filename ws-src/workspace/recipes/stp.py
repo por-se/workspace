@@ -1,4 +1,4 @@
-import os, shutil
+import os, shutil, sys
 from dataclasses import dataclass
 from hashlib import blake2s
 from typing import cast, List, Dict
@@ -94,9 +94,11 @@ class STP(Recipe):
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
         self.cmake = CMakeConfig(ws)
-        # STP may crash when linked with LLD right now, see:
-        # https://laboratory.comsys.rwth-aachen.de/symbiosys/projects/workspace_base/issues/34
-        self.cmake.use_linker(Linker.GOLD)
+        if self.cmake.linker == Linker.LLD:
+            msg = ("warning: linking STP with lld may cause crashes, falling back to gold.\n"
+                   "         see https://laboratory.comsys.rwth-aachen.de/symbiosys/projects/workspace_base/issues/34")
+            print(msg, file=sys.stderr)
+            self.cmake.linker = Linker.GOLD
 
     def setup(self, ws: Workspace):
         src_dir = self.paths.src_dir
