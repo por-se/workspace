@@ -19,22 +19,22 @@ class Linker(enum.Enum):
     LLD = "lld"
 
 class BuildSystemConfig(abc.ABC):
-    def __init__(self, ws):
+    def __init__(self, ws: "workspace.Workspace"):
         self._linker = ws.get_default_linker()
 
     def use_linker(self, linker: Linker):
         self._linker = linker
 
     @abc.abstractmethod
-    def is_configured(self, ws, source_dir: Path, build_dir: Path):
+    def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self, ws, source_dir: Path, build_dir: Path):
+    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, ws, source_dir: Path, build_dir: Path, target=None):
+    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None):
         raise NotImplementedError
 
 
@@ -90,17 +90,17 @@ class CMakeConfig(BuildSystemConfig):
             return output
 
 
-    def __init__(self, ws):
+    def __init__(self, ws: "workspace.Workspace"):
         super().__init__(ws)
         self._cmake_flags = CMakeConfig.CMakeFlags()
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
 
-    def is_configured(self, ws, source_dir: Path, build_dir: Path):
+    def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, ws, source_dir: Path, build_dir: Path):
+    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
         assert not self.is_configured(ws, source_dir, build_dir)
 
         config_call = ["cmake"]
@@ -130,7 +130,7 @@ class CMakeConfig(BuildSystemConfig):
 
         workspace._run(config_call, env=env)
 
-    def build(self, ws, source_dir: Path, build_dir: Path, target=None):
+    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None):
         assert self.is_configured(ws, source_dir, build_dir)
 
         build_call = ["cmake"]
