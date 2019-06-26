@@ -94,7 +94,9 @@ class STP(Recipe):
         self.repository = Recipe.concretize_repo_uri(self.repository, ws)
 
         self.cmake = CMakeConfig(ws)
-        self.cmake.use_linker(Linker.LLD)
+        # STP may crash when linked with LLD right now, see:
+        # https://laboratory.comsys.rwth-aachen.de/symbiosys/projects/workspace_base/issues/34
+        self.cmake.use_linker(Linker.GOLD)
 
     def setup(self, ws: Workspace):
         src_dir = self.paths.src_dir
