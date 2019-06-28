@@ -27,7 +27,7 @@ class KLEE(Recipe):
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
                 'KLEE_RUNTIME_BUILD_TYPE': 'Release',
-                'ENABLE_TCMALLOC': False,
+                'ENABLE_TCMALLOC': True,
             },
             "c_flags": ["-fno-omit-frame-pointer"],
             "cxx_flags": ["-fno-omit-frame-pointer"],
@@ -35,7 +35,7 @@ class KLEE(Recipe):
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
-                'LEE_RUNTIME_BUILD_TYPE': 'Debug',
+                'KLEE_RUNTIME_BUILD_TYPE': 'Debug',
                 'ENABLE_TCMALLOC': True,
             },
             "c_flags": [],
