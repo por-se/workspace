@@ -7,7 +7,7 @@ branch = "Z3-4.8.5"
 profile = "rel+debinfo"
 
 [[MINISAT]]
-branch = "master"
+branch = "releases/2.2.1"
 
 [[STP]]
 branch = "2.3.3"
