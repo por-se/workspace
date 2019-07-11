@@ -3,7 +3,7 @@ branch = "llvmorg-8.0.0"
 profile = "debug"
 
 [[Z3]]
-branch = "z3-4.8.4"
+branch = "Z3-4.8.5"
 profile = "rel+debinfo"
 
 [[MINISAT]]
