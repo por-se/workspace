@@ -1,5 +1,5 @@
 [[LLVM]]
-branch = "llvmorg-8.0.0"
+branch = "llvmorg-8.0.1"
 profile = "release"
 
 [[Z3]]
