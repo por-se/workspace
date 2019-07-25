@@ -265,13 +265,14 @@ class Workspace:
             if venv_dir.exists():
                 shutil.rmtree(venv_dir)
 
-    def get_env(self, linker: Optional[build_systems.Linker]=None):
+    def get_env(self):
         env = os.environ.copy()
-        if linker is not None:
-            linker_dir = self.get_linker_dir(linker)
-            util.env_prepend_path(env, "PATH", linker_dir.resolve())
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
         return env
+
+    def add_linker_to_env(self, linker: build_systems.Linker, env):
+        linker_dir = self.get_linker_dir(linker)
+        util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
     def get_linker_dir(self, linker):
         if not linker in self._linker_dirs:

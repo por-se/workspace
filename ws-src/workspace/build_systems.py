@@ -100,8 +100,11 @@ class CMakeConfig(BuildSystemConfig):
     def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
+    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, env=None):
         assert not self.is_configured(ws, source_dir, build_dir)
+
+        if not env:
+            env = ws.get_env()
 
         config_call = ["cmake"]
         config_call += ["-S", str(source_dir),
@@ -127,12 +130,16 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        env = ws.get_env(linker=self.linker)
+        if self.linker:
+            ws.add_linker_to_env(self.linker, env)
 
         workspace._run(config_call, env=env)
 
-    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None):
+    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None, env=None):
         assert self.is_configured(ws, source_dir, build_dir)
+
+        if not env:
+            env = ws.get_env()
 
         build_call = ["cmake"]
         build_call += ["--build", str(build_dir.resolve())]
@@ -140,7 +147,8 @@ class CMakeConfig(BuildSystemConfig):
             build_call += ['--target', target]
         build_call += util.j_from_num_threads(ws.args.num_threads)
 
-        env = ws.get_env(linker=self.linker)
+        if self.linker:
+            ws.add_linker_to_env(self.linker, env)
 
         workspace._run(build_call, env=env)
 
@@ -181,4 +189,3 @@ class CMakeConfig(BuildSystemConfig):
             }
         else:
             raise NotImplementedError(str(self.linker))
-
