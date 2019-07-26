@@ -1,7 +1,7 @@
 variables:
   # When using dind, it's wise to use the overlayfs driver for
   # improved performance.
-  DOCKER_DRIVER: overlay2
+  DOCKER_DRIVER: btrfs
   DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
   # Release image names for builds on master:
   MASTER_RELEASE_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
