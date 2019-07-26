@@ -16,7 +16,7 @@ setup(
             "deactivate-cfg = workspace.bin.deactivate_cfg:main",
             "shell          = workspace.bin.shell:main",
             "run            = workspace.bin.run:main",
-            "list_options   = workspace.bin.list_options:main",
+            "list-options   = workspace.bin.list_options:main",
             "clean          = workspace.bin.clean:main",
 		],
 	},

@@ -4,88 +4,32 @@ from pathlib import Path, PurePosixPath
 from typing import Optional
 import shutil
 
-import schema, toml
-
 import workspace.util as util
 import workspace.build_systems as build_systems
-
+from workspace.settings import settings
 
 def _run(cmd, *args, **kwargs):
     kwargs.setdefault("check", True)
     subprocess.run(cmd, *args, **kwargs)
 
-
 class Workspace:
-    def __init__(self, ws_path):
-        if not ws_path:
-            raise RuntimeException("'ws_path' not set")
+    def __init__(self):
+        self.ws_path = settings.ws_path
 
-        # make sure we have a Path, Path(Path()) is just Path()
-        ws_path = Path(ws_path)
-        self.ws_path = ws_path
-        self._load_config()
-
-        self.ref_dir = Path(self._config['reference']) if 'reference' in self._config else None
         self.patch_dir = self.ws_path / 'ws-patch'
         self.build_dir = self.ws_path / '.build'
         self._bin_dir = self.ws_path / '.bin'
         self._linker_dirs = {}
         self.builds = []
-        self.git_clone_args = []
-
-    def _apply_config(self, config):
-        remove_duplicates = lambda lst: list(OrderedDict.fromkeys(lst))
-        is_valid_linker = lambda name: any(name == linker.value for linker in build_systems.Linker)
-
-        self._config = schema.Schema({
-            schema.Optional('reference'): schema.And(str, len),
-            schema.Optional('active configs', default=['release']): schema.Use(remove_duplicates, [schema.And(str, len)]),
-            schema.Optional('default_linker', default=build_systems.Linker.GOLD.value): is_valid_linker,
-            schema.Optional('repository_prefixes', default={
-                'github://': "ssh://git@github.com/",
-                'laboratory://': "ssh://git@laboratory.comsys.rwth-aachen.de/",
-            }): schema.Schema({str: str}),
-        }).validate(config)
-
-        if self._config != config:
-            self._store_config()
-
-    def _load_config(self):
-        try:
-            with open(self.ws_path/'.ws-config.toml') as f:
-                config = toml.load(f)
-        except FileNotFoundError:
-            config = {}
-        self._apply_config(config)
-
-    def _store_config(self):
-        with open(self.ws_path/'.ws-config.toml', 'wt') as f:
-            toml.dump(self._config, f)
-
-    def reset_config(self):
-        self._apply_config({})
-
-    def activate_config(self, config: str):
-        if not config in self._config['active configs']:
-            self._config['active configs'].append(config)
-            self._store_config()
-
-    def deactivate_config(self, config: str):
-        if config in self._config['active configs']:
-            self._config['active configs'].remove(config)
-            self._store_config()
-
-    def active_configs(self):
-        return self._config['active configs']
 
     def get_repository_prefixes(self):
-        return self._config['repository_prefixes']
+        return settings.uri_schemes.value
 
     def get_default_linker(self):
-        return build_systems.Linker(self._config['default_linker'])
+        return settings.default_linker.value
 
     def _check_create_ref_dir(self):
-        if self.ref_dir is None:
+        if settings.reference_repositories.value is None:
             ref_target_path = Path.home()/'.cache'/'reference-repos'
             input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
             if input_res:
@@ -95,17 +39,15 @@ class Workspace:
 
             os.makedirs(ref_target_path, exist_ok=True)
 
-            self.ref_dir = ref_target_path
-            self._config["reference"] = str(ref_target_path)
-            self._store_config()
+            settings.reference_repositories.update(str(ref_target_path))
 
-        if not self.ref_dir.is_dir():
-            if self.ref_dir.exists():
+        if not settings.reference_repositories.value.is_dir():
+            if settings.reference_repositories.value.exists():
                 raise RuntimeError(
-                    f"reference-repository path '{self.ref_dir}' exists but is not a directory"
+                    f"reference-repository path '{settings.reference_repositories.value}' exists but is not a directory"
                 )
             else:
-                os.makedirs(self.ref_dir.resolve(), exist_ok=True)
+                os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
 
     def set_builds(self, builds):
         self.builds = builds
@@ -132,9 +74,9 @@ class Workspace:
 
         def make_ref_path(git_path):
             name = re.sub("^https://|^ssh://([^/]+@)?|^[^/]+@", "", str(git_path))
-            name = re.sub("\.git$", "", name)
+            name = re.sub("\\.git$", "", name)
             name = re.sub(":", "/", name)
-            return self.ref_dir / "v1" / name
+            return settings.reference_repositories.value / "v1" / name
 
         def check_ref_dir(ref_dir):
             if not ref_dir.is_dir():
@@ -148,22 +90,22 @@ class Workspace:
         ref_path = make_ref_path(repo_uri)
 
         if check_ref_dir(ref_path):
-            _run(["git", "remote", "update", "--prune"], cwd=ref_path)
+            _run(["git", "-c", f'pack.threads={settings.jobs.value}', "remote", "update", "--prune"], cwd=ref_path)
         else:
             if ref_path.is_dir():
                 print(f"Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..", file=sys.stderr)
                 shutil.rmtree(ref_path)
             os.makedirs(ref_path, exist_ok=True)
-            _run(["git", "clone", "--mirror", repo_uri, ref_path])
-            _run(["git", "gc", "--aggressive"], cwd=ref_path)
+            _run(["git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--mirror", repo_uri, ref_path])
+            _run(["git", "-c", f'pack.threads={settings.jobs.value}', "gc", "--aggressive"], cwd=ref_path)
 
         clone_command = [
-            "git", "clone", "--reference", ref_path, repo_uri, target_path,
-            "--branch", branch
+            "git", "-c", f'pack.threads={settings.jobs.value}', "clone",
+            "--reference", ref_path, repo_uri, target_path, "--branch", branch
         ]
-        clone_command += self.git_clone_args
         if checkout == False or sparse is not None:
             clone_command += ["--no-checkout"]
+        clone_command += settings.x_git_clone.value
         _run(clone_command + clone_args)
 
         if sparse is not None:
@@ -223,9 +165,8 @@ class Workspace:
         for build in self.builds:
             build.initialize(self)
 
-    def setup(self, git_clone_args=[]):
+    def setup(self):
         self._initialize_builds()
-        self.git_clone_args = git_clone_args
 
         for build in self.builds:
             build.setup(self)
@@ -242,8 +183,6 @@ class Workspace:
 
         self.args = util.EmptyClass()
         self.args.num_threads = num_threads
-
-        self._check_create_ref_dir()
 
         for build in self.builds:
             build.build(self)
@@ -263,7 +202,7 @@ class Workspace:
             shutil.rmtree(self.build_dir)
 
         if dist_clean:
-            config_file = self.ws_path/".ws-config.toml"
+            config_file = self.ws_path/"ws-settings.toml"
             if config_file.exists():
                 os.remove(config_file)
 
@@ -286,7 +225,7 @@ class Workspace:
         linker_dir = self.get_linker_dir(linker)
         util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
-    def get_linker_dir(self, linker):
+    def get_linker_dir(self, linker: build_systems.Linker):
         if not linker in self._linker_dirs:
             linker_name = linker.value
             main_linker_dir = self._bin_dir / "linkers"

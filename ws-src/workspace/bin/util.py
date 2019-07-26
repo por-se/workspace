@@ -1,42 +1,17 @@
 import os
 from pathlib import Path
-
 import toml
+from typing import Set
 
 import workspace.recipes as recipes
+from workspace.settings import settings
 from workspace.workspace import Workspace
 
-def get_all_recipes():
-    # collect all true subclasses of 'recipes.Recipe' that are in 'recipes'
-    # https://stackoverflow.com/questions/7584418/iterate-the-classes-defined-in-a-module-imported-dynamically
-    return { name: cls for name, cls in recipes.__dict__.items()
-         if isinstance(cls, type) and issubclass(cls, recipes.Recipe)
-         and not cls == recipes.Recipe
-    }
+def ws_from_config_name(config_name: str) -> Workspace:
+    return ws_from_config_path(settings.ws_path/"ws-config"/f'{config_name}.toml')
 
-def available_configs(ws_path):
-    available_config_dir = ws_path / 'ws-config'
-    configs = available_config_dir.glob('*.toml')
-    return configs
-
-def resolve_or_default_configs(ws_path, given_configs):
-    available_config_dir = ws_path / 'ws-config'
-    if given_configs:
-        configs = [available_config_dir/f"{config}.toml" for config in given_configs]
-    else:
-        if "WS_ENV_CONFIGURATION" in os.environ:
-            configs = [
-                available_config_dir / f"{os.environ['WS_ENV_CONFIGURATION']}.toml"
-            ]
-        else:
-            configs = [available_config_dir/f"{config}.toml" for config in Workspace(ws_path).active_configs()]
-    return configs
-
-def ws_path_from_here():
-    return Path(__file__).resolve().parent.parent.parent.parent
-
-def ws_from_config(ws_path, config_path):
-    ws = Workspace(ws_path)
+def ws_from_config_path(config_path: Path) -> Workspace:
+    ws = Workspace()
 
     assert config_path, "no config given"
     assert config_path.exists(), f"given config doesn't exist ({config_path})"
@@ -45,23 +20,21 @@ def ws_from_config(ws_path, config_path):
     with open(config_path) as f:
         config = toml.load(f)
 
-    recipes_to_list = get_all_recipes()
-
     for (target, variations) in config.items():
-        if not target in recipes_to_list:
+        if not target in recipes.all:
             raise RuntimeError(
                 f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')"
             )
 
-        seen_names = set()
+        seen_names: Set[str] = set()
         for options in variations:
-            rep = recipes_to_list[target](**options)
+            rep = recipes.all[target](**options)
 
             if rep.name in seen_names:
                 raise RuntimeError(
                     f"two variations for target '{target}' with same name '{rep.name}' found"
                 )
-            seen_names.update({rep.name})
+            seen_names.add(rep.name)
 
             ws.builds += [rep]
 

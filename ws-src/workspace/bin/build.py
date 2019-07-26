@@ -1,40 +1,28 @@
-import multiprocessing
-from workspace.workspace import util
-from workspace.bin.util import available_configs, resolve_or_default_configs, ws_path_from_here, ws_from_config
+import argparse
+
+from workspace.settings import settings
+from workspace.bin.util import ws_from_config_name
 
 def main():
-    parser = util.EnvVarArgumentParser(
+    parser = argparse.ArgumentParser(
         description=
         "Build one or more configurations. By default, builds all configurations, or only the configuration of the current environment if one is active."
     )
 
-    choice_group = parser.add_mutually_exclusive_group()
-    choice_group.add_argument(
-        'configs',
-        metavar='CONFIG',
-        type=str,
-        nargs='*',
-        default=False,
-        help="The configurations to build")
-    choice_group.add_argument(
-        '-a',
-        '--all',
-        action='store_true',
-        help="build all available configs")
+    settings.configs.add_argument(parser)
+    settings.jobs.add_kwargument(parser)
 
-    parser.add_argument(
-        '-j',
-        '--num_threads',
-        type=int,
-        default=multiprocessing.cpu_count(),
-        help="specify number of threads to use in parallel")
+    settings.bind_args(parser)
 
-    args = parser.parse_args()
+    if len(settings.configs.value) == 0:
+        print("Warning: No configurations specified for build command.")
+    elif len(settings.configs.value) == 1:
+        print("Building", settings.configs.value[0])
+        print()
+    else:
+        print("Building", ", ".join(settings.configs.value[:-1]), "and", settings.configs.value[-1])
+        print()
 
-    ws_path = ws_path_from_here()
-
-    configs = available_configs(ws_path) if args.all else resolve_or_default_configs(ws_path, args.configs)
-
-    for config in configs:
-        ws = ws_from_config(ws_path, config)
-        ws.build(num_threads = args.num_threads)
+    for config in settings.configs.value:
+        ws = ws_from_config_name(config)
+        ws.build(num_threads = settings.jobs.value)

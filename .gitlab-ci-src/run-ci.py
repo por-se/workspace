@@ -124,11 +124,12 @@ def main():
         cache_arg = ["-v", f"{args.cache_dir}:/cache"] if args.cache_dir else []
         docker_run_and_commit(run_options = ccache_arg + cache_arg + gitlab_ci_token_args,
             command = ["/usr/bin/bash", "-c",
-             f"""\
-            export PATH=\"/usr/share/git/credential/netrc:$PATH\" &&
-            git config --global credential.helper 'netrc -k -v -f /ci-token-dir/netrc' &&
-            ./ws setup --git-clone-args=\"--dissociate --depth=1 -c pack.threads={args.num_threads}\" &&
-            ./ws build -j{args.num_threads} &&
+            f"""set -e ; set -u ; set -o pipefail
+            export PATH=\"/usr/share/git/credential/netrc:$PATH\"
+            export WS_JOBS={args.num_threads}
+            git config --global credential.helper 'netrc -k -v -f /ci-token-dir/netrc'
+            ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1
+            ./ws build
             git config --global --unset credential.helper"""])
 
         # check if this is supposed to be the release-image

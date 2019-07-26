@@ -1,5 +1,6 @@
 import argparse
-from workspace.bin.util import available_configs, resolve_or_default_configs, ws_path_from_here, ws_from_config
+from workspace.bin.util import ws_from_config_name
+from workspace.settings import settings
 
 def main():
     parser = argparse.ArgumentParser(
@@ -16,10 +17,6 @@ def main():
 
     args = parser.parse_args()
 
-    ws_path = ws_path_from_here()
-
-    configs = available_configs(ws_path)
-
-    for config in configs:
-        ws = ws_from_config(ws_path, config)
+    for config in settings.configs.available:
+        ws = ws_from_config_name(config)
         ws.clean(dist_clean=args.dist_clean)

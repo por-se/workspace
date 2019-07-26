@@ -1,22 +1,57 @@
 # Quickstart
 
 ```bash
-$ ./ws build                # build all active configurations
-$ ./ws activate-cfg debug   # activate the debug configuration
-$ ./ws deactivate-cfg debug # deactivate the debug configuration again
-$ ./ws build debug release  # build only debug and release
+$ ./ws build                # build configurations from environment or settings file (default: release)
+$ ./ws build debug release  # build debug and release
 $ ./ws shell debug          # start a shell with the environment (paths, etc.) set up for use of the debug configuration
+(debug) $ build             # build the configuration of the active shell (unless overwritten in settings file)
+(debug) $ klee --help       # run debug klee
+(debug) $ exit              # leave debug shell
 $ ./ws run debug gdb klee   # run a single command (`gdb klee`) with the environment (paths, etc.) set up for use of the debug configuration
+$ ./ws run gdb klee         # run a single command (`gdb klee`) with the environment (paths, etc.) set up for use of a configuration from environment or settings file (default: release)
 $ ./ws clean                # clean workspace
 $ ./ws clean --dist-clean   # completely remove all projects - WILL NUKE YOUR CHANGES!
 ```
 
+# Settings
+The workspace tools process three different kinds of settings, in the following order:
+1. Command line arguments if they are present
+2. Otherwise, environment variables beginning with `WS_`
+3. If no environment variables are set either, the `ws-settings.toml` settings file is used
+4. Some settings have additional defaults that are used as a last resort
+
+For example, the `jobs` setting, which controls the available parallelism, will perform the following checks:
+1. If a command line parameter (usually called `-j` or `--jobs`) is available, use that value
+2. If no command line parameter is available, check the environment variable `WS_JOBS`
+3. If no command line parameter is available and `WS_JOBS` is not set, check `ws-settings.toml` for the `jobs` key
+4. If all this failed, use the default value `0`
+(Note: If the `jobs` setting resolves to `0`, the number of CPUs is used.)
+
+The settings file can be (re-)created using `./ws reset-settings` or by running any command, when it does not exist.
+
+Note that the formats are obviously different depending on which method you choose. See [ws-doc/settings.md](ws-doc/settings.md) for a complete list of settings and how they can be passed.
+
 # Configurations
-Available configurations are stored as toml files in [`/ws-config/*.toml`](/ws-config/). Generally speaking, configurations are a list of individual builds that are processed in order.
+Available configurations are stored as toml files in [`ws-config/*.toml`](/ws-config/). Configurations are lists of parameterized recipes that are processed in order.
 
-To see all available recipes and their options, use `./ws list_options -c $CONFIG`.
+To see all available recipes and their options, use `./ws list-options -c $CONFIG all`.
 
-Configurations can also be *active*, which is achieved by running `./ws activate-cfg $CONFIG`. Similarly, to deactivate them, run `./ws deactivate-cfg $CONFIG`. For example, if you wish `debug` to be active, run `./ws activate-cfg debug`.
+## Setting Default Configuration(s)
+There are two settings that decide which configuration(s) are used in a command: `config` for operations on single configurations, such as `shell`, and `configs` for operations on (potentially) multiple configurations, such as `build`. The `configs` setting will default to the value of the `config` setting if it is not set.
+
+Note that the formats are obviously different depending on which method you choose. See [ws-doc/settings.md](ws-doc/settings.md) for a complete list of settings and how they can be passed.
+
+Examples:
+
+```bash
+$ ./ws build debug release                             # build debug and release configurations
+$ WS_CONFIGS=release,profile ./ws build debug release  # build debug and release configurations
+$ WS_CONFIGS=release,profile ./ws build                # build release and profile configurations
+$ vim ws-settings.toml                                 # set `config` to "profile"
+$ ./ws build                                           # build profile configuration
+$ vim ws-settings.toml                                 # set `configs` to ["debug", "sanitized"]
+$ ./ws build                                           # build debug and sanitized configurations
+```
 
 ## Default Configurations
 By default, 4 configurations are available:
@@ -80,18 +115,18 @@ $ ws-src/run_mypy.sh
 
 # Workspace Settings
 
-The workspace saves its settings in the `.ws-config.toml` file, located in the base directory of the workspace. This file is created upon starting ws for the first time and deleted on `./ws clean --dist-clean`. It stores the currently active building configurations as well as the reference repository path (if already set) and the pull URLs for git.
+The workspace saves its settings in the `ws-settings.toml` file, located in the base directory of the workspace. This file is created upon starting ws for the first time and deleted on `./ws clean --dist-clean`. It stores the currently active building configurations as well as the reference repository path (if already set) and the pull URLs for git.
 ## Pull via HTTPS or SSH
 If you prefer pulling the git sources via HTTPS, rather than SSH as by default, you have to modify the pull URLs via the configuration file.
 SSH clone (default):
 ```
-[repository_prefixes]
+[uri-schemes]
 "github://" = "ssh://git@github.com/"
 "laboratory://" = "ssh://git@laboratory.comsys.rwth-aachen.de/"
 ```
 HTTPS clone:
 ```
-[repository_prefixes]
+[uri-schemes]
 "github://" = "https://github.com/"
 "laboratory://" = "https://laboratory.comsys.rwth-aachen.de/"
 ```

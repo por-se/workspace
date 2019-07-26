@@ -14,4 +14,4 @@ COPY . /workspace
 
 WORKDIR /workspace
 
-RUN cp .gitlab-ci-src/.ws-config.toml .
+RUN cp .gitlab-ci-src/ws-settings.toml .

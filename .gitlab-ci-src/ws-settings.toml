@@ -1,6 +1,6 @@
-"active configs" = ["release",]
-reference = "/cache/reference-repos"
+config = "release"
+default-linker = "gold"
 
-[repository_prefixes]
+[uri-schemes]
 "github://" = "https://github.com/"
 "laboratory://" = "https://laboratory.comsys.rwth-aachen.de/"

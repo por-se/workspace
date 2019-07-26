@@ -7,11 +7,13 @@ name = "pypi"
 lit = ">=0.6.0"
 wllvm = "*"
 
+cached-property = "*"
 psutil = "*"
 schema = "*"
 shellingham = "*"
 tabulate = "*"
 toml = "*"
+vyper-config = "*"
 
 workspace = { path = "ws-src", editable = true }
 

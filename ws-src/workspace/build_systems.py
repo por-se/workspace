@@ -4,10 +4,6 @@ import shlex
 from typing import Dict, List, Optional, Sequence, Union
 from pathlib import Path
 
-import workspace.util as util
-import workspace.workspace as workspace
-
-
 def _quote_sequence(seq: Sequence[str]):
     for item in seq:
         yield shlex.quote(item)
@@ -17,6 +13,9 @@ class Linker(enum.Enum):
     LD = "ld"
     GOLD = "gold"
     LLD = "lld"
+
+import workspace.util as util
+import workspace.workspace as workspace
 
 class BuildSystemConfig(abc.ABC):
     def __init__(self, ws: "workspace.Workspace"):
