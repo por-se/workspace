@@ -126,7 +126,7 @@ class Workspace:
 
     def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
         if not branch:
-            raise ValueError("'branch' is required bot not given")
+            raise ValueError("'branch' is required but not given")
 
         self._check_create_ref_dir()
 
@@ -136,11 +136,23 @@ class Workspace:
             name = re.sub(":", "/", name)
             return self.ref_dir / "v1" / name
 
+        def check_ref_dir(ref_dir):
+            if not ref_dir.is_dir():
+                return False
+            try:
+                _run(["git", "fsck", "--root", "--no-full"], cwd=ref_dir)
+                return True
+            except subprocess.CalledProcessError:
+                return False
+
         ref_path = make_ref_path(repo_uri)
 
-        if ref_path.is_dir():
+        if check_ref_dir(ref_path):
             _run(["git", "remote", "update", "--prune"], cwd=ref_path)
         else:
+            if ref_path.is_dir():
+                print("Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..", file=sys.stderr)
+                shutil.rmtree(ref_path)
             os.makedirs(ref_path, exist_ok=True)
             _run(["git", "clone", "--mirror", repo_uri, ref_path])
             _run(["git", "gc", "--aggressive"], cwd=ref_path)
