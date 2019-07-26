@@ -1,6 +1,7 @@
 variables:
   # When using dind, it's wise to use the overlayfs driver for
   # improved performance.
+  # Using btrfs (at least) until https://github.com/docker/for-linux/issues/711 is fixed
   DOCKER_DRIVER: btrfs
   DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
   # Release image names for builds on master:
