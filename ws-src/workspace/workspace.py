@@ -151,7 +151,7 @@ class Workspace:
             _run(["git", "remote", "update", "--prune"], cwd=ref_path)
         else:
             if ref_path.is_dir():
-                print("Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..", file=sys.stderr)
+                print(f"Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..", file=sys.stderr)
                 shutil.rmtree(ref_path)
             os.makedirs(ref_path, exist_ok=True)
             _run(["git", "clone", "--mirror", repo_uri, ref_path])
