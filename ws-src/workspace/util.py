@@ -4,6 +4,7 @@ import argparse, os, sys, enum
 class EmptyClass:
     pass
 
+
 def j_from_num_threads(num_threads):
     if num_threads:
         return ["-j", str(num_threads)]

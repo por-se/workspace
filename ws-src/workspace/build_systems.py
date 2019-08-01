@@ -4,6 +4,7 @@ import shlex
 from typing import Dict, List, Optional, Sequence, Union
 from pathlib import Path
 
+
 def _quote_sequence(seq: Sequence[str]):
     for item in seq:
         yield shlex.quote(item)
@@ -14,8 +15,10 @@ class Linker(enum.Enum):
     GOLD = "gold"
     LLD = "lld"
 
+
 import workspace.util as util
 import workspace.workspace as workspace
+
 
 class BuildSystemConfig(abc.ABC):
     def __init__(self, ws: "workspace.Workspace"):
@@ -88,7 +91,6 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-
     def __init__(self, ws: "workspace.Workspace"):
         super().__init__(ws)
         self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
@@ -106,9 +108,7 @@ class CMakeConfig(BuildSystemConfig):
             env = ws.get_env()
 
         config_call = ["cmake"]
-        config_call += ["-S", str(source_dir),
-                        "-B", str(build_dir),
-                        "-G", "Ninja"]
+        config_call += ["-S", str(source_dir), "-B", str(build_dir), "-G", "Ninja"]
 
         cmake_flags = self._cmake_flags.copy()
         cmake_flags.illegal_flags = set()
@@ -120,9 +120,9 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
-        c_flags   = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(ws.ws_path.resolve())}=."]
+        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(ws.ws_path.resolve())}=."]
         cxx_flags = c_flags.copy()
-        c_flags   += self._extra_c_flags
+        c_flags += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
         cmake_flags.set("CMAKE_C_FLAGS", ' '.join(_quote_sequence(c_flags)), override=False)
         cmake_flags.set("CMAKE_CXX_FLAGS", ' '.join(_quote_sequence(cxx_flags)), override=False)

@@ -5,6 +5,7 @@ from workspace.bin.util import ws_from_config_name
 import workspace.recipes as recipes
 from workspace.settings import settings
 
+
 def main():
     parser = argparse.ArgumentParser(
         description=

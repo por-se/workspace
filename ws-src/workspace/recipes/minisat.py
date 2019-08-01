@@ -14,11 +14,7 @@ from pathlib import Path
 class MINISAT(Recipe):
     default_name = "minisat"
 
-    def __init__(self,
-                 branch=None,
-                 name=default_name,
-                 repository="github://stp/minisat.git",
-                 cmake_adjustments=[]):
+    def __init__(self, branch=None, name=default_name, repository="github://stp/minisat.git", cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.repository = repository
@@ -43,10 +39,7 @@ class MINISAT(Recipe):
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(
-                src_dir=ws.ws_path / self.name,
-                build_dir=ws.build_dir / f'{self.name}-{self.digest}'
-            )
+            paths = InternalPaths(src_dir=ws.ws_path / self.name, build_dir=ws.build_dir / f'{self.name}-{self.digest}')
             return paths
 
         self.digest = _compute_digest(self, ws)
@@ -58,10 +51,7 @@ class MINISAT(Recipe):
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch)
+            ws.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
             ws.apply_patches("minisat", self.paths.src_dir)
 
     def _configure(self, ws: Workspace):

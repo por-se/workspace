@@ -46,7 +46,6 @@ class LLVM(Recipe):
         },
     }
 
-
     def __init__(self,
                  profile,
                  branch=None,
@@ -83,19 +82,17 @@ class LLVM(Recipe):
                 build_dir: Path
                 tablegen: Optional[Path] = None
 
-            paths = InternalPaths(
-                src_dir=ws.ws_path / self.name,
-                build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            )
+            paths = InternalPaths(src_dir=ws.ws_path / self.name,
+                                  build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths
 
         if self.profile != "release":
-            self._release_build = LLVM(profile = "release",
-                                       branch = self.branch,
-                                       repository = self.repository,
-                                       name = self.name,
-                                       cmake_adjustments = [])
+            self._release_build = LLVM(profile="release",
+                                       branch=self.branch,
+                                       repository=self.repository,
+                                       name=self.name,
+                                       cmake_adjustments=[])
             self._release_build.initialize(ws)
 
         self.digest = _compute_digest(self, ws)
@@ -110,11 +107,10 @@ class LLVM(Recipe):
 
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch,
-                sparse=["/llvm", "/clang"])
+            ws.reference_clone(self.repository,
+                               target_path=self.paths.src_dir,
+                               branch=self.branch,
+                               sparse=["/llvm", "/clang"])
             ws.apply_patches("llvm", self.paths.src_dir)
 
     def _configure(self, ws: Workspace):
@@ -132,7 +128,8 @@ class LLVM(Recipe):
             self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
 
         avail_mem = psutil.virtual_memory().available
-        if self.profiles[self.profile]["has_debug_info"] and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
+        if self.profiles[self.profile][
+                "has_debug_info"] and avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
             print(
                 f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
             )

@@ -3,6 +3,7 @@ import argparse
 from workspace.settings import settings
 from workspace.bin.util import ws_from_config_name
 
+
 def main():
     parser = argparse.ArgumentParser(
         description=
@@ -25,4 +26,4 @@ def main():
 
     for config in settings.configs.value:
         ws = ws_from_config_name(config)
-        ws.build(num_threads = settings.jobs.value)
+        ws.build(num_threads=settings.jobs.value)

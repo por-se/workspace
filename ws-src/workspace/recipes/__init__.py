@@ -9,7 +9,7 @@ from .klee import KLEE
 from typing import Type, Dict
 
 all: Dict[str, Type[Recipe]] = {
-    name: cls for name, cls in globals().items()
-    if isinstance(cls, type) and issubclass(cls, Recipe) and not cls == Recipe
+    name: cls
+    for name, cls in globals().items() if isinstance(cls, type) and issubclass(cls, Recipe) and not cls == Recipe
 }
 """all true subclasses of 'Recipe' that are in the current module"""

@@ -8,9 +8,11 @@ import workspace.util as util
 import workspace.build_systems as build_systems
 from workspace.settings import settings
 
+
 def _run(cmd, *args, **kwargs):
     kwargs.setdefault("check", True)
     subprocess.run(cmd, *args, **kwargs)
+
 
 class Workspace:
     def __init__(self):
@@ -30,7 +32,7 @@ class Workspace:
 
     def _check_create_ref_dir(self):
         if settings.reference_repositories.value is None:
-            ref_target_path = Path.home()/'.cache'/'reference-repos'
+            ref_target_path = Path.home() / '.cache' / 'reference-repos'
             input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
             if input_res:
                 ref_target_path = Path(input_res)
@@ -93,15 +95,17 @@ class Workspace:
             _run(["git", "-c", f'pack.threads={settings.jobs.value}', "remote", "update", "--prune"], cwd=ref_path)
         else:
             if ref_path.is_dir():
-                print(f"Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..", file=sys.stderr)
+                print(
+                    f"Directory is not a valid git repository ('{ref_path}'), deleting and performing a fresh clone..",
+                    file=sys.stderr)
                 shutil.rmtree(ref_path)
             os.makedirs(ref_path, exist_ok=True)
             _run(["git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--mirror", repo_uri, ref_path])
             _run(["git", "-c", f'pack.threads={settings.jobs.value}', "gc", "--aggressive"], cwd=ref_path)
 
         clone_command = [
-            "git", "-c", f'pack.threads={settings.jobs.value}', "clone",
-            "--reference", ref_path, repo_uri, target_path, "--branch", branch
+            "git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--reference", ref_path, repo_uri, target_path,
+            "--branch", branch
         ]
         if checkout == False or sparse is not None:
             clone_command += ["--no-checkout"]
@@ -127,14 +131,14 @@ class Workspace:
 
         git_exclude_path = git_info_dir / "exclude"
 
-        has_line_end = True # empty file
+        has_line_end = True  # empty file
         if git_exclude_path.is_file():
             with open(git_exclude_path, "rt") as f:
                 lines = f.read()
                 has_line_end = (len(lines) == 0 or lines[-1] == "\n")
                 for line in lines.splitlines():
                     if line == f'/{path}':
-                        return # path already excluded
+                        return  # path already excluded
 
         with open(git_info_dir / "exclude", "at") as f:
             if not has_line_end:
@@ -147,7 +151,7 @@ class Workspace:
 
         git_exclude_path = self.ws_path / ".git" / "info" / "exclude"
         if not git_exclude_path.is_file():
-            return # nothing to un-exclude
+            return  # nothing to un-exclude
 
         lines = ""
         with open(git_exclude_path, "rt") as f:
@@ -202,17 +206,17 @@ class Workspace:
             shutil.rmtree(self.build_dir)
 
         if dist_clean:
-            config_file = self.ws_path/"ws-settings.toml"
+            config_file = self.ws_path / "ws-settings.toml"
             if config_file.exists():
                 os.remove(config_file)
 
-            pipfile = self.ws_path/"Pipfile.lock"
+            pipfile = self.ws_path / "Pipfile.lock"
             if pipfile.exists():
                 os.remove(pipfile)
-            egg_dir = self.ws_path/"ws-src"/"workspace.egg-info"
+            egg_dir = self.ws_path / "ws-src" / "workspace.egg-info"
             if egg_dir.exists():
                 shutil.rmtree(egg_dir)
-            venv_dir = self.ws_path/".venv"
+            venv_dir = self.ws_path / ".venv"
             if venv_dir.exists():
                 shutil.rmtree(venv_dir)
 

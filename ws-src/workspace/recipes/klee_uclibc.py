@@ -42,10 +42,7 @@ class KLEE_UCLIBC(Recipe):
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(
-                src_dir=ws.ws_path / self.name,
-                build_dir=ws.build_dir / f'{self.name}-{self.digest}'
-            )
+            paths = InternalPaths(src_dir=ws.ws_path / self.name, build_dir=ws.build_dir / f'{self.name}-{self.digest}')
             return paths
 
         self.digest = _compute_digest(self, ws)
@@ -55,10 +52,7 @@ class KLEE_UCLIBC(Recipe):
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch)
+            ws.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
             ws.apply_patches("klee-uclibc", self.paths.src_dir)
 
     def build(self, ws: Workspace):
@@ -70,10 +64,9 @@ class KLEE_UCLIBC(Recipe):
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
 
-            _run([
-                "./configure", "--make-llvm-lib",
-                f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"
-            ], cwd=self.paths.build_dir, env=env)
+            _run(["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],
+                 cwd=self.paths.build_dir,
+                 env=env)
 
         _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
 

@@ -2,18 +2,16 @@ import argparse
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
+
 def main():
     parser = argparse.ArgumentParser(
         description=
-        "Clean the workspace. Removes all build artefacts, to ensure that the next build starts from scratch."
-    )
+        "Clean the workspace. Removes all build artefacts, to ensure that the next build starts from scratch.")
 
-    parser.add_argument(
-        "--dist-clean",
-        action='store_true',
-        default=False,
-        help="Clean fully, e.g., also remove all cloned repositories, etc."
-    )
+    parser.add_argument("--dist-clean",
+                        action='store_true',
+                        default=False,
+                        help="Clean fully, e.g., also remove all cloned repositories, etc.")
 
     args = parser.parse_args()
 

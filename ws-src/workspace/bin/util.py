@@ -7,8 +7,10 @@ import workspace.recipes as recipes
 from workspace.settings import settings
 from workspace.workspace import Workspace
 
+
 def ws_from_config_name(config_name: str) -> Workspace:
-    return ws_from_config_path(settings.ws_path/"ws-config"/f'{config_name}.toml')
+    return ws_from_config_path(settings.ws_path / "ws-config" / f'{config_name}.toml')
+
 
 def ws_from_config_path(config_path: Path) -> Workspace:
     ws = Workspace()
@@ -23,17 +25,14 @@ def ws_from_config_path(config_path: Path) -> Workspace:
     for (target, variations) in config.items():
         if not target in recipes.all:
             raise RuntimeError(
-                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')"
-            )
+                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')")
 
         seen_names: Set[str] = set()
         for options in variations:
             rep = recipes.all[target](**options)
 
             if rep.name in seen_names:
-                raise RuntimeError(
-                    f"two variations for target '{target}' with same name '{rep.name}' found"
-                )
+                raise RuntimeError(f"two variations for target '{target}' with same name '{rep.name}' found")
             seen_names.add(rep.name)
 
             ws.builds += [rep]

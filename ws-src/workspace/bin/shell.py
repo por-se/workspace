@@ -8,10 +8,10 @@ import shellingham
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Activates a shell with an environment suitable for the given configuration."
-    )
+        description="Activates a shell with an environment suitable for the given configuration.")
 
     settings.config.add_argument(parser)
     settings.shell.add_kwargument(parser)

@@ -90,8 +90,7 @@ class KLEE(Recipe):
             stp = ws.find_build(build_name=self.stp_name, before=self)
             z3 = ws.find_build(build_name=self.z3_name, before=self)
             llvm = ws.find_build(build_name=self.llvm_name, before=self)
-            klee_uclibc = ws.find_build(
-                build_name=self.klee_uclibc_name, before=self)
+            klee_uclibc = ws.find_build(build_name=self.klee_uclibc_name, before=self)
 
             assert stp, "klee requires stp"
             assert z3, "klee requires z3"
@@ -111,10 +110,8 @@ class KLEE(Recipe):
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(
-                src_dir=ws.ws_path / self.name,
-                build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            )
+            paths = InternalPaths(src_dir=ws.ws_path / self.name,
+                                  build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             return paths
 
         self.digest = _compute_digest(self, ws)
@@ -126,10 +123,7 @@ class KLEE(Recipe):
     def setup(self, ws: Workspace):
         if not self.paths.src_dir.is_dir():
             ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch)
+            ws.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
             ws.apply_patches("klee", self.paths.src_dir)
 
     def _configure(self, ws: Workspace):

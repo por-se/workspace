@@ -83,10 +83,8 @@ class STP(Recipe):
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(
-                src_dir=ws.ws_path / self.name,
-                build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            )
+            paths = InternalPaths(src_dir=ws.ws_path / self.name,
+                                  build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             return paths
 
         self.digest = _compute_digest(self, ws)
@@ -104,10 +102,7 @@ class STP(Recipe):
         src_dir = self.paths.src_dir
         if not src_dir.is_dir():
             ws.git_add_exclude_path(src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=src_dir,
-                branch=self.branch)
+            ws.reference_clone(self.repository, target_path=src_dir, branch=self.branch)
             ws.apply_patches("stp", src_dir)
 
     def _configure(self, ws: Workspace):

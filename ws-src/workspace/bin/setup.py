@@ -3,10 +3,9 @@ import argparse
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Setup (usually download sources) one or more configurations."
-    )
+    parser = argparse.ArgumentParser(description="Setup (usually download sources) one or more configurations.")
 
     settings.configs.add_argument(parser)
     settings.default_linker.add_kwargument(parser)

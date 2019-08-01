@@ -5,6 +5,7 @@ from enum import Enum
 
 from workspace.workspace import Workspace
 
+
 class Recipe(abc.ABC):
     def __init__(self, name):
         self.name = name
@@ -32,10 +33,10 @@ class Recipe(abc.ABC):
     @classmethod
     def list_options(cls, instance=None):
         initf = inspect.getargspec(cls.__init__)
-        defaults_start = len(initf.args) - len (initf.defaults)
+        defaults_start = len(initf.args) - len(initf.defaults)
         print(f"Description:\n  {cls.__init__.__doc__}")
         print("Available options:")
-        for i in range(1, len(initf.args)): # skip first entry which is always 'self
+        for i in range(1, len(initf.args)):  # skip first entry which is always 'self
             argname = initf.args[i]
             set_value = None
 
@@ -46,7 +47,7 @@ class Recipe(abc.ABC):
                 s += f": '{instance.__dict__[argname]}'"
 
             if i >= defaults_start:
-                def_value = initf.defaults[i-defaults_start]
+                def_value = initf.defaults[i - defaults_start]
                 s += f" (default: '{def_value}')"
             else:
                 s += " (required)"
@@ -55,8 +56,7 @@ class Recipe(abc.ABC):
 
     @staticmethod
     def concretize_repo_uri(repo_uri, ws: Workspace):
-        for (prefix,replacement) in ws.get_repository_prefixes().items():
+        for (prefix, replacement) in ws.get_repository_prefixes().items():
             if repo_uri.startswith(prefix):
                 repo_uri = replacement + repo_uri[len(prefix):]
         return repo_uri
-
