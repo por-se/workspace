@@ -19,6 +19,7 @@ workspace = { path = "ws-src", editable = true }
 
 [dev-packages]
 mypy = "*"
+yapf = "*"
 
 [requires]
 python_version = "3.7"
