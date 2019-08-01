@@ -11,18 +11,17 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 	[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
-cd "$DIR"
+cd "$DIR"/..
 
-../ws sh -c "
-	set -u
-	set -e
-	set -o pipefail
-
-	if ! type mypy >/dev/null 2>&1 ; then
-	  echo >&2 'error: mypy is not installed. Install it with \"pipenv install --dev\".'
-	  exit 1
+export PIPENV_VENV_IN_PROJECT=1
+if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] || [[ ! -x .venv/bin/mypy ]] ; then
+	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
+		# https://github.com/pypa/pipenv/issues/1744
+		>&2 echo "Performing workaround for Debian"
+		pushd ws-src
+		pipenv run python setup.py develop
+		popd
 	fi
-
-	cd ws-src/
-	mypy --config-file mypy.ini workspace/
-"
+	pipenv update -d
+fi
+exec pipenv run sh -c "cd ws-src/ && exec mypy --config-file mypy.ini workspace/"
