@@ -9,8 +9,5 @@ __pycache__
 /.build
 /ws-settings.toml
 
-# editor files
-.vscode
-
 # OS garbage
 .DS_Store
