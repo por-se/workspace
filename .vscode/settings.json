@@ -13,4 +13,16 @@
 	"python.formatting.yapfArgs": [
 		"--style", "${workspaceFolder}/ws-src/yapf.ini",
 	],
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true,
+		"**/node_modules/**": true,
+		"**/.mypy_cache/**": true,
+		"**/.venv/**": true,
+	},
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/bower_components": true,
+		"**/.mypy_cache": true,
+	}
 }
