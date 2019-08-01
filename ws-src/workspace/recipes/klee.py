@@ -165,9 +165,7 @@ class KLEE(Recipe):
         self.cmake.set_flag('LIT_TOOL', lit)
 
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
-        # Waiting for this to be merged:
-        # https://github.com/klee/klee/pull/1005
-        self.cmake.set_flag('ENABLE_UNIT_TESTS', False)
+        self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
 
         for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
             self.cmake.set_flag(name, value)
