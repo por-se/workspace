@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from pathlib import Path
 import shutil
 
@@ -29,16 +30,16 @@ Example (for using a value from the settings file): ./ws run which klee''',
     else:
         command = sys.argv[2:]
 
-    if len(command) > 0 and command[0] == "--":
+    if command and command[0] == "--":
         command = command[1:]
 
-    if len(command) == 0:
+    if not command:
         print('No command specified')
         sys.exit(1)
 
-    ws = ws_from_config_name(config_name)
-    env = ws.get_env()
-    ws.add_to_env(env)
+    workspace = ws_from_config_name(config_name)
+    env = workspace.get_env()
+    workspace.add_to_env(env)
     env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     env["WS_CONFIG"] = config_name
     env["WS_CONFIGS"] = config_name

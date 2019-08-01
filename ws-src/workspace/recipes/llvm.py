@@ -1,17 +1,19 @@
-import os, shutil, psutil
 from dataclasses import dataclass
 from hashlib import blake2s
+from pathlib import Path
+import shutil
 from typing import Dict, List, Optional, cast
 
-from workspace.workspace import Workspace, _run
-from workspace.build_systems import CMakeConfig, Linker
-from workspace.util import j_from_num_threads, env_prepend_path
+import psutil
+
+from workspace.workspace import Workspace
+from workspace.build_systems import CMakeConfig
+from workspace.settings import settings
+from workspace.util import env_prepend_path
 from . import Recipe
 
-from pathlib import Path
 
-
-class LLVM(Recipe):
+class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     default_name = "llvm"
     profiles = {
         "release": {
@@ -46,12 +48,13 @@ class LLVM(Recipe):
         },
     }
 
-    def __init__(self,
-                 profile,
-                 branch=None,
-                 repository="github://llvm/llvm-project.git",
-                 name=default_name,
-                 cmake_adjustments=[]):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            profile,
+            branch=None,
+            repository="github://llvm/llvm-project.git",
+            name=default_name,
+            cmake_adjustments=[]):
         """Build LLVM."""
         super().__init__(name)
         self.branch = branch
@@ -59,10 +62,16 @@ class LLVM(Recipe):
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
+        self._release_build: Optional[LLVM] = None
+        self.cmake = None
+        self.paths = None
+
         assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
-    def initialize(self, ws: Workspace):
-        def _compute_digest(self, ws: Workspace):
+    def initialize(self, workspace: Workspace):
+        def _compute_digest(self, workspace: Workspace):
+            del workspace  # unused parameter
+
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
@@ -75,45 +84,46 @@ class LLVM(Recipe):
 
             return digest.hexdigest()[:12]
 
-        def _make_internal_paths(self, ws: Workspace):
+        def _make_internal_paths(self, workspace: Workspace):
             @dataclass
             class InternalPaths:
                 src_dir: Path
                 build_dir: Path
                 tablegen: Optional[Path] = None
 
-            paths = InternalPaths(src_dir=ws.ws_path / self.name,
-                                  build_dir=ws.build_dir / f'{self.name}-{self.profile}-{self.digest}')
+            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths
 
-        if self.profile != "release":
+        if not self.profiles[self.profile]["is_performance_build"]:
             self._release_build = LLVM(profile="release",
                                        branch=self.branch,
                                        repository=self.repository,
                                        name=self.name,
                                        cmake_adjustments=[])
-            self._release_build.initialize(ws)
+            self._release_build.initialize(workspace)
 
-        self.digest = _compute_digest(self, ws)
-        self.paths = _make_internal_paths(self, ws)
-        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.digest = _compute_digest(self, workspace)
+        self.paths = _make_internal_paths(self, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
 
-        self.cmake = CMakeConfig(ws)
+        self.cmake = CMakeConfig(workspace)
 
-    def setup(self, ws: Workspace):
-        if self.profile != "release":
-            self._release_build.setup(ws)
+    def setup(self, workspace: Workspace):
+        if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
+            self._release_build.setup(workspace)
 
         if not self.paths.src_dir.is_dir():
-            ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(self.repository,
-                               target_path=self.paths.src_dir,
-                               branch=self.branch,
-                               sparse=["/llvm", "/clang"])
-            ws.apply_patches("llvm", self.paths.src_dir)
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository,
+                                      target_path=self.paths.src_dir,
+                                      branch=self.branch,
+                                      sparse=["/llvm", "/clang"])
+            workspace.apply_patches("llvm", self.paths.src_dir)
 
-    def _configure(self, ws: Workspace):
+    def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
         c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
         self.cmake.set_extra_c_flags(c_flags)
@@ -125,11 +135,12 @@ class LLVM(Recipe):
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
 
         if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
             self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
 
         avail_mem = psutil.virtual_memory().available
         if self.profiles[self.profile][
-                "has_debug_info"] and avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
+                "has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
             print(
                 f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
             )
@@ -139,21 +150,25 @@ class LLVM(Recipe):
             self.cmake.set_flag(name, value)
         self.cmake.adjust_flags(self.cmake_adjustments)
 
-        self.cmake.configure(ws, self.paths.src_dir / "llvm", self.paths.build_dir)
+        self.cmake.configure(workspace, self.paths.src_dir / "llvm", self.paths.build_dir)
 
-    def build(self, ws: Workspace, target=None):
-        if self.profile != "release":
-            self._release_build.build(ws, target='bin/llvm-tblgen')
+    def build_target(self, workspace: Workspace, target):
+        if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
+            self._release_build.build_target(workspace, target='bin/llvm-tblgen')
 
-        if not self.cmake.is_configured(ws, self.paths.src_dir / "llvm", self.paths.build_dir):
-            self._configure(ws)
-        self.cmake.build(ws, self.paths.src_dir / "llvm", self.paths.build_dir, target=target)
+        if not self.cmake.is_configured(workspace, self.paths.src_dir / "llvm", self.paths.build_dir):
+            self._configure(workspace)
+        self.cmake.build(workspace, self.paths.src_dir / "llvm", self.paths.build_dir, target=target)
 
-    def clean(self, ws: Workspace):
-        if ws.args.dist_clean:
+    def build(self, workspace: Workspace):
+        self.build_target(workspace, target=None)
+
+    def clean(self, workspace: Workspace):
+        if workspace.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
-            ws.git_remove_exclude_path(self.paths.src_dir)
+            workspace.git_remove_exclude_path(self.paths.src_dir)
 
-    def add_to_env(self, env, ws: Workspace):
+    def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")

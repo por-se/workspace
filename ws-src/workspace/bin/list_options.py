@@ -1,4 +1,3 @@
-import os
 import argparse
 
 from workspace.bin.util import ws_from_config_name
@@ -16,13 +15,13 @@ def main():
     settings.recipes.add_argument(parser)
     settings.bind_args(parser)
 
-    recipes_to_list = recipes.all
+    recipes_to_list = recipes.ALL
     if settings.recipes.value:
         recipes_to_list = {k: recipes_to_list[k] for k in settings.recipes.value}
 
     if settings.config.value:
-        ws = ws_from_config_name(settings.config.value)
-        for rep in ws.builds:
+        workspace = ws_from_config_name(settings.config.value)
+        for rep in workspace.builds:
             clas = rep.__class__
             name = clas.__name__
             if not name in recipes_to_list:

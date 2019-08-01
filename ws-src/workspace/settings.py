@@ -1,123 +1,132 @@
 from argparse import ArgumentParser
-from cached_property import cached_property
 import multiprocessing
 from pathlib import Path
+from typing import Optional, List, Dict
+
+from cached_property import cached_property
 import toml
-from typing import Optional, Union, List, Dict
 from vyper import v
+
+from workspace.build_systems import Linker
 
 
 class _Settings:
     # get the workspace path
-    ws_path = Path(__file__).resolve().parent.parent.parent
+    ws_path: Path = Path(__file__).resolve().parent.parent.parent
 
-    def bind_args(self, argparse: ArgumentParser) -> None:
+    @staticmethod
+    def bind_args(argparse: ArgumentParser) -> None:
         v.bind_args(argparse)
 
+    # cached_property requires self, but pylint does not notice it
+    # pylint: disable=no-self-use
+
     @cached_property
-    def config(self):
+    def config(self) -> "_Config":
         return _Config()
 
     @cached_property
-    def configs(self):
+    def configs(self) -> "_Configs":
         return _Configs()
 
     @cached_property
-    def default_linker(self):
+    def default_linker(self) -> "_DefaultLinker":
         return _DefaultLinker()
 
     @cached_property
-    def jobs(self):
+    def jobs(self) -> "_Jobs":
         return _Jobs()
 
     @cached_property
-    def recipes(self):
+    def recipes(self) -> "_Recipes":
         return _Recipes()
 
     @cached_property
-    def reference_repositories(self):
+    def reference_repositories(self) -> "_ReferenceRepositories":
         return _ReferenceRepositories()
 
     @cached_property
-    def uri_schemes(self):
+    def uri_schemes(self) -> "_UriSchemes":
         return _UriSchemes()
 
     @cached_property
-    def shell(self):
+    def shell(self) -> "_Shell":
         return _Shell()
 
     @cached_property
-    def x_git_clone(self):
+    def x_git_clone(self) -> "_XGitClone":
         return _XGitClone()
 
+    # pylint: enable=no-self-use
 
-settings = _Settings()
+
+settings = _Settings()  # pylint: disable=invalid-name
 
 #################################################################################
 
-available_configurations = [path.stem for path in (settings.ws_path / 'ws-config').glob('*.toml')]
+AVAILABLE_CONFIGURATIONS = [path.stem for path in (settings.ws_path / 'ws-config').glob('*.toml')]
 
 
 class _Config:
     """The configuration on which a command is to work on (name of config as string)"""
 
     name = "config"
-    available = available_configurations
-    choices = available_configurations
+    available = AVAILABLE_CONFIGURATIONS
+    choices = AVAILABLE_CONFIGURATIONS
 
-    def add_argument(self, argparser: ArgumentParser, help: str = f'The chosen configuration'):
+    def add_argument(self, argparser: ArgumentParser, help_message: str = f'The chosen configuration'):
         name = self.name
-        NAME = self.name.upper().replace("-", "_")
-        return argparser.add_argument(name,
-                                      metavar=NAME,
-                                      nargs="?",
-                                      choices=self.choices,
-                                      help=f'{help} (choices: {", ".join(self.choices)}) (env: WS_{NAME})')
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument(
+            name,
+            metavar=uppercase_name,
+            nargs="?",
+            choices=self.choices,
+            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
-    def add_kwargument(self, argparser: ArgumentParser, help: str = f'The chosen configuration'):
-        NAME = self.name.upper().replace("-", "_")
-        return argparser.add_argument("-c",
-                                      "--config",
-                                      metavar=NAME,
-                                      choices=self.choices,
-                                      help=f'{help} (choices: {", ".join(self.choices)}) (env: WS_{NAME})')
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = f'The chosen configuration'):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument(
+            "-c",
+            "--config",
+            metavar=uppercase_name,
+            choices=self.choices,
+            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     def _understand_value(self, value: str) -> str:
         if value in self.choices:
             return value
-        else:
-            raise Exception(
-                f'"{value}" is not a valid configuration (encountered while parsing the "{self.name}" setting)')
+        raise Exception(f'"{value}" is not a valid configuration (encountered while parsing the "{self.name}" setting)')
 
     @cached_property
     def value(self) -> Optional[str]:
         value = get(self.name)
         if value is None:
             return value
-        elif isinstance(value, str):
+        if isinstance(value, str):
             return self._understand_value(value)
-        else:
-            return self._understand_value(str(value))
+        return self._understand_value(str(value))
 
 
 class _Configs:
     """The set of configurations a command is to work on (list of configuration names as strings with the additional choice "all" resolved)"""
 
     name = "configs"
-    available = available_configurations
-    choices = ["all"] + available_configurations
+    available = AVAILABLE_CONFIGURATIONS
+    choices = ["all"] + AVAILABLE_CONFIGURATIONS
 
-    def add_argument(self, argparser: ArgumentParser, help: str = f'The set of chosen configurations'):
+    def add_argument(self, argparser: ArgumentParser, help_message: str = f'The set of chosen configurations'):
         name = self.name
-        NAME = self.name.upper().replace("-", "_")
+        uppercase_name = self.name.upper().replace("-", "_")
         # We cannot actually use the choices here, as it effectively turns the nargs="*" into
         # nargs="+", thus disabling the possibility to set this setting from other sources.
         # The default needs to be set to the empty list explicitly, or it will not be seen as "unset".
-        return argparser.add_argument(name,
-                                      metavar=NAME,
-                                      nargs="*",
-                                      default=[],
-                                      help=f'{help} (choices: {", ".join(self.choices)}) (env: WS_{NAME})')
+        return argparser.add_argument(
+            name,
+            metavar=uppercase_name,
+            nargs="*",
+            default=[],
+            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     def _understand_value(self, value: List[str]) -> List[str]:
         value_set = set(value)
@@ -136,15 +145,10 @@ class _Configs:
             value = settings.config.value
             if value is None:
                 return []
-            else:
-                return [value]
-        elif isinstance(value, list):
+            return [value]
+        if isinstance(value, list):
             return self._understand_value(value)
-        else:
-            return self._understand_value(str(value).split(","))
-
-
-from workspace.build_systems import Linker
+        return self._understand_value(str(value).split(","))
 
 
 class _DefaultLinker:
@@ -153,12 +157,13 @@ class _DefaultLinker:
     name = "default-linker"
     choices = [str(linker.value) for linker in Linker]
 
-    def add_kwargument(self, argparser: ArgumentParser, help: str = f'The default linker'):
-        NAME = self.name.upper().replace("-", "_")
-        return argparser.add_argument('--default-linker',
-                                      choices=self.choices,
-                                      metavar=NAME,
-                                      help=f'{help} (choices: {", ".join(self.choices)}) (env: WS_{NAME})')
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = f'The default linker'):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument(
+            '--default-linker',
+            choices=self.choices,
+            metavar=uppercase_name,
+            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> Linker:
@@ -174,9 +179,12 @@ class _Jobs:
 
     name = "jobs"
 
-    def add_kwargument(self, argparser: ArgumentParser, help: str = "The number of parallel jobs to start"):
-        NAME = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-j', '--jobs', metavar=NAME, help=f'{help} (env: WS_{NAME})')
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "The number of parallel jobs to start"):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument('-j',
+                                      '--jobs',
+                                      metavar=uppercase_name,
+                                      help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> int:
@@ -201,19 +209,20 @@ class _Recipes:
 
     def __init__(self):
         import workspace.recipes
-        self.choices = ["all"] + [name for name in workspace.recipes.all]
+        self.choices = ["all"] + [name for name in workspace.recipes.ALL]
 
-    def add_argument(self, argparser: ArgumentParser, help: str = f'The set of chosen recipes'):
+    def add_argument(self, argparser: ArgumentParser, help_message: str = f'The set of chosen recipes'):
         name = self.name
-        NAME = self.name.upper().replace("-", "_")
+        uppercase_name = self.name.upper().replace("-", "_")
         # We cannot actually use the choices here, as it effectively turns the nargs="*" into
         # nargs="+", thus disabling the possibility to set this setting from other sources.
         # The default needs to be set to the empty list explicitly, or it will not be seen as "unset".
-        return argparser.add_argument(name,
-                                      metavar=NAME,
-                                      nargs="*",
-                                      default=[],
-                                      help=f'{help} (choices: {", ".join(self.choices)}) (env: WS_{NAME})')
+        return argparser.add_argument(
+            name,
+            metavar=uppercase_name,
+            nargs="*",
+            default=[],
+            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     def _understand_value(self, value: List[str]) -> List[str]:
         value_set = set(value)
@@ -230,10 +239,9 @@ class _Recipes:
         value = get(self.name)
         if value is None or value == []:
             return []
-        elif isinstance(value, list):
+        if isinstance(value, list):
             return self._understand_value(value)
-        else:
-            return self._understand_value(str(value).split(","))
+        return self._understand_value(str(value).split(","))
 
 
 class _ReferenceRepositories:
@@ -241,10 +249,13 @@ class _ReferenceRepositories:
 
     name = "reference-repositories"
 
-    def add_kwargument(self, argparser: ArgumentParser,
-                       help: str = "The location of the reference repositories") -> None:
-        NAME = self.name.upper().replace("-", "_")
-        argparser.add_argument('--reference-repositories', metavar=NAME, help=f'{help} (env: WS_{NAME})')
+    def add_kwargument(self,
+                       argparser: ArgumentParser,
+                       help_message: str = "The location of the reference repositories") -> None:
+        uppercase_name = self.name.upper().replace("-", "_")
+        argparser.add_argument('--reference-repositories',
+                               metavar=uppercase_name,
+                               help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> Optional[Path]:
@@ -255,18 +266,18 @@ class _ReferenceRepositories:
         return Path(value)
 
     def update(self, path: str) -> None:
-        with open(settings.ws_path / "ws-settings.toml", "r") as f:
-            settings_dict = toml.load(f)
+        with open(settings.ws_path / "ws-settings.toml", "r") as file:
+            settings_dict = toml.load(file)
         if self.name not in settings_dict or settings_dict[self.name] != path:
             settings_dict[self.name] = path
-            with open(settings.ws_path / "ws-settings.toml", "w") as f:
-                toml.dump(settings_dict, f)
+            with open(settings.ws_path / "ws-settings.toml", "w") as file:
+                toml.dump(settings_dict, file)
             v.read_in_config()
             if "value" in self.__dict__:
                 del self.value
 
 
-class _UriSchemes:
+class _UriSchemes:  # pylint: disable=too-few-public-methods
     """The configured extra URI schemas (Dict[str, str])"""
 
     name = "uri-schemes"
@@ -291,19 +302,21 @@ class _Shell:
     name = "shell"
     choices = ["auto", "bash", "fish", "zsh"]
 
-    def add_kwargument(self, argparser: ArgumentParser, help: str = "The shell to invoke"):
-        NAME = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-s', '--shell', choices=self.choices, help=f'{help} (env: WS_{NAME})')
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "The shell to invoke"):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument('-s',
+                                      '--shell',
+                                      choices=self.choices,
+                                      help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> str:
         value = get(self.name)
         if value is None:
             return self.choices[0]
-        elif value in self.choices:
+        if value in self.choices:
             return value
-        else:
-            raise Exception(f'value {value} is not valid for setting {self.name}')
+        raise Exception(f'value {value} is not valid for setting {self.name}')
 
 
 class _XGitClone:
@@ -313,9 +326,12 @@ class _XGitClone:
 
     def add_kwargument(self,
                        argparser: ArgumentParser,
-                       help: str = "Additional arguments to pass to the underlying git clone call") -> None:
-        NAME = self.name.upper().replace("-", "_")
-        argparser.add_argument('--X-git-clone', metavar=NAME, action="append", help=f'{help} (env: WS_{NAME})')
+                       help_message: str = "Additional arguments to pass to the underlying git clone call") -> None:
+        uppercase_name = self.name.upper().replace("-", "_")
+        argparser.add_argument('--X-git-clone',
+                               metavar=uppercase_name,
+                               action="append",
+                               help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> List[str]:
@@ -327,15 +343,15 @@ class _XGitClone:
             value = value.split(' ')
 
         assert isinstance(value, list)
-        for x in value:
-            assert isinstance(x, str)
+        for element in value:
+            assert isinstance(element, str)
 
         return value
 
 
 #################################################################################
 
-default_settings_file = (f'''config = "release"
+DEFAULT_SETTINGS_FILE = (f'''config = "release"
 default-linker = "gold"
 
 [uri-schemes]
@@ -344,8 +360,8 @@ default-linker = "gold"
 
 
 def write_default_settings_file():
-    with open(settings.ws_path / "ws-settings.toml", "w") as f:
-        print(default_settings_file, file=f)
+    with open(settings.ws_path / "ws-settings.toml", "w") as file:
+        print(DEFAULT_SETTINGS_FILE, file=file)
 
 
 v.add_config_path(settings.ws_path)
@@ -357,7 +373,7 @@ except FileNotFoundError:
     write_default_settings_file()
     v.read_in_config()
 
-v.set_env_prefix('WS')
+v.set_env_prefix('workspace')
 v.automatic_env()
 v.set_env_key_replacer("-", "_")
 

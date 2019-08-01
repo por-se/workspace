@@ -14,7 +14,7 @@ def main():
 
     settings.bind_args(parser)
 
-    if len(settings.configs.value) == 0:
+    if not settings.configs.value:
         print("Warning: No configurations specified for setup command.")
     elif len(settings.configs.value) == 1:
         print("Setting up", settings.configs.value[0])
@@ -24,5 +24,5 @@ def main():
         print()
 
     for config in settings.configs.value:
-        ws = ws_from_config_name(config)
-        ws.setup()
+        workspace = ws_from_config_name(config)
+        workspace.setup()

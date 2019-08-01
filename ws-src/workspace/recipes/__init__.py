@@ -1,3 +1,5 @@
+from typing import Type, Dict
+
 from .recipe import Recipe
 from .llvm import LLVM
 from .z3 import Z3
@@ -6,9 +8,7 @@ from .minisat import MINISAT
 from .stp import STP
 from .klee import KLEE
 
-from typing import Type, Dict
-
-all: Dict[str, Type[Recipe]] = {
+ALL: Dict[str, Type[Recipe]] = {
     name: cls
     for name, cls in globals().items() if isinstance(cls, type) and issubclass(cls, Recipe) and not cls == Recipe
 }

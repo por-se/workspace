@@ -15,7 +15,7 @@ def main():
 
     settings.bind_args(parser)
 
-    if len(settings.configs.value) == 0:
+    if not settings.configs.value:
         print("Warning: No configurations specified for build command.")
     elif len(settings.configs.value) == 1:
         print("Building", settings.configs.value[0])
@@ -25,5 +25,5 @@ def main():
         print()
 
     for config in settings.configs.value:
-        ws = ws_from_config_name(config)
-        ws.build(num_threads=settings.jobs.value)
+        workspace = ws_from_config_name(config)
+        workspace.build()

@@ -1,7 +1,11 @@
 [MESSAGES CONTROL]
 disable=
 	cyclic-import,
-	duplicate-code
+	duplicate-code,
+	line-too-long,
+	missing-docstring,
+	dangerous-default-value
 
 [FORMAT]
 max-line-length=120
+variable-rgx=(?:z3|[a-z_][a-z0-9_]{2,30})$

@@ -1,6 +1,5 @@
 import argparse
 
-from workspace.workspace import Workspace
 import workspace.settings
 
 

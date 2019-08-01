@@ -1,8 +1,12 @@
 import abc
 import enum
 import shlex
-from typing import Dict, List, Optional, Sequence, Union
+import subprocess
+from typing import Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from workspace.workspace import Workspace
 
 
 def _quote_sequence(seq: Sequence[str]):
@@ -16,24 +20,20 @@ class Linker(enum.Enum):
     LLD = "lld"
 
 
-import workspace.util as util
-import workspace.workspace as workspace
-
-
 class BuildSystemConfig(abc.ABC):
-    def __init__(self, ws: "workspace.Workspace"):
-        self.linker = ws.get_default_linker()
+    def __init__(self, workspace: "Workspace"):
+        self.linker = workspace.get_default_linker()
 
     @abc.abstractmethod
-    def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
+    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None):
+    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None):
         raise NotImplementedError
 
 
@@ -45,7 +45,7 @@ class CMakeConfig(BuildSystemConfig):
 
         def copy(self):
             other = CMakeConfig.CMakeFlags(illegal_flags=self.illegal_flags.copy())
-            other._flags = self._flags.copy()
+            other._flags = self._flags.copy()  # pylint: disable=protected-access
             return other
 
         def set(self, name: str, value: Union[str, bool, int], override=True):
@@ -91,21 +91,21 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-    def __init__(self, ws: "workspace.Workspace"):
-        super().__init__(ws)
+    def __init__(self, workspace: "Workspace"):
+        super().__init__(workspace)
         self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
 
-    def is_configured(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, env=None):
-        assert not self.is_configured(ws, source_dir, build_dir)
+    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
+        assert not self.is_configured(workspace, source_dir, build_dir)
 
         if not env:
-            env = ws.get_env()
+            env = workspace.get_env()
 
         config_call = ["cmake"]
         config_call += ["-S", str(source_dir), "-B", str(build_dir), "-G", "Ninja"]
@@ -120,7 +120,7 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
-        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(ws.ws_path.resolve())}=."]
+        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(workspace.ws_path.resolve())}=."]
         cxx_flags = c_flags.copy()
         c_flags += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
@@ -130,26 +130,26 @@ class CMakeConfig(BuildSystemConfig):
         config_call += cmake_flags.generate()
 
         if self.linker:
-            ws.add_linker_to_env(self.linker, env)
+            workspace.add_linker_to_env(self.linker, env)
 
-        workspace._run(config_call, env=env)
+        subprocess.run(config_call, env=env, check=True)
 
-    def build(self, ws: "workspace.Workspace", source_dir: Path, build_dir: Path, target=None, env=None):
-        assert self.is_configured(ws, source_dir, build_dir)
+    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None, env=None):  # pylint: disable=arguments-differ,too-many-arguments
+        assert self.is_configured(workspace, source_dir, build_dir)
+
+        from workspace.settings import settings
 
         if not env:
-            env = ws.get_env()
+            env = workspace.get_env()
 
-        build_call = ["cmake"]
-        build_call += ["--build", str(build_dir.resolve())]
+        build_call = ["cmake", "--build", str(build_dir.resolve()), "-j", str(settings.jobs.value)]
         if target is not None:
             build_call += ['--target', target]
-        build_call += util.j_from_num_threads(ws.args.num_threads)
 
         if self.linker:
-            ws.add_linker_to_env(self.linker, env)
+            workspace.add_linker_to_env(self.linker, env)
 
-        workspace._run(build_call, env=env)
+        subprocess.run(build_call, env=env, check=True)
 
     def set_flag(self, name: str, value: Union[str, bool, int]):
         self._cmake_flags.set(name, value)
@@ -172,19 +172,18 @@ class CMakeConfig(BuildSystemConfig):
     def get_linker_flags(self):
         if self._linker_flags is not None:
             return self._linker_flags
-        elif self.linker in [Linker.GOLD, Linker.LLD]:
+        if self.linker in [Linker.GOLD, Linker.LLD]:
             return {
                 "CMAKE_STATIC_LINKER_FLAGS": ["-T"],
                 "CMAKE_MODULE_LINKER_FLAGS": ["-Xlinker", "--no-threads"],
                 "CMAKE_SHARED_LINKER_FLAGS": ["-Xlinker", "--no-threads"],
                 "CMAKE_EXE_LINKER_FLAGS": ["-Xlinker", "--no-threads", "-Xlinker", "--gdb-index"]
             }
-        elif self.linker == Linker.LD:
+        if self.linker == Linker.LD:
             return {
                 "CMAKE_STATIC_LINKER_FLAGS": ["-T"],
                 "CMAKE_MODULE_LINKER_FLAGS": [],
                 "CMAKE_SHARED_LINKER_FLAGS": [],
                 "CMAKE_EXE_LINKER_FLAGS": []
             }
-        else:
-            raise NotImplementedError(str(self.linker))
+        raise NotImplementedError(str(self.linker))

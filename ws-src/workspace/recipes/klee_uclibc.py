@@ -1,77 +1,80 @@
-import os, shutil
 from dataclasses import dataclass
 from hashlib import blake2s
+from pathlib import Path
+import shutil
 
 from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, env_prepend_path
+from workspace.settings import settings
 from . import Recipe, LLVM
 
-from pathlib import Path
 
-
-class KLEE_UCLIBC(Recipe):
+class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     default_name = "klee-uclibc"
 
-    def __init__(self,
-                 branch=None,
-                 repository="github://klee/klee-uclibc.git",
-                 name=default_name,
-                 llvm_name=LLVM.default_name):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            branch=None,
+            repository="github://klee/klee-uclibc.git",
+            name=default_name,
+            llvm_name=LLVM.default_name):
         super().__init__(name)
         self.branch = branch
         self.llvm_name = llvm_name
         self.repository = repository
 
-    def initialize(self, ws: Workspace):
-        def _compute_digest(self, ws: Workspace):
+        self.paths = None
+
+    def initialize(self, workspace: Workspace):
+        def _compute_digest(self, workspace: Workspace):
             digest = blake2s()
             digest.update(self.name.encode())
 
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            llvm = ws.find_build(build_name=self.llvm_name, before=self)
+            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
             digest.update(llvm.digest.encode())
 
             return digest.hexdigest()[:12]
 
-        def _make_internal_paths(self, ws: Workspace):
+        def _make_internal_paths(self, workspace: Workspace):
             @dataclass
             class InternalPaths:
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(src_dir=ws.ws_path / self.name, build_dir=ws.build_dir / f'{self.name}-{self.digest}')
+            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}')
             return paths
 
-        self.digest = _compute_digest(self, ws)
-        self.paths = _make_internal_paths(self, ws)
-        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.digest = _compute_digest(self, workspace)
+        self.paths = _make_internal_paths(self, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
 
-    def setup(self, ws: Workspace):
+    def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
-            ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            ws.apply_patches("klee-uclibc", self.paths.src_dir)
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            workspace.apply_patches("klee-uclibc", self.paths.src_dir)
 
-    def build(self, ws: Workspace):
+    def build(self, workspace: Workspace):
         _run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir])
 
-        env = ws.get_env()
+        env = workspace.get_env()
 
         if not (self.paths.build_dir / '.config').exists():
-            llvm = ws.find_build(build_name=self.llvm_name, before=self)
+            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
 
             _run(["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],
                  cwd=self.paths.build_dir,
                  env=env)
 
-        _run(["make"] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+        _run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env)
 
-    def clean(self, ws: Workspace):
-        if ws.args.dist_clean:
+    def clean(self, workspace: Workspace):
+        if workspace.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
-            ws.git_remove_exclude_path(self.paths.src_dir)
+            workspace.git_remove_exclude_path(self.paths.src_dir)

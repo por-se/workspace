@@ -1,8 +1,7 @@
-import os, sys
-from pathlib import Path
-import shutil
-
 import argparse
+import os
+import sys
+
 import shellingham
 
 from workspace.bin.util import ws_from_config_name
@@ -24,9 +23,9 @@ def main():
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    ws = ws_from_config_name(settings.config.value)
-    env = ws.get_env()
-    ws.add_to_env(env)
+    workspace = ws_from_config_name(settings.config.value)
+    env = workspace.get_env()
+    workspace.add_to_env(env)
     env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     env["WS_CONFIG"] = config
     env["WS_CONFIGS"] = config

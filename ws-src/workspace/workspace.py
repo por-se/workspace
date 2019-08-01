@@ -1,7 +1,8 @@
-import os, sys, subprocess, re
-from collections import OrderedDict
+import os
 from pathlib import Path, PurePosixPath
-from typing import Optional
+import sys
+import subprocess
+import re
 import shutil
 
 import workspace.util as util
@@ -24,13 +25,18 @@ class Workspace:
         self._linker_dirs = {}
         self.builds = []
 
-    def get_repository_prefixes(self):
+        self.args = None
+
+    @staticmethod
+    def get_repository_prefixes():
         return settings.uri_schemes.value
 
-    def get_default_linker(self):
+    @staticmethod
+    def get_default_linker():
         return settings.default_linker.value
 
-    def _check_create_ref_dir(self):
+    @staticmethod
+    def _check_create_ref_dir():
         if settings.reference_repositories.value is None:
             ref_target_path = Path.home() / '.cache' / 'reference-repos'
             input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
@@ -48,8 +54,7 @@ class Workspace:
                 raise RuntimeError(
                     f"reference-repository path '{settings.reference_repositories.value}' exists but is not a directory"
                 )
-            else:
-                os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
+            os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
 
     def set_builds(self, builds):
         self.builds = builds
@@ -68,7 +73,7 @@ class Workspace:
 
         return None
 
-    def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=[]):
+    def reference_clone(self, repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=None):  # pylint: disable=too-many-arguments
         if not branch:
             raise ValueError("'branch' is required but not given")
 
@@ -107,16 +112,18 @@ class Workspace:
             "git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--reference", ref_path, repo_uri, target_path,
             "--branch", branch
         ]
-        if checkout == False or sparse is not None:
+        if not checkout or sparse is not None:
             clone_command += ["--no-checkout"]
         clone_command += settings.x_git_clone.value
-        _run(clone_command + clone_args)
+        if clone_args:
+            clone_command += clone_args
+        _run(clone_command)
 
         if sparse is not None:
             _run(["git", "-C", target_path, "config", "core.sparsecheckout", "true"])
-            with open(target_path / ".git/info/sparse-checkout", "wt") as f:
+            with open(target_path / ".git/info/sparse-checkout", "wt") as file:
                 for line in sparse:
-                    print(line, file=f)
+                    print(line, file=file)
             _run(["git", "-C", target_path, "checkout", branch])
 
     def git_add_exclude_path(self, path):
@@ -133,17 +140,17 @@ class Workspace:
 
         has_line_end = True  # empty file
         if git_exclude_path.is_file():
-            with open(git_exclude_path, "rt") as f:
-                lines = f.read()
-                has_line_end = (len(lines) == 0 or lines[-1] == "\n")
+            with open(git_exclude_path, "rt") as file:
+                lines = file.read()
+                has_line_end = (not lines or lines[-1] == "\n")
                 for line in lines.splitlines():
                     if line == f'/{path}':
                         return  # path already excluded
 
-        with open(git_info_dir / "exclude", "at") as f:
+        with open(git_info_dir / "exclude", "at") as file:
             if not has_line_end:
-                f.write("\n")
-            f.write(f'/{path}\n')
+                file.write("\n")
+            file.write(f'/{path}\n')
 
     def git_remove_exclude_path(self, path):
         path = PurePosixPath(path)
@@ -154,12 +161,12 @@ class Workspace:
             return  # nothing to un-exclude
 
         lines = ""
-        with open(git_exclude_path, "rt") as f:
-            for line in f.read().splitlines():
+        with open(git_exclude_path, "rt") as file:
+            for line in file.read().splitlines():
                 if line != f'/{path}':
                     lines += f'{line}\n'
-        with open(git_exclude_path, "wt") as f:
-            f.write(lines)
+        with open(git_exclude_path, "wt") as file:
+            file.write(lines)
 
     def apply_patches(self, name, target_path):
         for patch in (self.patch_dir / name).glob("*.patch"):
@@ -181,12 +188,9 @@ class Workspace:
         for build in self.builds:
             build.add_to_env(env, self)
 
-    def build(self, num_threads):
+    def build(self):
         self._initialize_builds()
         self.setup()
-
-        self.args = util.EmptyClass()
-        self.args.num_threads = num_threads
 
         for build in self.builds:
             build.build(self)
@@ -194,7 +198,7 @@ class Workspace:
     def clean(self, dist_clean):
         self._initialize_builds()
 
-        self.args = util.EmptyClass()
+        self.args = None
         self.args.dist_clean = dist_clean
 
         for build in self.builds:

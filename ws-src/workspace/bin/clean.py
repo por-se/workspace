@@ -1,4 +1,5 @@
 import argparse
+
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
@@ -16,5 +17,5 @@ def main():
     args = parser.parse_args()
 
     for config in settings.configs.available:
-        ws = ws_from_config_name(config)
-        ws.clean(dist_clean=args.dist_clean)
+        workspace = ws_from_config_name(config)
+        workspace.clean(dist_clean=args.dist_clean)
