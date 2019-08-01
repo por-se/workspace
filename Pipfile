@@ -19,6 +19,7 @@ workspace = { path = "ws-src", editable = true }
 
 [dev-packages]
 mypy = "*"
+pylint = "*"
 yapf = "*"
 
 [requires]
