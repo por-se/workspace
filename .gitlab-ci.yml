@@ -10,7 +10,6 @@ variables:
   # Final image name for builds on other branches:
   NOT_MASTER_FINAL_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
 
-image: docker:dind
 
 before_script:
   - echo $CI_JOB_ID
@@ -30,23 +29,43 @@ before_script:
   - echo "$CUSTOM_CI_NUMTHREADS"
   - LOCAL_NUM_THREADS=${CUSTOM_CI_NUMTHREADS:-$(nproc)}
   - echo "$LOCAL_NUM_THREADS"
-  - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
-  - 'DOCKERD_PID="$(jobs -l -p)"'
-  - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
-  - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
-  - 'trap kill_and_wait_for_docker EXIT'
-  - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
-  - docker info
 
 stages:
+  - lint
   - build
+
+formatting:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
+
+typing:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/mypy_check.sh
+
+linting:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/pylint_check.sh || true
 
 build-master:
   stage: build
+  image: docker:dind
   only:
     refs:
       - master
   script:
+    - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
+    - 'DOCKERD_PID="$(jobs -l -p)"'
+    - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
+    - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
+    - 'trap kill_and_wait_for_docker EXIT'
+    - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
+    - docker info
     - apk add python3
     - set +e
     - export PYTHONUNBUFFERED=1
@@ -62,10 +81,18 @@ build-master:
 
 build-not-master:
   stage: build
+  image: docker:dind
   except:
     refs:
       - master
   script:
+    - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
+    - 'DOCKERD_PID="$(jobs -l -p)"'
+    - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
+    - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
+    - 'trap kill_and_wait_for_docker EXIT'
+    - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
+    - docker info
     - apk add python3
     - set +e
     - export PYTHONUNBUFFERED=1
