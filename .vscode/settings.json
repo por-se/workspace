@@ -11,7 +11,7 @@
 	],
 	"python.formatting.provider": "yapf",
 	"python.formatting.yapfArgs": [
-		"--style", "${workspaceFolder}/ws-src/yapf.ini",
+		"--style", "${workspaceFolder}/ws-src/.style.yapf",
 	],
 	"files.watcherExclude": {
 		"**/.git/objects/**": true,
