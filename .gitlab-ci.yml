@@ -22,19 +22,18 @@ before_script:
   - echo "${WS_JOBS:-auto}"
 
 stages:
-  - prepare
   - build
 
 lint:
-  stage: prepare
+  stage: build
   image: kennethreitz/pipenv
   script:
     - ws-src/mypy_check.sh
     - ws-src/pylint_check.sh
     - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
 
-checkout-not-master:
-  stage: prepare
+build-not-master:
+  stage: build
   image: docker:dind
   except:
     refs:
@@ -50,8 +49,10 @@ checkout-not-master:
     - 'docker push $IMAGE_NAME:$CI_COMMIT_SHA'
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
-checkout-master:
-  stage: prepare
+    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build'
+
+build-master:
+  stage: build
   image: docker:dind
   only:
     refs:
@@ -66,24 +67,6 @@ checkout-master:
     - 'docker push $IMAGE_NAME:latest'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
 
-build-not-master:
-  stage: build
-  image: docker:dind
-  except:
-    refs:
-      - master
-  script:
-    - 'source .gitlab-ci-src/setup_dind.sh'
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build'
-
-build-master:
-  stage: build
-  image: docker:dind
-  only:
-    refs:
-      - master
-  script:
-    - 'source .gitlab-ci-src/setup_dind.sh'
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build'
     - 'docker commit ci $IMAGE_NAME:latest-prebuilt'
     - 'docker push $IMAGE_NAME:latest-prebuilt'
