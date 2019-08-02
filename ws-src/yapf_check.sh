@@ -24,4 +24,4 @@ if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] || [[ ! -x .venv/bin/yapf 
 	fi
 	pipenv update -d
 fi
-exec pipenv run sh -c "cd ws-src && exec yapf --diff --style yapf.ini --recursive --parallel workspace"
+exec pipenv run sh -c "cd ws-src && exec yapf --diff --style yapf.ini --recursive --parallel workspace setup.py"
