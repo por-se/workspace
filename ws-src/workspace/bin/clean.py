@@ -7,7 +7,7 @@ from workspace.settings import settings
 def main():
     parser = argparse.ArgumentParser(
         description=
-        "Clean the workspace. Removes all build artefacts, to ensure that the next build starts from scratch.")
+        "Clean the workspace. Removes all build artifacts, to ensure that the next build starts from scratch.")
 
     parser.add_argument("--dist-clean",
                         action='store_true',
