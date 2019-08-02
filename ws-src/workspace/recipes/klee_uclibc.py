@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
 import shutil
+import subprocess
 
-from workspace.workspace import Workspace, _run
+from workspace.workspace import Workspace
 from workspace.settings import settings
 from . import Recipe, LLVM
 
@@ -59,7 +60,7 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
             workspace.apply_patches("klee-uclibc", self.paths.src_dir)
 
     def build(self, workspace: Workspace):
-        _run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir])
+        subprocess.run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir], check=True)
 
         env = workspace.get_env()
 
@@ -67,11 +68,13 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
             llvm = workspace.find_build(build_name=self.llvm_name, before=self)
             assert llvm, "klee_uclibc requires llvm"
 
-            _run(["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],
-                 cwd=self.paths.build_dir,
-                 env=env)
+            subprocess.run(
+                ["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],
+                cwd=self.paths.build_dir,
+                env=env,
+                check=True)
 
-        _run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env)
+        subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env, check=True)
 
     def clean(self, workspace: Workspace):
         if workspace.args.dist_clean:
