@@ -28,6 +28,7 @@ def main():
     workspace.add_to_env(env)
     env["WS_CONFIG"] = config
     env["WS_CONFIGS"] = config
+    env["WS_HOME"] = settings.ws_path
 
     shell = settings.shell.value
     if shell == "auto":

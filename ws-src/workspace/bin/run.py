@@ -43,6 +43,7 @@ Example (for using a value from the settings file): ./ws run which klee''',
     env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     env["WS_CONFIG"] = config_name
     env["WS_CONFIGS"] = config_name
+    env["WS_HOME"] = settings.ws_path
 
     os.execvpe("pipenv", [
         shutil.which("pipenv"),
