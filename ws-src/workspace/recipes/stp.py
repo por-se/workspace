@@ -103,11 +103,10 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             self.cmake.linker = Linker.GOLD
 
     def setup(self, workspace: Workspace):
-        src_dir = self.paths.src_dir
-        if not src_dir.is_dir():
-            workspace.git_add_exclude_path(src_dir)
-            workspace.reference_clone(self.repository, target_path=src_dir, branch=self.branch)
-            workspace.apply_patches("stp", src_dir)
+        if not self.paths.src_dir.is_dir():
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            workspace.apply_patches("stp", self.paths.src_dir)
 
     def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
