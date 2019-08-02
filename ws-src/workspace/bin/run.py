@@ -1,38 +1,46 @@
-import os, sys
+import os
+import sys
 from pathlib import Path
-import shutil
 
-import shellingham
+from workspace.settings import settings
+from workspace.bin.util import ws_from_config_name
 
-from workspace.bin import ws_path_from_here, ws_from_config
 
 def main():
     cmd_name = Path(sys.argv[0]).name
-    if len(sys.argv) < 3:
-        print(f"Usage: {cmd_name} <config_name> <command> [args...]", file=sys.stderr)
+    if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        print(f'Usage: {cmd_name} [configuration_name] [--] <command> [args...]', file=sys.stderr)
         print(
-            f"Example (for 'release.toml' config): {cmd_name} release which klee",
+            f'''If the first argument is not a valid configuration name, the configuration is determined by the environment variable WS_CONFIG and the configuration file.
+
+Example (for 'release' configuration): ./ws run release which klee
+Example (for 'debug' configuration): env WS_CONFIG=debug ./ws run which klee
+Example (for using a value from the settings file): ./ws run which klee''',
             file=sys.stderr)
+        sys.exit(0)
+
+    config_name = str(sys.argv[1])
+    if config_name not in settings.config.available:
+        config_name = settings.config.value
+        if config_name is None:
+            print(f'"{sys.argv[1]}" is not a valid configuration and the setting "config" is not set', file=sys.stderr)
+            sys.exit(1)
+        command = sys.argv[1:]
+    else:
+        command = sys.argv[2:]
+
+    if command and command[0] == "--":
+        command = command[1:]
+
+    if not command:
+        print('No command specified')
         sys.exit(1)
 
-    config_name = sys.argv[1]
+    workspace = ws_from_config_name(config_name)
+    env = workspace.get_env()
+    workspace.add_to_env(env)
+    env["WS_CONFIG"] = config_name
+    env["WS_CONFIGS"] = config_name
+    env["WS_HOME"] = settings.ws_path
 
-    ws_path = ws_path_from_here()
-
-    config_path = ws_path/'ws-config'/f"{config_name}.toml"
-    if not config_path.exists():
-        print(f"configuration '{config_name}' not found at '{config_path}'")
-        sys.exit(1)
-
-    ws = ws_from_config(ws_path, config_path)
-    env = ws.get_env()
-    ws.add_to_env(env)
-    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
-
-    # yes, the `str()` is actually necessary
-    env["WS_ENV_CONFIGURATION"] = str(config_name)
-
-    os.execvpe("pipenv", [
-        shutil.which("pipenv"),
-        "run",
-        ] + sys.argv[2:], env)
+    os.execvpe(command[0], command, env)

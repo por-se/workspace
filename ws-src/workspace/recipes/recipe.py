@@ -1,9 +1,8 @@
 import abc
 import inspect
-import enum
-from enum import Enum
 
 from workspace.workspace import Workspace
+
 
 class Recipe(abc.ABC):
     def __init__(self, name):
@@ -11,97 +10,49 @@ class Recipe(abc.ABC):
         self.digest = None
 
     @abc.abstractmethod
-    def initialize(self, ws: Workspace):
+    def initialize(self, workspace: Workspace):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def setup(self, ws: Workspace):
+    def setup(self, workspace: Workspace):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, ws: Workspace):
+    def build(self, workspace: Workspace):
         raise NotImplementedError
 
-    def add_to_env(self, env, ws: Workspace):
+    def add_to_env(self, env, workspace: Workspace):
         pass
 
     @abc.abstractmethod
-    def clean(self, ws: Workspace):
+    def clean(self, workspace: Workspace):
         raise NotImplementedError
 
     @classmethod
     def list_options(cls, instance=None):
-        initf = inspect.getargspec(cls.__init__)
-        defaults_start = len(initf.args) - len (initf.defaults)
+        initf = inspect.getfullargspec(cls.__init__)
+        defaults_start = len(initf.args) - len(initf.defaults)
         print(f"Description:\n  {cls.__init__.__doc__}")
         print("Available options:")
-        for i in range(1, len(initf.args)): # skip first entry which is always 'self
+        for i in range(1, len(initf.args)):  # skip first entry which is always 'self
             argname = initf.args[i]
-            set_value = None
 
-            s = f"  '{argname}'"
+            string = f"  '{argname}'"
 
             if instance and argname in instance.__dict__:
-                set_value = instance.__dict__[argname]
-                s += f": '{instance.__dict__[argname]}'"
+                string += f": '{instance.__dict__[argname]}'"
 
             if i >= defaults_start:
-                def_value = initf.defaults[i-defaults_start]
-                s += f" (default: '{def_value}')"
+                def_value = initf.defaults[i - defaults_start]
+                string += f" (default: '{def_value}')"
             else:
-                s += " (required)"
+                string += " (required)"
 
-            print(s)
+            print(string)
 
     @staticmethod
-    def concretize_repo_uri(repo_uri, ws: Workspace):
-        for (prefix,replacement) in ws.get_repository_prefixes().items():
+    def concretize_repo_uri(repo_uri, workspace: Workspace):
+        for (prefix, replacement) in workspace.get_repository_prefixes().items():
             if repo_uri.startswith(prefix):
                 repo_uri = replacement + repo_uri[len(prefix):]
         return repo_uri
-
-    @staticmethod
-    def adjusted_cmake_args(original_args, adjustments):
-        """
-        Adjust a list of cmake arguments 'original_args', e.g., ['-DFOO=bar', '-DBAR=foo'] with a list of adjustments 'adjustments', e.g., ['-DFOO=BLUB', '-UBAR', '-DNEW=VAL'].
-        These adjustment can only contain '-DXXX=yyy' and '-UXXX' entries. Changed entries will be changed, new entries will be appended,
-        and '-U'-entries will be removed from the result, which otherwise is a copy of 'original_args'.
-        """
-
-        if not isinstance(adjustments, list):
-            raise ValueError("adjusted_cmake_args: adjustments has to be a list")
-
-        class Mode(enum.Enum):
-            DEFINE = 1
-            UNDEFINE = 2
-
-        new_args = list(original_args)
-
-        for adj in adjustments:
-            if adj.startswith("-D"):
-                mode = Mode.DEFINE
-                needle = adj[:adj.index("=") + 1]
-            elif adj.startswith("-U"):
-                mode = Mode.UNDEFINE
-                needle = "-D" + adj[2:] + "="
-            else:
-                raise ValueError(
-                    f"adjusted_cmake_args: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
-                )
-
-            found = False
-            for i in range(0, len(new_args)):
-                if new_args[i].startswith(needle):
-                    found = True
-                    if mode == Mode.DEFINE:
-                        new_args[i] = adj
-                    elif mode == Mode.UNDEFINE:
-                        del new_args[i]
-                    else:
-                        assert False, f"unexpected mode: '{mode}'"
-                    break
-
-            if not found and mode == Mode.DEFINE:
-                new_args = new_args + [adj]
-
-        return new_args

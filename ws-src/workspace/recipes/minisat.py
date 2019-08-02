@@ -1,28 +1,35 @@
-import os, shutil
+from dataclasses import dataclass
 from hashlib import blake2s
+from pathlib import Path
+import shutil
 
-from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, env_prepend_path
+from workspace.workspace import Workspace
+from workspace.build_systems import CMakeConfig
+from workspace.util import env_prepend_path
 from . import Recipe
 
-from pathlib import Path
 
-
-class MINISAT(Recipe):
+class MINISAT(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     default_name = "minisat"
 
-    def __init__(self,
-                 branch,
-                 name=default_name,
-                 repository="github://stp/minisat.git",
-                 cmake_adjustments=[]):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            branch=None,
+            name=default_name,
+            repository="github://stp/minisat.git",
+            cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
-    def initialize(self, ws: Workspace):
-        def _compute_digest(self, ws: Workspace):
+        self.cmake = None
+        self.paths = None
+
+    def initialize(self, workspace: Workspace):
+        def _compute_digest(self, workspace: Workspace):
+            del workspace  # unused parameter
+
             digest = blake2s()
             digest.update(self.name.encode())
             for adjustment in self.cmake_adjustments:
@@ -34,48 +41,44 @@ class MINISAT(Recipe):
 
             return digest.hexdigest()[:12]
 
-        def _make_internal_paths(self, ws: Workspace):
+        def _make_internal_paths(self, workspace: Workspace):
+            @dataclass
             class InternalPaths:
-                pass
+                src_dir: Path
+                build_dir: Path
 
-            paths = InternalPaths()
-            paths.src_dir = ws.ws_path / self.name
-            paths.build_dir = ws.build_dir / f'{self.name}-{self.digest}'
+            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}')
             return paths
 
-        self.digest = _compute_digest(self, ws)
-        self.paths = _make_internal_paths(self, ws)
-        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.digest = _compute_digest(self, workspace)
+        self.paths = _make_internal_paths(self, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
 
-    def setup(self, ws: Workspace):
+        self.cmake = CMakeConfig(workspace)
+
+    def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
-            ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch)
-            ws.apply_patches("minisat", self.paths.src_dir)
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            workspace.apply_patches("minisat", self.paths.src_dir)
 
-    def build(self, ws: Workspace):
-        env = ws.get_env()
+    def _configure(self, workspace: Workspace):
+        self.cmake.set_extra_cxx_flags(["-std=c++11"])
+        self.cmake.adjust_flags(self.cmake_adjustments)
 
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
-            cmake_args = Recipe.adjusted_cmake_args([
-                '-G', 'Ninja',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. -std=c++11',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-            ], self.cmake_adjustments)
-            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
+        self.cmake.configure(workspace, self.paths.src_dir, self.paths.build_dir)
 
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
+    def build(self, workspace: Workspace):
+        if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
+            self._configure(workspace)
+        self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
 
-    def clean(self, ws: Workspace):
-        if ws.args.dist_clean:
+    def clean(self, workspace: Workspace):
+        if workspace.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
-            ws.git_remove_exclude_path(self.paths.src_dir)
+            workspace.git_remove_exclude_path(self.paths.src_dir)
+
+    def add_to_env(self, env, workspace: Workspace):
+        env_prepend_path(env, "PATH", self.paths.build_dir)

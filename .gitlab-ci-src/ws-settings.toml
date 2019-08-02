@@ -1,0 +1,6 @@
+config = "release"
+default-linker = "gold"
+
+[uri-schemes]
+"github://" = "https://github.com/"
+"laboratory://" = "https://laboratory.comsys.rwth-aachen.de/"

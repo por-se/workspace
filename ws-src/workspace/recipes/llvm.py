@@ -1,55 +1,60 @@
-import os, shutil, psutil
+from dataclasses import dataclass
 from hashlib import blake2s
+from pathlib import Path
+import shutil
+from typing import Dict, List, Optional, cast
 
-from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, env_prepend_path
+import psutil
+
+from workspace.workspace import Workspace
+from workspace.build_systems import CMakeConfig
+from workspace.settings import settings
+from workspace.util import env_prepend_path
 from . import Recipe
 
-from pathlib import Path
 
-
-class LLVM(Recipe):
+class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     default_name = "llvm"
     profiles = {
         "release": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
             "is_performance_build": True,
             "has_debug_info": False,
         },
         "rel+debinfo": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "-fno-omit-frame-pointer",
-            "cxx_flags": "-fno-omit-frame-pointer",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": ["-fno-omit-frame-pointer"],
+            "cxx_flags": ["-fno-omit-frame-pointer"],
             "is_performance_build": True,
             "has_debug_info": True,
         },
         "debug": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Debug',
-                '-DLLVM_ENABLE_ASSERTIONS=On',
-            ],
-            "c_flags": "",
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+                'LLVM_ENABLE_ASSERTIONS': True,
+            },
+            "c_flags": [],
+            "cxx_flags": [],
             "is_performance_build": False,
             "has_debug_info": True,
         },
     }
 
-
-    def __init__(self,
-                 branch,
-                 profile,
-                 repository="github://llvm/llvm-project.git",
-                 name=default_name,
-                 cmake_adjustments=[]):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            profile,
+            branch=None,
+            repository="github://llvm/llvm-project.git",
+            name=default_name,
+            cmake_adjustments=[]):
         """Build LLVM."""
         super().__init__(name)
         self.branch = branch
@@ -57,10 +62,16 @@ class LLVM(Recipe):
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
+        self._release_build: Optional[LLVM] = None
+        self.cmake = None
+        self.paths = None
+
         assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
-    def initialize(self, ws: Workspace):
-        def _compute_digest(self, ws: Workspace):
+    def initialize(self, workspace: Workspace):
+        def _compute_digest(self, workspace: Workspace):
+            del workspace  # unused parameter
+
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
@@ -73,86 +84,91 @@ class LLVM(Recipe):
 
             return digest.hexdigest()[:12]
 
-        def _make_internal_paths(self, ws: Workspace):
+        def _make_internal_paths(self, workspace: Workspace):
+            @dataclass
             class InternalPaths:
-                pass
+                src_dir: Path
+                build_dir: Path
+                tablegen: Optional[Path] = None
 
-            paths = InternalPaths()
-            paths.src_dir = ws.ws_path / self.name
-            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths
 
-        if self.profile != "release":
-            self._release_build = LLVM(self.branch, "release", self.repository, self.name, [])
-            self._release_build.initialize(ws)
+        if not self.profiles[self.profile]["is_performance_build"]:
+            self._release_build = LLVM(profile="release",
+                                       branch=self.branch,
+                                       repository=self.repository,
+                                       name=self.name,
+                                       cmake_adjustments=[])
+            self._release_build.initialize(workspace)
 
-        self.digest = _compute_digest(self, ws)
-        self.paths = _make_internal_paths(self, ws)
-        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.digest = _compute_digest(self, workspace)
+        self.paths = _make_internal_paths(self, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
 
-    def setup(self, ws: Workspace):
-        if self.profile != "release":
-            self._release_build.setup(ws)
+        self.cmake = CMakeConfig(workspace)
+
+    def setup(self, workspace: Workspace):
+        if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
+            self._release_build.setup(workspace)
 
         if not self.paths.src_dir.is_dir():
-            ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch,
-                sparse=["/llvm", "/clang"])
-            ws.apply_patches("llvm", self.paths.src_dir)
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository,
+                                      target_path=self.paths.src_dir,
+                                      branch=self.branch,
+                                      sparse=["/llvm", "/clang"])
+            workspace.apply_patches("llvm", self.paths.src_dir)
 
-    def build(self, ws: Workspace, target=None):
-        if self.profile != "release":
-            self._release_build.build(ws, target='bin/llvm-tblgen')
+    def _configure(self, workspace: Workspace):
+        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
+        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        self.cmake.set_extra_c_flags(c_flags)
+        self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        env = ws.get_env()
+        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths.src_dir / "clang"))
+        self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
+        self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
+        self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
 
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
+        if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
+            self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
 
-            cmake_args = [
-                '-G', 'Ninja',
-                '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_C_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["c_flags"]}',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_STATIC_LINKER_FLAGS=-T',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-Xlinker --no-threads',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-Xlinker --no-threads -Xlinker --gdb-index',
-                f'-DLLVM_EXTERNAL_CLANG_SOURCE_DIR={self.paths.src_dir / "clang"}',
-                '-DLLVM_TARGETS_TO_BUILD=X86',
-                '-DLLVM_INCLUDE_EXAMPLES=Off',
-                '-DHAVE_VALGRIND_VALGRIND_H=0',
-            ]
-            if not self.profiles[self.profile]["is_performance_build"]:
-                cmake_args = Recipe.adjusted_cmake_args(cmake_args, [f'-DLLVM_TABLEGEN={self._release_build.paths.tablegen}'])
+        avail_mem = psutil.virtual_memory().available
+        if self.profiles[self.profile][
+                "has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
+            print(
+                f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
+            )
+            self.cmake.set_flag("LLVM_PARALLEL_LINK_JOBS", 1)
 
-            avail_mem = psutil.virtual_memory().available
-            if self.profiles[self.profile]["has_debug_info"] and  avail_mem < ws.args.num_threads * 12000000000 and avail_mem < 35000000000:
-                print(
-                    f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
-                )
-                cmake_args = Recipe.adjusted_cmake_args(cmake_args, ["-DLLVM_PARALLEL_LINK_JOBS=1"])
+        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+            self.cmake.set_flag(name, value)
+        self.cmake.adjust_flags(self.cmake_adjustments)
 
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+        self.cmake.configure(workspace, self.paths.src_dir / "llvm", self.paths.build_dir)
 
-            _run(["cmake"] + cmake_args + [self.paths.src_dir / "llvm"], cwd=self.paths.build_dir, env=env)
+    def build_target(self, workspace: Workspace, target):
+        if not self.profiles[self.profile]["is_performance_build"]:
+            assert self._release_build is not None
+            self._release_build.build_target(workspace, target='bin/llvm-tblgen')
 
-        build_call = ["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads)
-        if target is not None:
-            build_call += ['--target', target]
-        _run(build_call, cwd=self.paths.build_dir, env=env)
+        if not self.cmake.is_configured(workspace, self.paths.src_dir / "llvm", self.paths.build_dir):
+            self._configure(workspace)
+        self.cmake.build(workspace, self.paths.src_dir / "llvm", self.paths.build_dir, target=target)
 
-    def clean(self, ws: Workspace):
-        if ws.args.dist_clean:
+    def build(self, workspace: Workspace):
+        self.build_target(workspace, target=None)
+
+    def clean(self, workspace: Workspace):
+        if workspace.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
-            ws.git_remove_exclude_path(self.paths.src_dir)
+            workspace.git_remove_exclude_path(self.paths.src_dir)
 
-    def add_to_env(self, env, ws: Workspace):
+    def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")

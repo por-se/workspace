@@ -1,32 +1,28 @@
 import argparse
-from workspace.bin import available_configs, resolve_or_default_configs, ws_path_from_here, ws_from_config
+
+from workspace.bin.util import ws_from_config_name
+from workspace.settings import settings
+
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=
-        "Setup (usually download sources) one or more configurations. By default, setups all configurations, or only the configuration of the current environment if one is active."
-    )
+    parser = argparse.ArgumentParser(description="Setup (usually download sources) one or more configurations.")
 
-    choice_group = parser.add_mutually_exclusive_group()
-    choice_group.add_argument(
-        'configs',
-        metavar='CONFIG',
-        type=str,
-        nargs='*',
-        default=False,
-        help="The configurations to build")
-    choice_group.add_argument(
-        '-a',
-        '--all',
-        action='store_true',
-        help="build all available configs")
+    settings.configs.add_argument(parser)
+    settings.default_linker.add_kwargument(parser)
+    settings.reference_repositories.add_kwargument(parser)
+    settings.x_git_clone.add_kwargument(parser)
 
-    args = parser.parse_args()
+    settings.bind_args(parser)
 
-    ws_path = ws_path_from_here()
+    if not settings.configs.value:
+        print("Warning: No configurations specified for setup command.")
+    elif len(settings.configs.value) == 1:
+        print("Setting up", settings.configs.value[0])
+        print()
+    else:
+        print("Setting up", ", ".join(settings.configs.value[:-1]), "and", settings.configs.value[-1])
+        print()
 
-    configs = available_configs(ws_path) if args.all else resolve_or_default_configs(ws_path, args.configs)
-
-    for config in configs:
-        ws = ws_from_config(ws_path, config)
-        ws.setup()
+    for config in settings.configs.value:
+        workspace = ws_from_config_name(config)
+        workspace.setup()

@@ -1,0 +1,113 @@
+variables:
+  WS_JOBS: 3 # the (required) runner only allows 3 cores to be used per job
+  DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
+  # Release image names for builds on master:
+  MASTER_RELEASE_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:latest
+  MASTER_RELEASE_IMAGE_2_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA
+  # Final image name for builds on other branches:
+  NOT_MASTER_FINAL_IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG:$CI_COMMIT_REF_SLUG
+
+
+before_script:
+  - echo $CI_JOB_ID
+  - echo $CI_RUNNER_ID
+  - echo $CI_RUNNER_REVISION
+  - echo $CI_RUNNER_TAGS
+  - echo $CI_RUNNER_VERSION
+  - echo $CI_RUNNER_DESCRIPTION
+  - echo "$CI_PROJECT_NAME"
+  - echo "$CI_PROJECT_NAMESPACE"
+  - echo "$CI_PROJECT_PATH"
+  - echo "$CI_PROJECT_PATH_SLUG"
+  - echo "$CI_COMMIT_REF_NAME"
+  - echo "$CI_COMMIT_REF_SLUG"
+  - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+  - echo "$CI_MERGE_REQUEST_TITLE"
+  - echo "$CUSTOM_CI_NUMTHREADS"
+  - echo "${WS_JOBS:-auto}"
+
+stages:
+  - lint
+  - build
+
+formatting:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
+
+typing:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/mypy_check.sh
+
+linting:
+  stage: lint
+  image: kennethreitz/pipenv
+  script:
+    - ws-src/pylint_check.sh
+
+build-master:
+  stage: build
+  image: docker:dind
+  variables:
+    # The dind server and client do not seem to be able to choose a valid default for their connection in our configuration.
+    DOCKER_HOST: unix:///var/run/docker.sock
+    # When using dind, it's wise to use the overlayfs driver for improved performance.
+    # Using btrfs (at least) until https://github.com/docker/for-linux/issues/711 is fixed.
+    DOCKER_DRIVER: btrfs
+  only:
+    refs:
+      - master
+  script:
+    - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
+    - 'DOCKERD_PID="$(jobs -l -p)" && echo $DOCKERD_PID'
+    - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
+    - 'while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
+    - 'trap kill_and_wait_for_docker EXIT'
+    - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
+    - docker info
+    - apk add python3
+    - set +e
+    - export PYTHONUNBUFFERED=1
+    - .gitlab-ci-src/run-ci.py --verbose --forward-gitlab-ci-token --ccache-dir "/ccache" --cache-dir "/cache" --release-image=pre-build --release-image-name=$MASTER_RELEASE_IMAGE_NAME; RES=$?
+    - set -e
+    - echo $RES
+    - docker images
+    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+    - docker tag $MASTER_RELEASE_IMAGE_NAME $MASTER_RELEASE_IMAGE_2_NAME || true
+    - docker push $MASTER_RELEASE_IMAGE_NAME || true
+    - docker push $MASTER_RELEASE_IMAGE_2_NAME || true
+    - exit $RES
+
+build-not-master:
+  stage: build
+  image: docker:dind
+  variables:
+    # The dind server and client do not seem to be able to choose a valid default for their connection in our configuration.
+    DOCKER_HOST: unix:///var/run/docker.sock
+    # When using dind, it's wise to use the overlayfs driver for improved performance.
+    # Using btrfs (at least) until https://github.com/docker/for-linux/issues/711 is fixed.
+    DOCKER_DRIVER: btrfs
+  except:
+    refs:
+      - master
+  script:
+    - 'dockerd-entrypoint.sh >/dev/null 2>&1 &'
+    - 'DOCKERD_PID="$(jobs -l -p)" && echo $DOCKERD_PID'
+    - 'function kill_and_wait_for_docker { kill "$DOCKERD_PID" ; wait "$DOCKERD_PID" ; echo dockerd terminated gracefully ; }'
+    - 'while if docker ps  ; then false ; else true ; fi do echo waiting for dockerd startup... ; sleep 1 ; done'
+    - 'trap kill_and_wait_for_docker EXIT'
+    - 'echo started dockerd with driver "\"$DOCKER_DRIVER\""'
+    - docker info
+    - apk add python3
+    - set +e
+    - export PYTHONUNBUFFERED=1
+    - .gitlab-ci-src/run-ci.py --verbose --forward-gitlab-ci-token --ccache-dir "/ccache" --cache-dir "/cache"  --final-image=$NOT_MASTER_FINAL_IMAGE_NAME; RES=$?
+    - set -e
+    - echo $RES
+    - docker images
+    - docker login -u $DOCKER_CI_USER -p $DOCKER_CI_AUTH $DOCKER_REGISTRY
+    - docker push $NOT_MASTER_FINAL_IMAGE_NAME || true
+    - exit $RES
