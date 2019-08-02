@@ -9,9 +9,7 @@ wllvm = "*"
 
 cached-property = "*"
 psutil = "*"
-schema = "*"
 shellingham = "*"
-tabulate = "*"
 toml = "*"
 vyper-config = "*"
 
