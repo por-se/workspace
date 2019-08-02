@@ -46,7 +46,7 @@ checkout-not-master:
     - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
     - 'docker run --name sources -v /cache:/cache -v ~/netrc:/root/netrc base ./ws setup all --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1'
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
-    - 'docker commit --change "LABEL comsys.ExpireDate=$EXPIRY" sources $IMAGE_NAME:$CI_COMMIT_SHA'
+    - 'docker commit --change "LABEL comsys.ExpireDate=$EXPIRY" --change "CMD bash" sources $IMAGE_NAME:$CI_COMMIT_SHA'
     - 'docker push $IMAGE_NAME:$CI_COMMIT_SHA'
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
