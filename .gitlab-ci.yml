@@ -46,7 +46,7 @@ linting:
   stage: lint
   image: kennethreitz/pipenv
   script:
-    - ws-src/pylint_check.sh || true
+    - ws-src/pylint_check.sh
 
 build-master:
   stage: build
