@@ -25,7 +25,7 @@ stages:
   - prepare
   - build
 
-formatting:
+lint:
   stage: prepare
   image: kennethreitz/pipenv
   script:
