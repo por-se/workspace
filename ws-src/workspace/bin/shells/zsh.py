@@ -1,5 +1,5 @@
 import os
-from pathlib import PurePosixPath
+from pathlib import Path
 import tempfile
 
 from . import Shell
@@ -20,18 +20,16 @@ class Zsh(Shell):
         # method inspired by https://www.zsh.org/mla/users/2017/msg00318.html
         # and https://superuser.com/a/591440
 
-        # obtain $ZDOTDIR in zsh interactive shell
-        zdotdir = PurePosixPath(
-            os.popen('zsh -i -c "if [[ -v ZDOTDIR ]]; then echo -n $ZDOTDIR; else echo -n $HOME; fi"').read())
+        zdotdir = env["ZDOTDIR"] if "ZDOTDIR" in env else env["HOME"]
 
         with tempfile.TemporaryDirectory() as _tempdir:
-            tempdir = PurePosixPath(_tempdir)
+            tempdir = Path(_tempdir)
 
             with open(tempdir / '.zshrc', 'w+') as file:
                 file.write(f"""
 # reset $ZDOTDIR and source user's default configuration
 ZDOTDIR="{zdotdir}"
-[ -r $ZDOTDIR/.zshrc ] && . $ZDOTDIR/.zshrc
+[[ -r "$ZDOTDIR/.zshrc" ]] && source "$ZDOTDIR/.zshrc"
 
 # remove this directory
 rm -rf {tempdir}
@@ -43,9 +41,9 @@ PROMPT="{self.prompt_prefix}$PROMPT"
                 """)
 
             # symlink tempdir/.zshenv to $ZDOTDIR/.zshenv
-            os.symlink(zdotdir / '.zshenv', tempdir / '.zshenv')
+            os.symlink(Path(zdotdir) / '.zshenv', tempdir / '.zshenv')
 
             # set ZDOTDIR for zsh to initialize with tempdir/.zshrc
-            env["ZDOTDIR"] = tempdir
+            env["ZDOTDIR"] = str(tempdir)
 
             os.execvpe("zsh", ["zsh", "-i"], env)
