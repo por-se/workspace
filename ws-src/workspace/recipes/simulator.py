@@ -1,58 +1,67 @@
-import os, shutil
+from dataclasses import dataclass
 from hashlib import blake2s
+from pathlib import Path
+import shutil
+from typing import cast, List, Dict
 
-from workspace.workspace import Workspace, _run
-from workspace.util import j_from_num_threads, env_prepend_path
+from workspace.workspace import Workspace
+from workspace.build_systems import CMakeConfig
+from workspace.util import env_prepend_path
 from . import Recipe
 
-from pathlib import Path
 
-
-class SIMULATOR(Recipe):
+class SIMULATOR(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     default_name = "simulator"
     profiles = {
         "release": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Release',
-            ],
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+            },
+            "cxx_flags": [],
         },
         "rel+debinfo": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
-            ],
-            "cxx_flags": "-fno-omit-frame-pointer",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+            },
+            "cxx_flags": ["-fno-omit-frame-pointer"],
         },
         "debug": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Debug',
-            ],
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+            },
+            "cxx_flags": [],
         },
         "sanitized": {
-            "cmake_args": [
-                '-DCMAKE_BUILD_TYPE=Asan',
-            ],
-            "cxx_flags": "",
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Asan',
+            },
+            "cxx_flags": [],
         },
     }
 
-    def __init__(self,
-                 branch,
-                 profile,
-                 repository="laboratory://concurrent-symbolic-execution/simulator.git",
-                 name=default_name,
-                 cmake_adjustments=[]):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            profile,
+            branch=None,
+            name=default_name,
+            repository="laboratory://concurrent-symbolic-execution/simulator.git",
+            cmake_adjustments=[]):
+
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
         self.cmake_adjustments = cmake_adjustments
 
+        self.cmake = None
+        self.paths = None
+
         assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
 
-    def initialize(self, ws: Workspace):
-        def _compute_digest(self, ws: Workspace):
+    def initialize(self, workspace: Workspace):
+        def _compute_digest(self, workspace: Workspace):
+            del workspace  # unused parameter
+
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
@@ -65,55 +74,48 @@ class SIMULATOR(Recipe):
 
             return digest.hexdigest()[:12]
 
-        def _make_internal_paths(self, ws: Workspace):
+        def _make_internal_paths(self, workspace: Workspace):
+            @dataclass
             class InternalPaths:
-                pass
+                src_dir: Path
+                build_dir: Path
 
-            paths = InternalPaths()
-            paths.src_dir = ws.ws_path / self.name
-            paths.build_dir = ws.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             return paths
 
-        self.digest = _compute_digest(self, ws)
-        self.paths = _make_internal_paths(self, ws)
-        self.repository = Recipe.concretize_repo_uri(self.repository, ws)
+        self.digest = _compute_digest(self, workspace)
+        self.paths = _make_internal_paths(self, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
 
-    def setup(self, ws: Workspace):
+        self.cmake = CMakeConfig(workspace)
+
+    def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
-            ws.git_add_exclude_path(self.paths.src_dir)
-            ws.reference_clone(
-                self.repository,
-                target_path=self.paths.src_dir,
-                branch=self.branch)
-            ws.apply_patches("simulator", self.paths.src_dir)
+            workspace.git_add_exclude_path(self.paths.src_dir)
+            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            workspace.apply_patches("simulator", self.paths.src_dir)
 
-    def build(self, ws: Workspace):
-        env = ws.get_env()
+    def _configure(self, workspace: Workspace):
+        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
+        self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        if not self.paths.build_dir.exists():
-            os.makedirs(self.paths.build_dir)
+        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+            self.cmake.set_flag(name, value)
+        self.cmake.adjust_flags(self.cmake_adjustments)
 
-            cmake_args = [
-                '-G', 'Ninja',
-                '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
-                f'-DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -fdebug-prefix-map={str(ws.ws_path.resolve())}=. {self.profiles[self.profile]["cxx_flags"]}',
-                f'-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2}',
-                f'-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -Xlinker --threads -Xlinker --thread-count={(ws.args.num_threads + 1)//2} -Xlinker --gdb-index',
-            ]
+        self.cmake.configure(workspace, self.paths.src_dir, self.paths.build_dir)
 
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.profiles[self.profile]["cmake_args"])
-            cmake_args = Recipe.adjusted_cmake_args(cmake_args, self.cmake_adjustments)
+    def build(self, workspace: Workspace):
+        if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
+            self._configure(workspace)
+        self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
 
-            _run(["cmake"] + cmake_args + [self.paths.src_dir], cwd=self.paths.build_dir, env=env)
-
-        _run(["cmake", "--build", "."] + j_from_num_threads(ws.args.num_threads), cwd=self.paths.build_dir, env=env)
-
-    def clean(self, ws: Workspace):
-        if ws.args.dist_clean:
+    def clean(self, workspace: Workspace):
+        if workspace.args.dist_clean:
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
-            ws.git_remove_exclude_path(self.paths.src_dir)
+            workspace.git_remove_exclude_path(self.paths.src_dir)
 
-    def add_to_env(self, env, ws: Workspace):
+    def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin/random-graph")
