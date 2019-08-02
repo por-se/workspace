@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-import shutil
 
 from workspace.settings import settings
 from workspace.bin.util import ws_from_config_name
@@ -40,12 +39,8 @@ Example (for using a value from the settings file): ./ws run which klee''',
     workspace = ws_from_config_name(config_name)
     env = workspace.get_env()
     workspace.add_to_env(env)
-    env["VIRTUAL_ENV_DISABLE_PROMPT"] = "1"
     env["WS_CONFIG"] = config_name
     env["WS_CONFIGS"] = config_name
     env["WS_HOME"] = settings.ws_path
 
-    os.execvpe("pipenv", [
-        shutil.which("pipenv"),
-        "run",
-    ] + command, env)
+    os.execvpe(command[0], command, env)
