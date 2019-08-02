@@ -22,30 +22,19 @@ before_script:
   - echo "${WS_JOBS:-auto}"
 
 stages:
-  - lint
-  - checkout
+  - prepare
   - build
 
 formatting:
-  stage: lint
-  image: kennethreitz/pipenv
-  script:
-    - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
-
-typing:
-  stage: lint
+  stage: prepare
   image: kennethreitz/pipenv
   script:
     - ws-src/mypy_check.sh
-
-linting:
-  stage: lint
-  image: kennethreitz/pipenv
-  script:
     - ws-src/pylint_check.sh
+    - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
 
 checkout-not-master:
-  stage: checkout
+  stage: prepare
   image: docker:dind
   except:
     refs:
@@ -62,7 +51,7 @@ checkout-not-master:
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
 checkout-master:
-  stage: checkout
+  stage: prepare
   image: docker:dind
   only:
     refs:
