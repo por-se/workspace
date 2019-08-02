@@ -1,5 +1,6 @@
 config = "release"
 default-linker = "gold"
+reference-repositories = "/reference-repos"
 
 [uri-schemes]
 "github://" = "https://github.com/"
