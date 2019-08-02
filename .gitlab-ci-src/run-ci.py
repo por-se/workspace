@@ -50,11 +50,6 @@ def setup_and_parse_args():
         default=None,
         help="cache directory (e.g., `$HOME/.cache`)")
     parser.add_argument(
-        '--num-threads',
-        type=int,
-        default=1,
-        help="number of threads to use in parallel for building (default: 1)")
-    parser.add_argument(
         '--release-image',
         type=str,
         default=None,
@@ -126,7 +121,6 @@ def main():
             command = ["/usr/bin/bash", "-c",
             f"""set -e ; set -u ; set -o pipefail
             export PATH=\"/usr/share/git/credential/netrc:$PATH\"
-            export WS_JOBS={args.num_threads}
             git config --global credential.helper 'netrc -k -v -f /ci-token-dir/netrc'
             ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1
             ./ws build
