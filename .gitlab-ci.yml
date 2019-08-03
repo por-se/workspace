@@ -66,7 +66,6 @@ build-master:
     - 'docker run --name sources -v /cache:/cache -v ~/netrc:/root/netrc base ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1'
     - 'docker commit sources $IMAGE_NAME:latest'
     - 'sh -c "docker push $IMAGE_NAME:latest & docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst && wait"'
-    - 'echo Waiting for $PUSH_PID and $SAVE_PID && wait $PUSH_PID $SAVE_PID'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
 
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build'
