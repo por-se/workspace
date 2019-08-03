@@ -31,6 +31,7 @@ docker info
 
 DOCKER_SAVE=false
 if [[ -e /cache/image.tar.zst ]] ; then
+	echo "Loading image from local cache..."
 	zstd -d -c /cache/image.tar.zst | docker load
 	docker pull $IMAGE_NAME:latest || true
 	if [[ "$(docker images | wc -l)" -eq 3 ]] ; then
@@ -41,3 +42,4 @@ else
 		DOCKER_SAVE=true
 	fi
 fi
+docker images

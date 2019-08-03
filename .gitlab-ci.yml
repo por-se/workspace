@@ -40,6 +40,7 @@ build-not-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
+    - 'echo DOCKER_SAVE is $DOCKER_SAVE'
     - 'if $($DOCKER_SAVE) ; then docker save $IMAGE_NAME:latest | zstd >/cache/image.tar.zst ; fi'
 
     - 'echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc'
