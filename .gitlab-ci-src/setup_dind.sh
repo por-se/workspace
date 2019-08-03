@@ -33,14 +33,29 @@ docker info
 DOCKER_SAVE=
 if [[ -e /cache/image.tar.zst ]] ; then
 	echo "Loading image from local cache..."
-	zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load
-	docker pull $IMAGE_NAME:latest || true
+	(
+		(zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load) &
+		n=0
+		while [[ $n -lt 5 ]] ; do
+			if docker pull $IMAGE_NAME:latest ; then
+				DOCKER_SAVE=true
+				break
+			fi
+			n=$[$n+1]
+		done
+		wait
+	)
 	if [[ "$(docker images | wc -l)" -ge 3 ]] ; then
 		DOCKER_SAVE=true
 	fi
 else
-	if docker pull $IMAGE_NAME:latest ; then
-		DOCKER_SAVE=true
-	fi
+	n=0
+	while [[ $n -lt 5 ]] ; do
+		if docker pull $IMAGE_NAME:latest ; then
+			DOCKER_SAVE=true
+			break
+		fi
+		n=$[$n+1]
+	done
 fi
 docker images
