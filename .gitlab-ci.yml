@@ -34,6 +34,10 @@ lint:
 build-not-master:
   stage: build
   image: docker:dind
+  artifacts:
+    paths:
+      - build.log
+    expire_in: 1 day
   except:
     refs:
       - master
@@ -53,11 +57,15 @@ build-not-master:
       wait"'
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build'
+    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build > build.log'
 
 build-master:
   stage: build
   image: docker:dind
+  artifacts:
+    paths:
+      - build.log
+    expire_in: 1 day
   only:
     refs:
       - master
@@ -74,7 +82,7 @@ build-master:
       wait"'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
 
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build'
+    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build > build.log'
     - 'docker commit ci $IMAGE_NAME:latest-prebuilt'
     - 'docker push $IMAGE_NAME:latest-prebuilt'
     - 'echo "Successfully pushed $IMAGE_NAME:latest-prebuilt"'
