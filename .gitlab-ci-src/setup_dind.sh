@@ -19,7 +19,7 @@ apk add zstd
 
 ###################################################################################################
 
-while if docker ps ; then false ; else true ; fi do
+while if docker ps >/dev/null 2>&1 ; then false ; else true ; fi do
 	echo waiting for dockerd startup...
 	sleep 1
 done
