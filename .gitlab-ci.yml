@@ -68,6 +68,8 @@ build-master:
     - 'docker commit sources $IMAGE_NAME:latest'
     - 'docker push $IMAGE_NAME:latest & PUSH_PID=$(jobs -l -p)'
     - '( docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst ) & SAVE_PID=$(jobs -l -p)'
+    - 'jobs'
+    - 'echo $PUSH_PID $SAVE_PID'
     - 'wait $PUSH_PID $SAVE_PID'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
 
