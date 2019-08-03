@@ -15,6 +15,7 @@ DOCKERD_PID="$(jobs -l -p)" && echo "dockerd starting with pid $DOCKERD_PID..."
 
 ########################### room to prepare image while starting docker ###########################
 
+echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc
 apk add zstd
 
 ###################################################################################################
@@ -29,12 +30,12 @@ echo started dockerd with driver "\"$DOCKER_DRIVER\""
 docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
 docker info
 
-DOCKER_SAVE=false
+DOCKER_SAVE=
 if [[ -e /cache/image.tar.zst ]] ; then
 	echo "Loading image from local cache..."
 	zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load
 	docker pull $IMAGE_NAME:latest || true
-	if [[ "$(docker images | wc -l)" -eq 3 ]] ; then
+	if [[ "$(docker images | wc -l)" -ge 3 ]] ; then
 		DOCKER_SAVE=true
 	fi
 else

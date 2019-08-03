@@ -39,15 +39,18 @@ build-not-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
-    - 'echo DOCKER_SAVE is $DOCKER_SAVE'
-    - 'if $($DOCKER_SAVE) ; then docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst ; fi'
 
-    - 'echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc'
     - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
-    - 'docker run --name sources -v /cache:/cache -v ~/netrc:/root/netrc base ./ws setup'
+    - 'docker run --name sources -v ~/netrc:/root/netrc base ./ws setup'
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
     - 'docker commit --change "LABEL comsys.ExpireDate=$EXPIRY" --change "CMD bash" sources $IMAGE_NAME:$CI_COMMIT_SHA'
-    - 'docker push $IMAGE_NAME:$CI_COMMIT_SHA'
+    - 'sh -c "set -e ; set -u ; set -o pipefail
+      docker push $IMAGE_NAME:CI_COMMIT_SHA &
+      if [[ $DOCKER_SAVE ]] ; then
+        docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+        echo Saved new copy of $IMAGE_NAME:latest to cache
+      fi
+      wait"'
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build'
@@ -61,11 +64,14 @@ build-master:
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
 
-    - 'echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc'
     - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
-    - 'docker run --name sources -v /cache:/cache -v ~/netrc:/root/netrc base ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1'
+    - 'docker run --name sources -v ~/netrc:/root/netrc base ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1'
     - 'docker commit sources $IMAGE_NAME:latest'
-    - 'sh -c "docker push $IMAGE_NAME:latest & docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst && wait"'
+    - 'sh -c "set -e ; set -u ; set -o pipefail
+      docker push $IMAGE_NAME:latest &
+      docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+      echo Saved new copy of $IMAGE_NAME:latest to cache
+      wait"'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
 
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build'
