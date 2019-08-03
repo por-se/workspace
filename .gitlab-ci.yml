@@ -66,7 +66,7 @@ build-master:
     - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
     - 'docker run --name sources -v /cache:/cache -v ~/netrc:/root/netrc base ./ws setup --reference-repositories=/cache/reference-repos --X-git-clone=--dissociate --X-git-clone=--depth=1'
     - 'docker commit sources $IMAGE_NAME:latest'
-    - 'docker push $IMAGE_NAME:latest & PUSH_PID=$(jobs -j -p)'
+    - 'docker push $IMAGE_NAME:latest & PUSH_PID=$(jobs -l -p)'
     - 'docker save $IMAGE_NAME:latest | zstd >/cache/image.tar.zst & SAVE_PID=$(jobs -l -p)'
     - 'wait $PUSH_PID $SAVE_PID'
     - 'echo "Successfully pushed $IMAGE_NAME:latest"'
