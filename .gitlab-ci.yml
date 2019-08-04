@@ -43,18 +43,15 @@ build-not-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
-
-    - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
-    - 'docker run --name sources -v ~/netrc:/root/netrc base ./ws setup'
+    - '.gitlab-ci-src/create_source_image.sh'
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
-    - 'docker commit --change "LABEL comsys.ExpireDate=$EXPIRY" --change "CMD bash" sources $IMAGE_NAME:$CI_COMMIT_SHA'
+    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=$IMAGE_NAME:ci -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
+
     - |
-        (
-          docker push $IMAGE_NAME:CI_COMMIT_SHA &
-          if [[ -z "$DOCKER_SAVE" ]] ; then
-            docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-            echo "Saved new copy of $IMAGE_NAME:latest to cache"
-          fi
+        ( # subshell to enable waiting on parallel processes
+          ( echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push ) &
+          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+          echo "Saved new copy of $IMAGE_NAME to cache"
           wait
         )
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
@@ -73,20 +70,27 @@ build-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
+    - '.gitlab-ci-src/create_source_image.sh'
+    - 'docker tag $IMAGE_NAME:ci $IMAGE_NAME:latest'
+    - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
+    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=$IMAGE_NAME:ci -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
 
-    - 'docker build --cache-from=$IMAGE_NAME:latest -f .gitlab-ci-src/Dockerfile -t base .'
-    - 'docker run --name sources -v ~/netrc:/root/netrc base ./ws setup --reference-repositories=/cache/reference-repos'
-    - 'docker commit sources $IMAGE_NAME:latest'
     - |
-        (
-          docker push $IMAGE_NAME:latest &
-          docker save $IMAGE_NAME:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-          echo "Saved new copy of $IMAGE_NAME:latest to cache"
+        ( # subshell to enable waiting on parallel processes
+          ( echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push ) &
+          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+          echo "Saved new copy of $IMAGE_NAME to cache"
           wait
         )
-    - 'echo "Successfully pushed $IMAGE_NAME:latest"'
+    - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build >build.log 2>&1'
-    - 'docker commit ci $IMAGE_NAME:latest-prebuilt'
-    - 'docker push $IMAGE_NAME:latest-prebuilt'
-    - 'echo "Successfully pushed $IMAGE_NAME:latest-prebuilt"'
+    - 'docker commit --change "CMD bash" ci $IMAGE_NAME:latest-prebuilt'
+
+    - |
+        ( # subshell to enable waiting on parallel processes
+          ( echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push ) &
+          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+          echo "Saved new copy of $IMAGE_NAME to cache"
+          wait
+        )

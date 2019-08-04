@@ -22,4 +22,3 @@ RUN \
 
 COPY . /workspace
 WORKDIR /workspace
-RUN cp .gitlab-ci-src/ws-settings.toml . && ./ws echo "Done"

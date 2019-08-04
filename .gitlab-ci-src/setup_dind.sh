@@ -37,7 +37,7 @@ if [[ -e /cache/image.tar.zst ]] ; then
 		(zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load) &
 		n=0
 		while [[ $n -lt 5 ]] ; do
-			if docker pull $IMAGE_NAME:latest ; then
+			if docker pull $IMAGE_NAME:ci ; then
 				DOCKER_SAVE=true
 				break
 			fi
@@ -51,7 +51,7 @@ if [[ -e /cache/image.tar.zst ]] ; then
 else
 	n=0
 	while [[ $n -lt 5 ]] ; do
-		if docker pull $IMAGE_NAME:latest ; then
+		if docker pull $IMAGE_NAME:ci ; then
 			DOCKER_SAVE=true
 			break
 		fi
