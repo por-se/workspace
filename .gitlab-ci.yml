@@ -59,7 +59,7 @@ build-not-master:
         )
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA ./ws build >build.log 2>&1'
+    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA build >build.log 2>&1'
 
 build-master:
   stage: build
@@ -88,6 +88,6 @@ build-master:
         )
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build >build.log 2>&1'
-    - 'docker commit --change "CMD bash" ci $IMAGE_NAME:latest-prebuilt'
+    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest build >build.log 2>&1'
+    - 'docker commit --change "CMD [\"shell\", \"-s\", \"fish\"]" ci $IMAGE_NAME:latest-prebuilt'
     - echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
