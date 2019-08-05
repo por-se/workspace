@@ -32,12 +32,9 @@ set -v # print commands to CI output
 docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
 docker info
 
-(
-	if [[ -e /cache/image.tar.zst ]] ; then
-		echo "Loading image from local cache..."
-		(zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load) &
-	fi
-	docker pull $IMAGE_NAME:ci
-	wait
-)
+if [[ -e /cache/image.tar.zst ]] ; then
+	echo "Loading image from local cache..."
+	(zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load)
+fi
+docker pull $IMAGE_NAME:ci
 docker images
