@@ -88,11 +88,4 @@ build-master:
 
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest ./ws build >build.log 2>&1'
     - 'docker commit --change "CMD bash" ci $IMAGE_NAME:latest-prebuilt'
-
-    - |
-        ( # subshell to enable waiting on parallel processes
-          ( echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push ) &
-          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-          echo "Saved new copy of $IMAGE_NAME to cache"
-          wait
-        )
+    - echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
