@@ -30,32 +30,12 @@ echo started dockerd with driver "\"$DOCKER_DRIVER\""
 docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
 docker info
 
-DOCKER_SAVE=
-if [[ -e /cache/image.tar.zst ]] ; then
-	echo "Loading image from local cache..."
-	(
+(
+	if [[ -e /cache/image.tar.zst ]] ; then
+		echo "Loading image from local cache..."
 		(zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load) &
-		n=0
-		while [[ $n -lt 5 ]] ; do
-			if docker pull $IMAGE_NAME:ci ; then
-				DOCKER_SAVE=true
-				break
-			fi
-			n=$[$n+1]
-		done
-		wait
-	)
-	if [[ "$(docker images | wc -l)" -ge 3 ]] ; then
-		DOCKER_SAVE=true
 	fi
-else
-	n=0
-	while [[ $n -lt 5 ]] ; do
-		if docker pull $IMAGE_NAME:ci ; then
-			DOCKER_SAVE=true
-			break
-		fi
-		n=$[$n+1]
-	done
-fi
+	docker pull $IMAGE_NAME:ci
+	wait
+)
 docker images
