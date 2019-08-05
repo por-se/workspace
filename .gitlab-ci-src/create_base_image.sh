@@ -5,11 +5,11 @@ set -e
 set -u
 set -o pipefail
 
-docker build --cache-from=$IMAGE_NAME:ci -f .gitlab-ci-src/base.Dockerfile -t base .
-docker run --name sources -v ~/netrc:/root/netrc -v /cache:/cache base bash -c "set -e ; set -u ; set -o pipefail
+docker build --cache-from=$IMAGE_NAME:ci -f .gitlab-ci-src/base.Dockerfile -t $IMAGE_NAME:ci .
+docker run --name sources -v ~/netrc:/root/netrc -v /cache:/cache $IMAGE_NAME:ci bash -c "set -e ; set -u ; set -o pipefail
 	cp .gitlab-ci-src/ws-settings.toml .
 	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup
 "
-docker commit --change "CMD bash" sources $IMAGE_NAME:ci
+docker commit --change "CMD bash" sources base
 
 # at this point cleanup might be performed, but we just wait for the cleanup of the dind container

@@ -45,9 +45,9 @@ build-not-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
-    - '.gitlab-ci-src/create_source_image.sh'
+    - '.gitlab-ci-src/create_base_image.sh'
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
-    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=$IMAGE_NAME:ci -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
+    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
 
     - |
         ( # subshell to enable waiting on parallel processes
@@ -72,8 +72,8 @@ build-master:
       - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
-    - '.gitlab-ci-src/create_source_image.sh'
-    - 'docker tag $IMAGE_NAME:ci $IMAGE_NAME:latest'
+    - '.gitlab-ci-src/create_base_image.sh'
+    - 'docker tag base $IMAGE_NAME:latest'
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
     - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=$IMAGE_NAME:ci -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
 
