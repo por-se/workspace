@@ -43,8 +43,7 @@ class Recipe(abc.ABC):
                 string += f": '{instance.__dict__[argname]}'"
 
             if i >= defaults_start:
-                def_value = initf.defaults[i - defaults_start]
-                string += f" (default: '{def_value}')"
+                string += f" (default: '{initf.defaults[i - defaults_start]}')"
             else:
                 string += " (required)"
 

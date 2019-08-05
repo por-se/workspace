@@ -1,5 +1,5 @@
 {
-	"python.pythonPath": ".venv/bin/python3",
+	"python.pythonPath": ".venv/bin/python3.7",
 	"python.linting.enabled": true,
 	"python.linting.mypyEnabled": true,
 	"python.linting.mypyArgs": [
