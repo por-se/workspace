@@ -36,5 +36,5 @@ if [[ -e /cache/image.tar.zst ]] ; then
 	echo "Loading image from local cache..."
 	zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load
 fi
-docker pull $IMAGE_NAME:ci
+docker pull $IMAGE_NAME:ci || true # If we don't find a cache image, just go on without one
 docker images
