@@ -18,7 +18,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         "release": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Release',
-                'KLEE_RUNTIME_BUILD_TYPE': 'Release',
+                'KLEE_RUNTIME_BUILD_TYPE': 'Release+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
             "c_flags": [],
@@ -27,7 +27,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         "rel+debinfo": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
-                'KLEE_RUNTIME_BUILD_TYPE': 'Release',
+                'KLEE_RUNTIME_BUILD_TYPE': 'Release+Debug+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
             "c_flags": ["-fno-omit-frame-pointer"],
@@ -36,7 +36,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
-                'KLEE_RUNTIME_BUILD_TYPE': 'Debug',
+                'KLEE_RUNTIME_BUILD_TYPE': 'Debug+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
             "c_flags": [],
@@ -45,7 +45,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         "sanitized": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
-                'KLEE_RUNTIME_BUILD_TYPE': 'Release',
+                'KLEE_RUNTIME_BUILD_TYPE': 'Release+Asserts',
                 'ENABLE_TCMALLOC': False,
             },
             "c_flags": ["-fsanitize=address", "-fsanitize=undefined"],
