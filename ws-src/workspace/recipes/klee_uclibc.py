@@ -6,7 +6,6 @@ import subprocess
 
 from workspace.workspace import Workspace
 from workspace.settings import settings
-from workspace.util import env_prepend_path
 from . import Recipe, LLVM
 
 
@@ -82,6 +81,3 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
             if self.paths.src_dir.is_dir():
                 shutil.rmtree(self.paths.src_dir)
             workspace.git_remove_exclude_path(self.paths.src_dir)
-
-    def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "C_INCLUDE_PATH", self.paths.build_dir / "include")
