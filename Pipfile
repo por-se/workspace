@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 lit = ">=0.6.0"
+tabulate = "*"
 wllvm = "*"
 
 cached-property = "*"
