@@ -5,6 +5,8 @@ set -e
 set -u
 set -o pipefail
 
+set -v # print commands to CI output
+
 docker build --cache-from=$IMAGE_NAME:ci -f .gitlab-ci-src/base.Dockerfile -t $IMAGE_NAME:ci .
 docker run --name sources -v ~/netrc:/root/netrc -v /cache:/cache $IMAGE_NAME:ci bash -c "set -e ; set -u ; set -o pipefail
 	cp .gitlab-ci-src/ws-settings.toml .

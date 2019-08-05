@@ -27,6 +27,8 @@ done
 trap kill_and_wait_for_docker EXIT
 echo started dockerd with driver "\"$DOCKER_DRIVER\""
 
+set -v # print commands to CI output
+
 docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
 docker info
 
