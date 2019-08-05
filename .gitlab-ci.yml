@@ -26,6 +26,8 @@ stages:
 lint:
   stage: build
   image: kennethreitz/pipenv
+  variables:
+    PIPENV_CACHE_DIR: /cache/pipenv
   script:
     - ws-src/mypy_check.sh
     - ws-src/pylint_check.sh

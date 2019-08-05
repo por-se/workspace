@@ -6,9 +6,9 @@ set -u
 set -o pipefail
 
 docker build --cache-from=$IMAGE_NAME:ci -f .gitlab-ci-src/base.Dockerfile -t base .
-docker run --name sources -v ~/netrc:/root/netrc base bash -c "set -e ; set -u ; set -o pipefail
+docker run --name sources -v ~/netrc:/root/netrc -v /cache:/cache base bash -c "set -e ; set -u ; set -o pipefail
 	cp .gitlab-ci-src/ws-settings.toml .
-	./ws setup
+	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup
 "
 docker commit --change "CMD bash" sources $IMAGE_NAME:ci
 
