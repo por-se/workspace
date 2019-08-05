@@ -37,6 +37,7 @@ build-not-master:
   stage: build
   image: docker:dind
   artifacts:
+    when: always
     paths:
       - build.log
     expire_in: 1 day
@@ -64,6 +65,7 @@ build-master:
   stage: build
   image: docker:dind
   artifacts:
+    when: always
     paths:
       - build.log
     expire_in: 1 day
