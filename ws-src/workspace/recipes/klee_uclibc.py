@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import shutil
 import subprocess
 
 from workspace.workspace import Workspace
@@ -75,9 +74,3 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
                 check=True)
 
         subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env, check=True)
-
-    def clean(self, workspace: Workspace):
-        if workspace.args.dist_clean:
-            if self.paths.src_dir.is_dir():
-                shutil.rmtree(self.paths.src_dir)
-            workspace.git_remove_exclude_path(self.paths.src_dir)

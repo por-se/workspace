@@ -25,8 +25,6 @@ class Workspace:
         self._linker_dirs = {}
         self.builds = []
 
-        self.args = None
-
     @staticmethod
     def get_repository_prefixes():
         return settings.uri_schemes.value
@@ -195,11 +193,8 @@ class Workspace:
         for build in self.builds:
             build.build(self)
 
-    def clean(self, dist_clean):
+    def clean(self):
         self._initialize_builds()
-
-        self.args = None
-        self.args.dist_clean = dist_clean
 
         for build in self.builds:
             build.clean(self)
@@ -208,21 +203,6 @@ class Workspace:
             shutil.rmtree(self._bin_dir)
         if self.build_dir.exists():
             shutil.rmtree(self.build_dir)
-
-        if dist_clean:
-            config_file = self.ws_path / "ws-settings.toml"
-            if config_file.exists():
-                os.remove(config_file)
-
-            pipfile = self.ws_path / "Pipfile.lock"
-            if pipfile.exists():
-                os.remove(pipfile)
-            egg_dir = self.ws_path / "ws-src" / "workspace.egg-info"
-            if egg_dir.exists():
-                shutil.rmtree(egg_dir)
-            venv_dir = self.ws_path / ".venv"
-            if venv_dir.exists():
-                shutil.rmtree(venv_dir)
 
     def get_env(self):
         env = os.environ.copy()

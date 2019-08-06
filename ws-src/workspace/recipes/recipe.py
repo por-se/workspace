@@ -24,9 +24,8 @@ class Recipe(abc.ABC):
     def add_to_env(self, env, workspace: Workspace):
         pass
 
-    @abc.abstractmethod
     def clean(self, workspace: Workspace):
-        raise NotImplementedError
+        pass
 
     @classmethod
     def list_options(cls, instance=None):

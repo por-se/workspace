@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import shutil
 
 from workspace.workspace import Workspace
 from workspace.build_systems import CMakeConfig
@@ -73,12 +72,6 @@ class MINISAT(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribu
         if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
             self._configure(workspace)
         self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
-
-    def clean(self, workspace: Workspace):
-        if workspace.args.dist_clean:
-            if self.paths.src_dir.is_dir():
-                shutil.rmtree(self.paths.src_dir)
-            workspace.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir)

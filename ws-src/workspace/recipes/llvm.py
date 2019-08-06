@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import shutil
 from typing import Dict, List, Optional, cast
 
 import psutil
@@ -163,12 +162,6 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
     def build(self, workspace: Workspace):
         self.build_target(workspace, target=None)
-
-    def clean(self, workspace: Workspace):
-        if workspace.args.dist_clean:
-            if self.paths.src_dir.is_dir():
-                shutil.rmtree(self.paths.src_dir)
-            workspace.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
