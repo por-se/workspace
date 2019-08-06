@@ -204,6 +204,9 @@ class Workspace:
         if self.build_dir.exists():
             shutil.rmtree(self.build_dir)
 
+        if (settings.ws_path / ".mypy_cache").exists():
+            shutil.rmtree(settings.ws_path / ".mypy_cache")
+
     def get_env(self):
         env = os.environ.copy()
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
