@@ -3,9 +3,9 @@ import sys
 
 import shellingham
 
-from workspace.bin.shells import Bash, Fish, Zsh
 from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
+from workspace.shells import Bash, Fish, Zsh
 
 
 def main():
