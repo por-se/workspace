@@ -24,4 +24,4 @@ if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] ; then
 	fi
 	pipenv update
 fi
-exec pipenv run mypy --config-file ws-src/mypy.ini ws-src/workspace
+exec pipenv run sh -c "cd ws-src && exec mypy --config-file mypy.ini -p workspace"
