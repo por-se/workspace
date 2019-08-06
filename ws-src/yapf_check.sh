@@ -14,7 +14,7 @@ DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"/..
 
 export PIPENV_VENV_IN_PROJECT=1
-if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] || [[ ! -x .venv/bin/yapf ]] ; then
+if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] ; then
 	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
 		# https://github.com/pypa/pipenv/issues/1744
 		>&2 echo "Performing workaround for Debian"

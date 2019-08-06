@@ -14,7 +14,7 @@ DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"/..
 
 export PIPENV_VENV_IN_PROJECT=1
-if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] || [[ ! -x .venv/bin/mypy ]] ; then
+if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] ; then
 	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
 		# https://github.com/pypa/pipenv/issues/1744
 		>&2 echo "Performing workaround for Debian"
@@ -22,6 +22,6 @@ if [[ ! -d .venv ]] || [[ Pipfile -nt Pipfile.lock ]] || [[ ! -x .venv/bin/mypy 
 		pipenv run python setup.py develop
 		popd
 	fi
-	pipenv update -d
+	pipenv update
 fi
 exec pipenv run mypy --config-file ws-src/mypy.ini ws-src/workspace
