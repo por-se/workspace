@@ -47,7 +47,7 @@ def main():
     else:
         raise Exception(f'Unknown shell: "{shell}"')
 
-    prompt_prefix = f"({workspace.ws_path.name}: {settings.config.name}) "
+    prompt_prefix = f"({workspace.ws_path.name}: {settings.config.value}) "
     shell_obj.set_prompt_prefix(prompt_prefix)
     shell_obj.add_cd_build(workspace.builds)
     shell_obj.spawn(env)
