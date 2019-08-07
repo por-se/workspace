@@ -1,6 +1,6 @@
 FROM archlinux/base
 ENV CCACHE_DIR=/ccache
-RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils crypto++ && pacman -Scc --noconfirm
+RUN pacman -Syu --noconfirm python-pipenv cmake ninja git gcc which openssh lld ccache bison flex rsync make wget awk gperftools diffutils fish zsh crypto++ && pacman -Scc --noconfirm
 
 RUN \
 	mkdir -p /reference-repos/v1/github.com/llvm/ && \
@@ -21,4 +21,3 @@ RUN \
 	git -C /reference-repos/v1/github.com/klee/klee gc --aggressive
 
 COPY . /workspace
-WORKDIR /workspace
