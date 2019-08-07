@@ -405,7 +405,7 @@ except FileNotFoundError:
     write_default_settings_file()
     v.read_in_config()
 
-v.set_env_prefix('workspace')
+v.set_env_prefix('ws')
 v.automatic_env()
 v.set_env_key_replacer("-", "_")
 
