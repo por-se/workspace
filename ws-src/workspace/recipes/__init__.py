@@ -8,6 +8,7 @@ from .minisat import MINISAT
 from .stp import STP
 from .klee import KLEE
 from .simulator import SIMULATOR
+from .pseudoalloc import PSEUDOALLOC
 from .porse import PORSE
 
 ALL: Dict[str, Type[Recipe]] = {

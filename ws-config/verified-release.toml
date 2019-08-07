@@ -20,6 +20,10 @@ branch = "klee_0_9_29"
 branch = "master"
 profile = "rel+debinfo"
 
+[[PSEUDOALLOC]]
+branch = "master"
+profile = "release"
+
 [[PORSE]]
 branch = "master"
 profile = "rel+debinfo"

@@ -9,7 +9,7 @@ from workspace.settings import settings
 from workspace.workspace import Workspace
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
-from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC, SIMULATOR
+from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC, PSEUDOALLOC, SIMULATOR
 
 
 class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
@@ -64,6 +64,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
             z3_name=Z3.default_name,
             llvm_name=LLVM.default_name,
             klee_uclibc_name=KLEE_UCLIBC.default_name,
+            pseudoalloc_name=PSEUDOALLOC.default_name,
             simulator_name=SIMULATOR.default_name,
             cmake_adjustments=[]):
 
@@ -76,6 +77,7 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         self.z3_name = z3_name
         self.llvm_name = llvm_name
         self.klee_uclibc_name = klee_uclibc_name
+        self.pseudoalloc_name = pseudoalloc_name
         self.simulator_name = simulator_name
         self.cmake_adjustments = cmake_adjustments
 
@@ -100,18 +102,21 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
             z3 = workspace.find_build(build_name=self.z3_name, before=self)
             llvm = workspace.find_build(build_name=self.llvm_name, before=self)
             klee_uclibc = workspace.find_build(build_name=self.klee_uclibc_name, before=self)
+            pseudoalloc = workspace.find_build(build_name=self.pseudoalloc_name, before=self)
             simulator = workspace.find_build(build_name=self.simulator_name, before=self)
 
             assert stp, "porse requires stp"
             assert z3, "porse requires z3"
             assert llvm, "porse requires llvm"
             assert klee_uclibc, "porse requires klee_uclibc"
+            assert pseudoalloc, "porse requires pseudoalloc"
             assert simulator, "porse requires simulator"
 
             digest.update(stp.digest.encode())
             digest.update(z3.digest.encode())
             digest.update(llvm.digest.encode())
             digest.update(klee_uclibc.digest.encode())
+            digest.update(pseudoalloc.digest.encode())
             digest.update(simulator.digest.encode())
 
             return digest.hexdigest()[:12]
@@ -158,12 +163,14 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         z3 = workspace.find_build(build_name=self.z3_name, before=self)
         llvm = workspace.find_build(build_name=self.llvm_name, before=self)
         klee_uclibc = workspace.find_build(build_name=self.klee_uclibc_name, before=self)
+        pseudoalloc = workspace.find_build(build_name=self.pseudoalloc_name, before=self)
         simulator = workspace.find_build(build_name=self.simulator_name, before=self)
 
         assert stp, "porse requires stp"
         assert z3, "porse requires z3"
         assert llvm, "porse requires llvm"
         assert klee_uclibc, "porse requires klee_uclibc"
+        assert pseudoalloc, "porse requires pseudoalloc"
         assert simulator, "porse requires simulator"
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
@@ -178,6 +185,8 @@ class PORSE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribute
         self.cmake.set_flag('ENABLE_PTHREAD_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', str(klee_uclibc.paths.build_dir))
+        self.cmake.set_flag('PSEUDOALLOC_LIBRARIES', str(pseudoalloc.paths.lib_path))
+        self.cmake.set_flag('PSEUDOALLOC_INCLUDE_DIRS', str(pseudoalloc.paths.include_dir))
         self.cmake.set_flag('POR_SIMULATOR_DIR', str(simulator.paths.build_dir))
 
         lit = shutil.which("lit")

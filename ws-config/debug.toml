@@ -20,6 +20,10 @@ branch = "klee_0_9_29"
 branch = "master"
 profile = "debug"
 
+[[PSEUDOALLOC]]
+branch = "master"
+profile = "debug"
+
 [[PORSE]]
 branch = "master"
 profile = "debug"
