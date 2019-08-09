@@ -9,6 +9,7 @@ def main():
 
     settings.configs.add_argument(parser)
     settings.default_linker.add_kwargument(parser)
+    settings.jobs.add_kwargument(parser)
     settings.reference_repositories.add_kwargument(parser)
     settings.x_git_clone.add_kwargument(parser)
 
