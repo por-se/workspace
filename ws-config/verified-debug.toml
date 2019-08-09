@@ -5,6 +5,7 @@ profile = "debug"
 [[Z3]]
 branch = "z3-4.8.4"
 profile = "rel+debinfo"
+openmp = false
 
 [[MINISAT]]
 branch = "master"
