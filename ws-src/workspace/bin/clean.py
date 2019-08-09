@@ -9,13 +9,8 @@ def main():
         description=
         "Clean the workspace. Removes all build artifacts, to ensure that the next build starts from scratch.")
 
-    parser.add_argument("--dist-clean",
-                        action='store_true',
-                        default=False,
-                        help="Clean fully, e.g., also remove all cloned repositories, etc.")
-
-    args = parser.parse_args()
+    settings.bind_args(parser)
 
     for config in settings.configs.available:
         workspace = ws_from_config_name(config)
-        workspace.clean(dist_clean=args.dist_clean)
+        workspace.clean()

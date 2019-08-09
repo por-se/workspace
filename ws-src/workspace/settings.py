@@ -54,6 +54,10 @@ class _Settings:
         return _Shell()
 
     @cached_property
+    def preserve_settings(self) -> "_PreserveSettings":
+        return _PreserveSettings()
+
+    @cached_property
     def x_git_clone(self) -> "_XGitClone":
         return _XGitClone()
 
@@ -319,6 +323,33 @@ class _Shell:
         raise Exception(f'value {value} is not valid for setting {self.name}')
 
 
+class _PreserveSettings:
+    """Preserve ws-settings.toml on dist-clean (boolean)"""
+
+    name = "preserve-settings"
+
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "Preserve ws-settings.toml"):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument('-p',
+                                      '--preserve-settings',
+                                      action='store_const',
+                                      const=True,
+                                      help=f'{help_message} (env: WS_{uppercase_name})')
+
+    @cached_property
+    def value(self) -> bool:
+        value = get(self.name)
+        if value is None:
+            return False
+        if isinstance(value, bool):
+            return value
+        if value == "1" or value.upper() == "TRUE":
+            return True
+        if value == "0" or value.upper() == "FALSE":
+            return False
+        raise Exception(f'value {value} is not valid for setting {self.name}')
+
+
 class _XGitClone:
     """Additional arguments to pass to the underlying git clone call (list of strings)"""
 
@@ -353,6 +384,7 @@ class _XGitClone:
 
 DEFAULT_SETTINGS_FILE = (f'''config = "release"
 default-linker = "gold"
+preserve-settings = false
 
 [uri-schemes]
 "github://" = "ssh://git@github.com/"
@@ -373,7 +405,7 @@ except FileNotFoundError:
     write_default_settings_file()
     v.read_in_config()
 
-v.set_env_prefix('workspace')
+v.set_env_prefix('ws')
 v.automatic_env()
 v.set_env_key_replacer("-", "_")
 

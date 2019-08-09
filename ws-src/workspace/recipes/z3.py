@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import shutil
 from typing import cast, List, Dict
 
 from workspace.workspace import Workspace
@@ -44,11 +43,13 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             branch=None,
             repository="github://Z3Prover/z3.git",
             name=default_name,
+            openmp=True,
             cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.openmp = openmp
         self.cmake_adjustments = cmake_adjustments
 
         self.paths = None
@@ -101,7 +102,7 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
         self.cmake.set_flag("BUILD_LIBZ3_SHARED", False)
-        self.cmake.set_flag("USE_OPENMP", False)
+        self.cmake.set_flag("USE_OPENMP", self.openmp)
 
         for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
             self.cmake.set_flag(name, value)
@@ -113,12 +114,6 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
             self._configure(workspace)
         self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
-
-    def clean(self, workspace: Workspace):
-        if workspace.args.dist_clean:
-            if self.paths.src_dir.is_dir():
-                shutil.rmtree(self.paths.src_dir)
-            workspace.git_remove_exclude_path(self.paths.src_dir)
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir)

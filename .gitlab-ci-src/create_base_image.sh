@@ -11,7 +11,7 @@ docker build --cache-from=$IMAGE_NAME:ci -f .gitlab-ci-src/base.Dockerfile -t $I
 docker run --name sources -v ~/netrc:/root/.netrc -v /cache:/cache $IMAGE_NAME:ci bash -c "set -e ; set -u ; set -o pipefail
 	cd /workspace
 	cp .gitlab-ci-src/ws-settings.toml .
-	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup
+	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup -j ${WS_JOBS}
 "
 docker commit \
 	--change 'WORKDIR /workspace' \

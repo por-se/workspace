@@ -15,8 +15,15 @@ DOCKERD_PID="$(jobs -l -p)" && echo "dockerd starting with pid $DOCKERD_PID..."
 
 ########################### room to prepare image while starting docker ###########################
 
+# setup netrc for usage in container
 echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc
 chmod 0600 ~/netrc
+
+# setup apk caching
+mkdir -p /cache/apk
+ln -s /cache/apk /etc/apk/cache
+
+# install apk packages
 apk add zstd
 
 ###################################################################################################

@@ -4,10 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+# KLEE dependencies
 lit = ">=0.6.0"
 tabulate = "*"
 wllvm = "*"
 
+# workspace dependencies
 cached-property = "*"
 psutil = "*"
 shellingham = "*"
@@ -16,7 +18,7 @@ vyper-config = "*"
 
 workspace = { path = "ws-src", editable = true }
 
-[dev-packages]
+# linters
 mypy = "*"
 pylint = "*"
 yapf = "*"
