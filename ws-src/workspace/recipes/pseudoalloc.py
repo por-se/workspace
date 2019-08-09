@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
 import os
-import shutil
 import subprocess
 from typing import cast, Dict, List
 
@@ -103,9 +102,3 @@ class PSEUDOALLOC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
 
         assert self.paths.lib_path.exists(), "Could not find libpseudoalloc.so in expected directory"
         assert (self.paths.include_dir / "pseudoalloc.h").exists(), "Could not find pseudoalloc.h in expected directory"
-
-    def clean(self, workspace: Workspace):
-        if workspace.args.dist_clean:
-            if self.paths.src_dir.is_dir():
-                shutil.rmtree(self.paths.src_dir)
-            workspace.git_remove_exclude_path(self.paths.src_dir)
