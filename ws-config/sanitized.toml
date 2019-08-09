@@ -5,6 +5,7 @@ profile = "rel+debinfo"
 [[Z3]]
 branch = "Z3-4.8.5"
 profile = "rel+debinfo"
+openmp = false
 
 [[MINISAT]]
 branch = "releases/2.2.1"

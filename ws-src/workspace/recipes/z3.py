@@ -43,11 +43,13 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             branch=None,
             repository="github://Z3Prover/z3.git",
             name=default_name,
+            openmp=True,
             cmake_adjustments=[]):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.openmp = openmp
         self.cmake_adjustments = cmake_adjustments
 
         self.paths = None
@@ -100,7 +102,7 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
         self.cmake.set_flag("BUILD_LIBZ3_SHARED", False)
-        self.cmake.set_flag("USE_OPENMP", False)
+        self.cmake.set_flag("USE_OPENMP", self.openmp)
 
         for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
             self.cmake.set_flag(name, value)

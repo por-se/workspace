@@ -5,6 +5,7 @@ profile = "release"
 [[Z3]]
 branch = "Z3-4.8.5"
 profile = "release"
+openmp = false
 
 [[MINISAT]]
 branch = "releases/2.2.1"
