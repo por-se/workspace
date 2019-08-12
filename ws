@@ -15,6 +15,7 @@ cd "$WORKSPACE"
 
 export PIPENV_VENV_IN_PROJECT=1
 if [[ ! -d .venv ]] || [[ Pipfile.lock -nt .venv ]] ; then
+	rm -rf .venv
 	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
 		# https://github.com/pypa/pipenv/issues/1744
 		>&2 echo "Performing workaround for Debian"
@@ -22,7 +23,16 @@ if [[ ! -d .venv ]] || [[ Pipfile.lock -nt .venv ]] ; then
 		pipenv run python setup.py develop
 		popd
 	fi
-	pipenv sync
-	touch .venv
+	if pipenv sync && [[ -d .venv ]] ; then
+		touch .venv
+	else
+		if [[ -e Pipfile.lock ]] ; then
+			rm -rf .venv
+		else
+			>&2 echo Missing Pipfile.lock: run `git checkout -- Pipfile.lock` or `pipenv lock`.
+		fi
+		>&2 echo Failed to synchronize virtualenv
+		exit 1
+	fi
 fi
 exec pipenv run "$@"
