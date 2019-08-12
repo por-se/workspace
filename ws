@@ -14,7 +14,7 @@ WORKSPACE="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$WORKSPACE"
 
 export PIPENV_VENV_IN_PROJECT=1
-if [[ ! -d .venv ]] || [[ Pipfile.lock -nt .venv ]] ; then
+if [[ ! -d .venv ]] || [[ Pipfile.lock -nt .venv ]] || not pipenv run run echo >/dev/null 2>&1 ; then
 	rm -rf .venv
 	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
 		# https://github.com/pypa/pipenv/issues/1744
