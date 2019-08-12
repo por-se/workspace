@@ -14,6 +14,8 @@ WORKSPACE="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$WORKSPACE"
 
 export PIPENV_VENV_IN_PROJECT=1
+export PIPENV_NO_INHERIT=1
+export PIPENV_DONT_LOAD_ENV=1
 if [[ ! -d .venv ]] || [[ Pipfile.lock -nt .venv ]] || not pipenv run run echo >/dev/null 2>&1 ; then
 	rm -rf .venv
 	if [[ -r /etc/issue ]] && [[ "$(cat /etc/issue)" = 'Debian'* ]] ; then
