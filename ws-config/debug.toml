@@ -1,28 +1,34 @@
 [[Recipe]]
 recipe = "LLVM"
+name = "llvm"
 branch = "llvmorg-8.0.1"
 profile = "debug"
 
 [[Recipe]]
 recipe = "Z3"
+name = "z3"
 branch = "Z3-4.8.5"
 profile = "rel+debinfo"
 openmp = false
 
 [[Recipe]]
 recipe = "MINISAT"
+name = "minisat"
 branch = "releases/2.2.1"
 
 [[Recipe]]
 recipe = "STP"
+name = "stp"
 branch = "2.3.3"
 profile = "rel+debinfo"
 
 [[Recipe]]
 recipe = "KLEE_UCLIBC"
+name = "klee-uclibc"
 branch = "klee_0_9_29"
 
 [[Recipe]]
 recipe = "KLEE"
+name = "klee"
 branch = "master"
 profile = "debug"
