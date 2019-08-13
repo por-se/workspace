@@ -1,5 +1,4 @@
 FROM kleenet.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image
-ENV CCACHE_DIR=/ccache
 
 RUN \
 	mkdir -p /reference-repos/v1/github.com/stp/ && \
