@@ -1,22 +1,28 @@
-[[LLVM]]
+[[Recipe]]
+recipe = "LLVM"
 branch = "llvmorg-8.0.1"
 profile = "release"
 
-[[Z3]]
+[[Recipe]]
+recipe = "Z3"
 branch = "Z3-4.8.5"
 profile = "release"
 openmp = false
 
-[[MINISAT]]
+[[Recipe]]
+recipe = "MINISAT"
 branch = "releases/2.2.1"
 
-[[STP]]
+[[Recipe]]
+recipe = "STP"
 branch = "2.3.3"
 profile = "release"
 
-[[KLEE_UCLIBC]]
+[[Recipe]]
+recipe = "KLEE_UCLIBC"
 branch = "klee_0_9_29"
 
-[[KLEE]]
+[[Recipe]]
+recipe = "KLEE"
 branch = "master"
 profile = "release"

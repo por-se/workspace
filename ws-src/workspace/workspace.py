@@ -54,9 +54,6 @@ class Workspace:
                 )
             os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
 
-    def set_builds(self, builds):
-        self.builds = builds
-
     def find_build(self, build_name, before=None):
         i = 0
 

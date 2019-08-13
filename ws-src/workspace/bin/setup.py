@@ -11,6 +11,7 @@ def main():
     settings.default_linker.add_kwargument(parser)
     settings.jobs.add_kwargument(parser)
     settings.reference_repositories.add_kwargument(parser)
+    settings.until.add_kwargument(parser)
     settings.x_git_clone.add_kwargument(parser)
 
     settings.bind_args(parser)
