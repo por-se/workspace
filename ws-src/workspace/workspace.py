@@ -167,31 +167,31 @@ class Workspace:
         for patch in (self.patch_dir / name).glob("*.patch"):
             _run(f"git apply < {patch}", shell=True, cwd=target_path)
 
-    def _initialize_builds(self):
+    def initialize_builds(self):
         for build in self.builds:
             build.initialize(self)
 
     def setup(self):
-        self._initialize_builds()
+        self.initialize_builds()
 
         for build in self.builds:
             build.setup(self)
 
     def add_to_env(self, env):
-        self._initialize_builds()
+        self.initialize_builds()
 
         for build in self.builds:
             build.add_to_env(env, self)
 
     def build(self):
-        self._initialize_builds()
+        self.initialize_builds()
         self.setup()
 
         for build in self.builds:
             build.build(self)
 
     def clean(self):
-        self._initialize_builds()
+        self.initialize_builds()
 
         for build in self.builds:
             build.clean(self)
