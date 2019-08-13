@@ -38,6 +38,10 @@ class _Settings:
         return _Jobs()
 
     @cached_property
+    def preserve_settings(self) -> "_PreserveSettings":
+        return _PreserveSettings()
+
+    @cached_property
     def recipes(self) -> "_Recipes":
         return _Recipes()
 
@@ -46,16 +50,12 @@ class _Settings:
         return _ReferenceRepositories()
 
     @cached_property
-    def uri_schemes(self) -> "_UriSchemes":
-        return _UriSchemes()
-
-    @cached_property
     def shell(self) -> "_Shell":
         return _Shell()
 
     @cached_property
-    def preserve_settings(self) -> "_PreserveSettings":
-        return _PreserveSettings()
+    def uri_schemes(self) -> "_UriSchemes":
+        return _UriSchemes()
 
     @cached_property
     def x_git_clone(self) -> "_XGitClone":
@@ -205,6 +205,33 @@ class _Jobs:
         return value
 
 
+class _PreserveSettings:
+    """Preserve ws-settings.toml on dist-clean (boolean)"""
+
+    name = "preserve-settings"
+
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "Preserve ws-settings.toml"):
+        uppercase_name = self.name.upper().replace("-", "_")
+        return argparser.add_argument('-p',
+                                      '--preserve-settings',
+                                      action='store_const',
+                                      const=True,
+                                      help=f'{help_message} (env: WS_{uppercase_name})')
+
+    @cached_property
+    def value(self) -> bool:
+        value = get(self.name)
+        if value is None:
+            return False
+        if isinstance(value, bool):
+            return value
+        if value == "1" or value.upper() == "TRUE":
+            return True
+        if value == "0" or value.upper() == "FALSE":
+            return False
+        raise Exception(f'value {value} is not valid for setting {self.name}')
+
+
 class _Recipes:
     """The set of recipes a command is to work on (list of recipe names as strings with the additional option "all" resolved)"""
 
@@ -281,25 +308,6 @@ class _ReferenceRepositories:
                 del self.value
 
 
-class _UriSchemes:  # pylint: disable=too-few-public-methods
-    """The configured extra URI schemas (Dict[str, str])"""
-
-    name = "uri-schemes"
-
-    @cached_property
-    def value(self) -> Dict[str, str]:
-        value = get(self.name)
-        if value is None:
-            return {}
-
-        assert isinstance(value, dict)
-        for key, val in value.items():
-            assert isinstance(key, str)
-            assert isinstance(val, str)
-
-        return value
-
-
 class _Shell:
     """The shell to invoke (string from choices)"""
 
@@ -323,31 +331,23 @@ class _Shell:
         raise Exception(f'value {value} is not valid for setting {self.name}')
 
 
-class _PreserveSettings:
-    """Preserve ws-settings.toml on dist-clean (boolean)"""
+class _UriSchemes:  # pylint: disable=too-few-public-methods
+    """The configured extra URI schemas (Dict[str, str])"""
 
-    name = "preserve-settings"
-
-    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "Preserve ws-settings.toml"):
-        uppercase_name = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-p',
-                                      '--preserve-settings',
-                                      action='store_const',
-                                      const=True,
-                                      help=f'{help_message} (env: WS_{uppercase_name})')
+    name = "uri-schemes"
 
     @cached_property
-    def value(self) -> bool:
+    def value(self) -> Dict[str, str]:
         value = get(self.name)
         if value is None:
-            return False
-        if isinstance(value, bool):
-            return value
-        if value == "1" or value.upper() == "TRUE":
-            return True
-        if value == "0" or value.upper() == "FALSE":
-            return False
-        raise Exception(f'value {value} is not valid for setting {self.name}')
+            return {}
+
+        assert isinstance(value, dict)
+        for key, val in value.items():
+            assert isinstance(key, str)
+            assert isinstance(val, str)
+
+        return value
 
 
 class _XGitClone:
