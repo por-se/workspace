@@ -12,6 +12,7 @@ wllvm = "*"
 # workspace dependencies
 cached-property = "*"
 psutil = "*"
+schema = "*"
 shellingham = "*"
 toml = "*"
 vyper-config = "*"
