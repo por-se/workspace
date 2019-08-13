@@ -1,3 +1,5 @@
-[[SIMULATOR]]
+[[Recipe]]
+recipe = "SIMULATOR"
+name = "simulator"
 branch = "master"
 profile = "sanitized"

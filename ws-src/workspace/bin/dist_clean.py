@@ -2,8 +2,30 @@ import argparse
 import subprocess
 import sys
 import os
+import shutil
+from pathlib import Path
 
-from workspace.settings import settings
+
+def _emergency_cleanup():
+    print(
+        "WARNING: This workspace seems to be broken (dependencies could not be loaded). Will try to remove the virtualenv, so it can be recreated..",
+        file=sys.stderr)
+    venv_path = Path(".venv")
+    if venv_path.exists():
+        print(".venv found, deleting...", file=sys.stderr)
+        shutil.rmtree(venv_path)
+        print("Deleted the virtualenv, please close open workspace-shells and run your workspace command again.",
+              file=sys.stderr)
+    else:
+        print("No virtualenv found, giving up. Please re-clone the workspace and start with a fresh copy.",
+              file=sys.stderr)
+    sys.exit(1)
+
+
+try:
+    from workspace.settings import settings
+except ModuleNotFoundError:
+    _emergency_cleanup()
 
 
 def _confirm(query):
@@ -49,8 +71,15 @@ def main():
             pass
 
     if sys.stdin.isatty:
-        subprocess.run(["git", "status"], check=True, env=en_env)
-        if not _confirm("Also remove all modifications?"):
+        diff = subprocess.run(["git", "diff", "--quiet"], env=en_env)
+        if diff.returncode == 0:
+            diff = subprocess.run(["git", "diff", "--quiet", "--staged"], env=en_env)
+        if diff.returncode != 0:
+            subprocess.run(["git", "status"], check=True, env=en_env)
+            if not _confirm("Also remove all modifications?"):
+                return
+        else:
+            print("No further modification detected.")
             return
 
     subprocess.run(["git", "reset", "--", "."], check=True, env=en_env)

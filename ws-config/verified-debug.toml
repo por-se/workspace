@@ -1,31 +1,47 @@
-[[LLVM]]
-branch = "llvmorg-8.0.0"
+[[Recipe]]
+recipe = "LLVM"
+name = "llvm"
+branch = "llvmorg-8.0.1"
 profile = "debug"
 
-[[Z3]]
-branch = "z3-4.8.4"
+[[Recipe]]
+recipe = "Z3"
+name = "z3"
+branch = "Z3-4.8.5"
 profile = "rel+debinfo"
 openmp = false
 
-[[MINISAT]]
-branch = "master"
+[[Recipe]]
+recipe = "MINISAT"
+name = "minisat"
+branch = "releases/2.2.1"
 
-[[STP]]
-branch = "2.3.2"
+[[Recipe]]
+recipe = "STP"
+name = "stp"
+branch = "2.3.3"
 profile = "rel+debinfo"
 
-[[KLEE_UCLIBC]]
+[[Recipe]]
+recipe = "KLEE_UCLIBC"
+name = "klee-uclibc"
 branch = "klee_0_9_29"
 
-[[SIMULATOR]]
+[[Recipe]]
+recipe = "SIMULATOR"
+name = "simulator"
 branch = "master"
 profile = "debug"
 
-[[PSEUDOALLOC]]
+[[Recipe]]
+recipe = "PSEUDOALLOC"
+name = "pseudoalloc"
 branch = "master"
 profile = "debug"
 
-[[PORSE]]
+[[Recipe]]
+recipe = "PORSE"
+name = "porse"
 branch = "master"
 profile = "debug"
 # WARNING: this is very memory intensive, even for small example programs

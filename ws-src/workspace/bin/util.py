@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Set
+from typing import Any, Set
 
 import toml
 
@@ -12,6 +12,12 @@ def ws_from_config_name(config_name: str) -> Workspace:
     return ws_from_config_path(settings.ws_path / "ws-config" / f'{config_name}.toml')
 
 
+def validate_config(config: Any) -> None:
+    from schema import Schema, Or
+
+    Schema({"Recipe": [{"recipe": Or(*recipes.ALL.keys()), str: object}]}).validate(config)
+
+
 def ws_from_config_path(config_path: Path) -> Workspace:
     workspace = Workspace()
 
@@ -21,20 +27,31 @@ def ws_from_config_path(config_path: Path) -> Workspace:
 
     with open(config_path) as file:
         config = toml.load(file)
+    validate_config(config)
+    items = config["Recipe"]
+    if not items:
+        raise Exception(f'The configuration at location "{config_path}" is empty.')
 
-    for (target, variations) in config.items():
-        if not target in recipes.ALL:
+    seen_names: Set[str] = set()
+    for item in items:
+        options = dict(item)  # shallow copy
+        del options["recipe"]
+        rep = recipes.ALL[item["recipe"]](**options)
+
+        if rep.name in seen_names:
             raise RuntimeError(
-                f"no recipe for target '{target}' found (i.e., no class '{target}' in module 'workspace.recipes')")
+                f'two recipe variations with same name "{rep.name}"" found in configuration at location "{config_path}"'
+            )
+        seen_names.add(rep.name)
 
-        seen_names: Set[str] = set()
-        for options in variations:
-            rep = recipes.ALL[target](**options)
+        workspace.builds += [rep]
 
-            if rep.name in seen_names:
-                raise RuntimeError(f"two variations for target '{target}' with same name '{rep.name}' found")
-            seen_names.add(rep.name)
+        if rep.name == settings.until.value:
+            break
 
-            workspace.builds += [rep]
+    if settings.until.value and settings.until.value not in seen_names:
+        raise Exception(
+            f'The configuration at location "{config_path}" does not contain a build named "{settings.until.value}" which should terminate processing.'
+        )
 
     return workspace

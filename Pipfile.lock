@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "88049111ded85bdfe8d83884a79418fc2804d1d54dd6ab3108b2a0604f93d8fc"
+            "sha256": "9865c9f0502567c92c10eed8e0b465faea9787a5d69e48f92d67e396d682d219"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -37,6 +37,13 @@
             ],
             "index": "pypi",
             "version": "==1.5.1"
+        },
+        "contextlib2": {
+            "hashes": [
+                "sha256:509f9419ee91cdd00ba34443217d5ca51f5a364a404e1dce9e8979cea969ca48",
+                "sha256:f5260a6e679d2ff42ec91ec5252f4eeffdcf21053db9113bd0a8e4d953769c00"
+            ],
+            "version": "==0.5.5"
         },
         "distconfig": {
             "hashes": [
@@ -171,6 +178,14 @@
                 "sha256:f81025eddd0327c7d4cfe9b62cf33190e1e736cc6e97502b3ec425f574b3e7a8"
             ],
             "version": "==5.1.2"
+        },
+        "schema": {
+            "hashes": [
+                "sha256:44add3ef9016c85ac4b0291b45286a657d0df309b31528ca8d0a9c6d0aa68186",
+                "sha256:5b0e0f47923164190513db2e91b9ab1941162b2dc400cc9b1803c2abab579e62"
+            ],
+            "index": "pypi",
+            "version": "==0.7.0"
         },
         "shellingham": {
             "hashes": [

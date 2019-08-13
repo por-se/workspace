@@ -1,30 +1,46 @@
-[[LLVM]]
+[[Recipe]]
+recipe = "LLVM"
+name = "llvm"
 branch = "llvmorg-8.0.1"
 profile = "release"
 
-[[Z3]]
+[[Recipe]]
+recipe = "Z3"
+name = "z3"
 branch = "Z3-4.8.5"
 profile = "release"
 openmp = false
 
-[[MINISAT]]
+[[Recipe]]
+recipe = "MINISAT"
+name = "minisat"
 branch = "releases/2.2.1"
 
-[[STP]]
+[[Recipe]]
+recipe = "STP"
+name = "stp"
 branch = "2.3.3"
 profile = "release"
 
-[[KLEE_UCLIBC]]
+[[Recipe]]
+recipe = "KLEE_UCLIBC"
+name = "klee-uclibc"
 branch = "klee_0_9_29"
 
-[[SIMULATOR]]
+[[Recipe]]
+recipe = "SIMULATOR"
+name = "simulator"
 branch = "master"
 profile = "release"
 
-[[PSEUDOALLOC]]
+[[Recipe]]
+recipe = "PSEUDOALLOC"
+name = "pseudoalloc"
 branch = "master"
 profile = "release"
 
-[[PORSE]]
+[[Recipe]]
+recipe = "PORSE"
+name = "porse"
 branch = "master"
 profile = "release"

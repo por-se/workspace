@@ -42,7 +42,12 @@ docker info
 
 if [[ -e /cache/image.tar.zst ]] ; then
 	echo "Loading image from local cache..."
-	zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load
+	if zstd -T${WS_JOBS:-0} -d -c /cache/image.tar.zst | docker load ; then
+		true # ok
+	else
+		echo "Local cache image corrupted - deleting..."
+		rm /cache/image.tar.zst
+	fi
 fi
 docker pull $IMAGE_NAME:ci || true # If we don't find a cache image, just go on without one
 docker images

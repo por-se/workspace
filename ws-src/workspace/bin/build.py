@@ -12,6 +12,7 @@ def main():
 
     settings.configs.add_argument(parser)
     settings.jobs.add_kwargument(parser)
+    settings.until.add_kwargument(parser)
 
     settings.bind_args(parser)
 
