@@ -71,8 +71,15 @@ def main():
             pass
 
     if sys.stdin.isatty:
-        subprocess.run(["git", "status"], check=True, env=en_env)
-        if not _confirm("Also remove all modifications?"):
+        diff = subprocess.run(["git", "diff", "--quiet"], env=en_env)
+        if diff.returncode == 0:
+            diff = subprocess.run(["git", "diff", "--quiet", "--staged"], env=en_env)
+        if diff.returncode != 0:
+            subprocess.run(["git", "status"], check=True, env=en_env)
+            if not _confirm("Also remove all modifications?"):
+                return
+        else:
+            print("No further modification detected.")
             return
 
     subprocess.run(["git", "reset", "--", "."], check=True, env=en_env)
