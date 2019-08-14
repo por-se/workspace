@@ -6,8 +6,18 @@ from workspace.settings import settings
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Print the path of the build directory of the given build for as used inside a configuration")
+    if sys.argv[1] != "--cd-build-dir":
+        cd_build_dir = False
+        description = "Print the path of the build directory of a given build as used inside a configuration"
+    else:
+        cd_build_dir = True
+        description = "Change to the build directory of a given build as used inside a configuration"
+
+        # directly setting argv[0] is not possible due to python
+        sys.argv[0] = "cd-build-dir"
+        del sys.argv[1]
+
+    parser = argparse.ArgumentParser(description=description)
 
     settings.build_name.add_argument(parser)
     settings.config.add_kwargument(parser)
@@ -31,4 +41,7 @@ def main():
             file=sys.stderr)
         sys.exit(1)
 
-    print(build[0])
+    if cd_build_dir:
+        print("cd '", str(build[0]).replace("'", "'\\''"), "'", sep="")
+    else:
+        print(build[0])

@@ -6,15 +6,26 @@ from . import Shell
 
 
 class Zsh(Shell):
-    def add_cd_build(self, builds):
-        cd_build = "# cd-build <build name>\n"
-        cd_build += "function cd-build { if [ \"$#\" -gt 0 ]; then\n case $@ in\n"
-        for build in builds:
-            cd_build += f"{build.name}) cd \"{build.paths.build_dir}\";;\n"
-        cd_build += "*) echo No build directory for \\\"$@\\\" found.;;\nesac\n"
-        cd_build += "else\necho 'Usage: cd-build <build name>'\nfi\n}\n"
+    def add_cd_build_dir(self):
+        cd_build_dir = """
+# cd-build-dir
+function cd-build-dir {
+    output=$(build-dir --cd-build-dir "$@" 2>&1)
+    exitcode=$?
+    if [[ $exitcode -ne 0 ]]; then
+        >&2 echo "$output"
+        return $exitcode
+    fi
+    regex="^cd .*"
+    if [[ "$output" =~ $regex ]]; then
+        eval "$output"
+    else
+        echo "$output"
+    fi
+}
+        """
 
-        self.add_additional_commands(cd_build)
+        self.add_additional_commands(cd_build_dir)
 
     def spawn(self, env):
         # method inspired by https://www.zsh.org/mla/users/2017/msg00318.html

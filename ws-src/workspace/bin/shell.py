@@ -49,5 +49,5 @@ def main():
 
     prompt_prefix = f"({workspace.ws_path.name}: {settings.config.value}) "
     shell_obj.set_prompt_prefix(prompt_prefix)
-    shell_obj.add_cd_build(workspace.builds)
+    shell_obj.add_cd_build_dir()
     shell_obj.spawn(env)

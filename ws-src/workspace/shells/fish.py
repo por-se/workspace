@@ -4,15 +4,24 @@ from . import Shell
 
 
 class Fish(Shell):
-    def add_cd_build(self, builds):
-        cd_build = "# cd-build <build name>\n"
-        cd_build += "function cd-build; if test (count $argv) -gt 0; switch $argv;\n"
-        for build in builds:
-            cd_build += f"case \"{build.name}\"; cd \"{build.paths.build_dir}\"\n"
-        cd_build += "case '*'; echo No build directory for \\\"$argv\\\" found.; end;\n"
-        cd_build += "else; echo 'Usage: cd-build <build name>'; end;\nend\n"
-
-        self.add_additional_commands(cd_build)
+    def add_cd_build_dir(self):
+        cd_build_dir = """
+# cd-build-dir
+function cd-build-dir
+    set -l output (build-dir --cd-build-dir $argv 2>&1)
+    set -l exitcode $status
+    if test $exitcode -ne 0
+        echo $output >&2
+        return $exitcode
+    end
+    if string match -r '^cd .*' $output
+        eval $output
+    else
+        printf '%s\n' $output
+    end
+end
+        """
+        self.add_additional_commands(cd_build_dir)
 
     def spawn(self, env):
         os.execvpe("fish", [
