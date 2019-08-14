@@ -68,7 +68,8 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake = None
         self.paths = None
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
+        assert self.profile in self.profiles, (
+            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -143,9 +144,9 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         avail_mem = psutil.virtual_memory().available
         if self.profiles[self.profile][
                 "has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
-            print(
-                f"[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available during a build containing debug information; restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]"
-            )
+            print(f'[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available '
+                  'during a build containing debug information; '
+                  'restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]')
             self.cmake.set_flag("LLVM_PARALLEL_LINK_JOBS", 1)
 
         for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():

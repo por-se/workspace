@@ -10,13 +10,13 @@ def main():
     cmd_name = Path(sys.argv[0]).name
     if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         print(f'Usage: {cmd_name} [configuration_name] [--] <command> [args...]', file=sys.stderr)
-        print(
-            f'''If the first argument is not a valid configuration name, the configuration is determined by the environment variable WS_CONFIG and the configuration file.
+        print(f'''If the first argument is not a valid configuration name, \
+the configuration is determined by the environment variable WS_CONFIG and the configuration file.
 
 Example (for 'release' configuration): ./ws run release which klee
 Example (for 'debug' configuration): env WS_CONFIG=debug ./ws run which klee
 Example (for using a value from the settings file): ./ws run which klee''',
-            file=sys.stderr)
+              file=sys.stderr)
         sys.exit(0)
 
     config_name = str(sys.argv[1])

@@ -65,7 +65,8 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake = None
         self.paths = None
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
+        assert self.profile in self.profiles, (
+            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):

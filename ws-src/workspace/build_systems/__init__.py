@@ -54,8 +54,9 @@ class CMakeConfig(BuildSystemConfig):
         def adjust(self, adjustments: List[str]):
             """
             Apply a list of adjustments of the form ['-DFOO=BLUB', '-UBAR', '-DNEW=VAL'] to the currently stored flags.
-            These adjustment can only contain '-DXXX=yyy' and '-UXXX' entries. Changed entries will be changed, new entries will be appended,
-            and '-U'-entries will be removed from the result, which otherwise is a copy of 'original_args'.
+            These adjustment can only contain '-DXXX=yyy' and '-UXXX' entries. Changed entries will be changed, new
+            entries will be appended, and '-U'-entries will be removed from the result, which otherwise is a copy of
+            'original_args'.
             """
             for adj in adjustments:
                 if adj.startswith("-D"):
@@ -67,9 +68,8 @@ class CMakeConfig(BuildSystemConfig):
                     name = adj[2:]
                     self.unset(name)
                 else:
-                    raise ValueError(
-                        f"adjust: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
-                    )
+                    raise ValueError('adjust: currently only adjustments starting with "-D" or "-U" are possible, '
+                                     f'but got "{adj}" instead. Please open an issue if required.')
 
         def generate(self):
             output = []

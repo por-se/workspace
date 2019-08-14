@@ -6,9 +6,8 @@ from workspace.bin.util import ws_from_config_name
 
 def main():
     parser = argparse.ArgumentParser(
-        description=
-        "Build one or more configurations. By default, builds all configurations, or only the configuration of the current environment if one is active."
-    )
+        description="Build one or more configurations. "
+        "By default, builds all configurations, or only the configuration of the current environment if one is active.")
 
     settings.configs.add_argument(parser)
     settings.jobs.add_kwargument(parser)

@@ -37,7 +37,8 @@ def main():
     assert len(build) <= 1
     if not build:
         print(
-            f'The configuration "{settings.config.value}" does not contain a build with the name "{settings.build_name.value}".',
+            f'The configuration "{settings.config.value}" '
+            f'does not contain a build with the name "{settings.build_name.value}".',
             file=sys.stderr)
         sys.exit(1)
 

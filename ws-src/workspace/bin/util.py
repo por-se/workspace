@@ -50,8 +50,7 @@ def ws_from_config_path(config_path: Path) -> Workspace:
             break
 
     if settings.until.value and settings.until.value not in seen_names:
-        raise Exception(
-            f'The configuration at location "{config_path}" does not contain a build named "{settings.until.value}" which should terminate processing.'
-        )
+        raise Exception(f'The configuration at location "{config_path}" '
+                        f'does not contain a build named "{settings.until.value}" which should terminate processing.')
 
     return workspace

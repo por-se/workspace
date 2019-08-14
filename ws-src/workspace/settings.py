@@ -144,7 +144,10 @@ class _Config:
 
 
 class _Configs:
-    """The set of configurations a command is to work on (list of configuration names as strings with the additional choice "all" resolved)"""
+    """
+    The set of configurations a command is to work on
+    (list of configuration names as strings with the additional choice "all" resolved)
+    """
 
     name = "configs"
     available = AVAILABLE_CONFIGURATIONS
@@ -264,7 +267,10 @@ class _PreserveSettings:
 
 
 class _Recipes:
-    """The set of recipes a command is to work on (list of recipe names as strings with the additional option "all" resolved)"""
+    """
+    The set of recipes a command is to work on
+    (list of recipe names as strings with the additional option "all" resolved)
+    """
 
     name = "recipes"
     choices = ["all"]
