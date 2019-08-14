@@ -37,7 +37,7 @@ echo started dockerd with driver "\"$DOCKER_DRIVER\""
 
 set -v # print commands to CI output
 
-docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
+docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" "$PRIVATE_DOCKER_REGISTRY"
 docker info
 
 if [[ -e /cache/image.tar.zst ]] ; then

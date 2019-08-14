@@ -1,6 +1,9 @@
 variables:
-  DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
-  IMAGE_NAME: $DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
+  PRIVATE_DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
+  PUBLIC_DOCKER_REGISTRY: kleenet.comsys.rwth-aachen.de
+  IMAGE_NAME: $PRIVATE_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
+  CI_IMAGE_NAME: $PUBLIC_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
+  PIPENV_CACHE_DIR: /cache/pipenv
 
 before_script:
   - echo $CI_JOB_ID
@@ -30,6 +33,7 @@ before_script:
 
 stages:
   - build
+  - test
 
 lint:
   stage: build
@@ -56,11 +60,6 @@ editorconfig:
 build-not-master:
   stage: build
   image: docker:dind
-  artifacts:
-    when: always
-    paths:
-      - build.log
-    expire_in: 1 day
   except:
     refs:
       - master
@@ -78,8 +77,6 @@ build-not-master:
           wait
         )
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
-
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:$CI_COMMIT_SHA build -j ${WS_JOBS} >build.log 2>&1'
 
 build-master:
   stage: build
@@ -111,3 +108,154 @@ build-master:
     - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1'
     - 'docker commit --change "CMD [\"shell\", \"-s\", \"fish\"]" ci $IMAGE_NAME:latest-prebuilt'
     - echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
+
+test-build-debug:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  artifacts:
+    when: always
+    paths:
+      - build.log
+    expire_in: 1 day
+  script:
+    - 'cd /workspace'
+    - './ws build debug >build.log 2>&1'
+  after_script:
+    - 'mv /workspace/build.log build.log'
+
+test-build-profile:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  artifacts:
+    when: always
+    paths:
+      - build.log
+    expire_in: 1 day
+  script:
+    - 'cd /workspace'
+    - './ws build profile >build.log 2>&1'
+  after_script:
+    - 'mv /workspace/build.log build.log'
+
+test-build-release:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  artifacts:
+    when: always
+    paths:
+      - build.log
+      - build-release.log
+    expire_in: 1 day
+  script:
+    - 'cd /workspace'
+    - './ws build >build.log 2>&1'
+    - 'timeout 10s ./ws build release >build-release.log 2>&1' # the previous command should already have built release
+  after_script:
+    - 'mv /workspace/build.log build.log'
+    - 'mv /workspace/build-release.log build-release.log'
+
+test-build-sanitized:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  artifacts:
+    when: always
+    paths:
+      - build.log
+    expire_in: 1 day
+  script:
+    - 'cd /workspace'
+    - './ws build sanitized >build.log 2>&1'
+  after_script:
+    - 'mv /workspace/build.log build.log'
+
+test-build-dir:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - './ws build-dir llvm'
+    - '! ./ws build-dir'
+    - '! ./ws build-dir lllvm'
+
+test-clean:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - 'mkdir .build .bin'
+    - './ws clean'
+    - '[[ -e ws-settings.toml ]]'
+    - '[[ ! -e .bin ]]'
+    - '[[ ! -e .build ]]'
+
+test-list-options:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - './ws list-options LLVM Z3'
+    - '! ./ws list-options Z4'
+    - './ws list-options'
+
+test-reset-settings:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - 'cp ws-settings.toml ws-settings.bak'
+    - './ws reset-settings'
+    - '! cmp --silent ws-settings.toml ws-settings.bak'
+
+test-run:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - './ws run -h'
+    - './ws run --help'
+    - './ws run echo'
+    - './ws run -- echo'
+    - './ws run profile echo'
+    - './ws run profile -- echo'
+    - '! ./ws run false'
+
+test-dist-clean-and-setup:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - 'echo y | ./ws dist-clean -p'
+    - '[[ -e ws-settings.toml ]]'
+    - '[[ ! -e .bin ]]'
+    - '[[ ! -e .build ]]'
+    - '[[ ! -e .venv ]]'
+    - '[[ ! -e llvm ]]'
+    - '[[ ! -e z3 ]]'
+    - '[[ ! -e minisat ]]'
+    - '[[ ! -e stp ]]'
+    - '[[ ! -e klee-uclibc ]]'
+    - '[[ ! -e klee ]]'
+
+    - './ws setup --until llvm'
+    - '[[ -e llvm ]]'
+    - '[[ ! -e klee ]]'
+
+    - './ws setup'
+    - '[[ -e klee ]]'
+
+    - 'touch foo'
+    - 'echo y | ./ws dist-clean'
+    - '[[ ! -e ws-settings.toml ]]'
+    - '[[ ! -e .venv ]]'
+    - '[[ ! -e llvm ]]'
+    - '[[ ! -e klee ]]'
+    - '[[ ! -e foo ]]'
+
+test-shell:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - 'echo | ./ws shell -s bash'
+    - 'echo | ./ws shell -s fish'
+    - 'echo | ./ws shell -s zsh'
