@@ -41,6 +41,18 @@ lint:
     - ws-src/pylint_check.sh
     - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
 
+editorconfig:
+  stage: build
+  image: mstruebing/editorconfig-checker
+  artifacts:
+    when: always
+    paths:
+      - paths.log
+    expire_in: 1 day
+  script:
+    - '/ec -spaces-after-tabs -e "\\.py$" -dry-run >paths.log'
+    - '/ec -spaces-after-tabs -e "\\.py$"'
+
 build-not-master:
   stage: build
   image: docker:dind
