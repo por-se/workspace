@@ -1,11 +1,16 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
 import subprocess
+from typing import TYPE_CHECKING
 
-from workspace.workspace import Workspace
 from workspace.settings import settings
-from . import Recipe, LLVM
+from .all_recipes import register_recipe
+from .recipe import Recipe
+from .llvm import LLVM
+if TYPE_CHECKING:
+    from workspace.workspace import Workspace
 
 
 class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
@@ -74,3 +79,6 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
                 check=True)
 
         subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env, check=True)
+
+
+register_recipe(KLEE_UCLIBC)

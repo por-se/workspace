@@ -1,13 +1,20 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
 import shutil
-from typing import cast, List, Dict
+from typing import TYPE_CHECKING, cast, List, Dict
 
-from workspace.workspace import Workspace
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
-from . import Recipe, STP, Z3, LLVM, KLEE_UCLIBC
+from .all_recipes import register_recipe
+from .recipe import Recipe
+from .llvm import LLVM
+from .z3 import Z3
+from .stp import STP
+from .klee_uclibc import KLEE_UCLIBC
+if TYPE_CHECKING:
+    from workspace.workspace import Workspace
 
 
 class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
@@ -178,3 +185,6 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
         env_prepend_path(env, "C_INCLUDE_PATH", self.paths.src_dir / "include")
+
+
+register_recipe(KLEE)

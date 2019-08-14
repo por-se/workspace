@@ -1,6 +1,5 @@
 [MESSAGES CONTROL]
 disable=
-	cyclic-import,
 	duplicate-code,
 	line-too-long,
 	missing-docstring,

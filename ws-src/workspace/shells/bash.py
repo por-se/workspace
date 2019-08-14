@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from . import Shell
+from .shell import Shell
 
 
 class Bash(Shell):

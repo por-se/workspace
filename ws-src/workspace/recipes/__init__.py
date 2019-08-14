@@ -8,8 +8,4 @@ from .minisat import MINISAT
 from .stp import STP
 from .klee import KLEE
 
-ALL: Dict[str, Type[Recipe]] = {
-    name: cls
-    for name, cls in globals().items() if isinstance(cls, type) and issubclass(cls, Recipe) and not cls == Recipe
-}
-"""all true subclasses of 'Recipe' that are in the current module"""
+from .all_recipes import ALL

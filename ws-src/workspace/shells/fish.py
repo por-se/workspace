@@ -1,6 +1,6 @@
 import os
 
-from . import Shell
+from .shell import Shell
 
 
 class Fish(Shell):

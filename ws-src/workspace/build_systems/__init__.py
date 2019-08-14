@@ -1,9 +1,11 @@
+from __future__ import annotations
 import abc
-import enum
 import shlex
 import subprocess
 from typing import Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 from pathlib import Path
+
+from .linker import Linker
 
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
@@ -14,26 +16,20 @@ def _quote_sequence(seq: Sequence[str]):
         yield shlex.quote(item)
 
 
-class Linker(enum.Enum):
-    LD = "ld"
-    GOLD = "gold"
-    LLD = "lld"
-
-
 class BuildSystemConfig(abc.ABC):
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         self.linker = workspace.get_default_linker()
 
     @abc.abstractmethod
-    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None):
+    def build(self, workspace: Workspace, source_dir: Path, build_dir: Path, target=None):
         raise NotImplementedError
 
 
@@ -91,17 +87,17 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         super().__init__(workspace)
         self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
 
-    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
         assert not self.is_configured(workspace, source_dir, build_dir)
 
         if not env:
@@ -134,7 +130,7 @@ class CMakeConfig(BuildSystemConfig):
 
         subprocess.run(config_call, env=env, check=True)
 
-    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None, env=None):  # pylint: disable=arguments-differ,too-many-arguments
+    def build(self, workspace: Workspace, source_dir: Path, build_dir: Path, target=None, env=None):  # pylint: disable=arguments-differ,too-many-arguments
         assert self.is_configured(workspace, source_dir, build_dir)
 
         from workspace.settings import settings

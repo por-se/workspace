@@ -7,7 +7,7 @@ from cached_property import cached_property
 import toml
 from vyper import v
 
-from workspace.build_systems import Linker
+from workspace.build_systems.linker import Linker
 
 
 class _Settings:
@@ -270,8 +270,9 @@ class _Recipes:
     choices = ["all"]
 
     def __init__(self):
-        import workspace.recipes
-        self.choices = ["all"] + [name for name in workspace.recipes.ALL]
+        # delayed initialization to give the recipes time to register themselves
+        import workspace.recipes.all_recipes
+        self.choices = ["all"] + [name for name in workspace.recipes.all_recipes.ALL]
 
     def add_argument(self, argparser: ArgumentParser, help_message: str = f'The set of chosen recipes'):
         name = self.name

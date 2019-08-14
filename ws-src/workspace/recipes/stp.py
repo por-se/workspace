@@ -1,13 +1,18 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
 import sys
-from typing import cast, List, Dict
+from typing import TYPE_CHECKING, cast, List, Dict
 
-from workspace.workspace import Workspace
 from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import env_prepend_path
-from . import Recipe, MINISAT
+from .all_recipes import register_recipe
+from .recipe import Recipe
+from .minisat import MINISAT
+
+if TYPE_CHECKING:
+    from workspace.workspace import Workspace
 
 
 class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
@@ -136,3 +141,6 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir)
+
+
+register_recipe(STP)

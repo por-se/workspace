@@ -1,7 +1,11 @@
+from __future__ import annotations
 import abc
 import inspect
+from typing import TYPE_CHECKING
 
-from workspace.workspace import Workspace
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from workspace.workspace import Workspace
 
 
 class Recipe(abc.ABC):

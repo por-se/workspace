@@ -6,7 +6,7 @@ import re
 import shutil
 
 import workspace.util as util
-import workspace.build_systems as build_systems
+from workspace.build_systems.linker import Linker
 from workspace.settings import settings
 
 
@@ -210,18 +210,18 @@ class Workspace:
         env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
         return env
 
-    def add_linker_to_env(self, linker: build_systems.Linker, env):
+    def add_linker_to_env(self, linker: Linker, env):
         linker_dir = self.get_linker_dir(linker)
         util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
-    def get_linker_dir(self, linker: build_systems.Linker):
+    def get_linker_dir(self, linker: Linker):
         if not linker in self._linker_dirs:
             linker_name = linker.value
             main_linker_dir = self._bin_dir / "linkers"
             linker_dir = main_linker_dir / linker_name
             if not linker_dir.exists():
                 linker_dir.mkdir(parents=True)
-                if linker == build_systems.Linker.LD:
+                if linker == Linker.LD:
                     ld_frontend = "ld"
                 else:
                     ld_frontend = f"ld.{linker_name}"

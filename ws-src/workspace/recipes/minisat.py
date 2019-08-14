@@ -1,11 +1,15 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from workspace.workspace import Workspace
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
-from . import Recipe
+from .all_recipes import register_recipe
+from .recipe import Recipe
+if TYPE_CHECKING:
+    from workspace.workspace import Workspace
 
 
 class MINISAT(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
@@ -75,3 +79,6 @@ class MINISAT(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribu
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths.build_dir)
+
+
+register_recipe(MINISAT)
