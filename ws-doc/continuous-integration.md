@@ -4,8 +4,8 @@ This file documents the basic structure for continuous integration of workspaces
 ## High-level overview of the features
 * For CI, create a docker container and build the workspace inside of it
 * Finally, if desired, these containers can be uploaded to our docker registry ({eyrie/kleenet}.comsys.rwth-aachen.de)
-  * In the current configuration, CI for the master branch will create & upload a container (if successful) containing an un-built workspace
-  * For other branches, the final container after building etc. will be uploaded, but with a manual expiration date of 1 day
+	* In the current configuration, CI for the master branch will create & upload a container (if successful) containing an un-built workspace
+	* For other branches, the final container after building etc. will be uploaded, but with a manual expiration date of 1 day
 * Most of the CI process is implemented in the script `.gitlab-ci-src/run-ci.py`, so that it can also be used for the CI of other projects, e.g., KleeNet
 * This does not yet actually run any tests as part of the build process, but lays the foundation for doing so.
 

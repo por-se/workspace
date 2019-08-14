@@ -13,6 +13,8 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "cd ws-src &&
-                        mypy --config-file mypy.ini setup.py &&
-                        exec mypy --config-file mypy.ini -p workspace"
+exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
+	cd ws-src
+	mypy --config-file mypy.ini setup.py
+	exec mypy --config-file mypy.ini -p workspace
+"
