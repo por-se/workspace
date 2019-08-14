@@ -115,6 +115,8 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
         c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(workspace.ws_path.resolve())}=."]
+        if self.linker:
+            c_flags.append(f"-B{workspace.get_linker_dir(self.linker)}")
         cxx_flags = c_flags.copy()
         c_flags += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
@@ -122,9 +124,6 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_CXX_FLAGS", ' '.join(_quote_sequence(cxx_flags)), override=False)
 
         config_call += cmake_flags.generate()
-
-        if self.linker:
-            workspace.add_linker_to_env(self.linker, env)
 
         subprocess.run(config_call, env=env, check=True)
 
@@ -139,9 +138,6 @@ class CMakeConfig(BuildSystemConfig):
         build_call = ["cmake", "--build", str(build_dir.resolve()), "-j", str(settings.jobs.value)]
         if target is not None:
             build_call += ['--target', target]
-
-        if self.linker:
-            workspace.add_linker_to_env(self.linker, env)
 
         subprocess.run(build_call, env=env, check=True)
 
