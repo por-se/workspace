@@ -20,11 +20,11 @@ class MINISAT(Recipe):  # pylint: disable=invalid-name,too-many-instance-attribu
             branch=None,
             name=default_name,
             repository="github://stp/minisat.git",
-            cmake_adjustments=[]):
+            cmake_adjustments=None):
         super().__init__(name)
         self.branch = branch
         self.repository = repository
-        self.cmake_adjustments = cmake_adjustments
+        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self.cmake = None
         self.paths = None

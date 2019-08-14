@@ -54,13 +54,13 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             name=default_name,
             repository="github://stp/stp.git",
             minisat_name=MINISAT.default_name,
-            cmake_adjustments=[]):
+            cmake_adjustments=None):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
         self.minisat_name = minisat_name
-        self.cmake_adjustments = cmake_adjustments
+        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self.cmake = None
         self.paths = None

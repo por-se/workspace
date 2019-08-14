@@ -2,7 +2,7 @@ from __future__ import annotations
 import abc
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Sequence, Union, TYPE_CHECKING
+from typing import List, Set, Dict, Optional, Sequence, Union, TYPE_CHECKING
 from pathlib import Path
 
 from .linker import Linker
@@ -35,14 +35,12 @@ class BuildSystemConfig(abc.ABC):
 
 class CMakeConfig(BuildSystemConfig):
     class CMakeFlags:
-        def __init__(self, illegal_flags=set()):
-            self._flags = {}
-            self.illegal_flags = illegal_flags
+        def __init__(self, flags: Optional[Dict] = None, illegal_flags: Optional[Set] = None):
+            self._flags = flags if flags is not None else {}
+            self.illegal_flags = illegal_flags if illegal_flags is not None else set()
 
         def copy(self):
-            other = CMakeConfig.CMakeFlags(illegal_flags=self.illegal_flags.copy())
-            other._flags = self._flags.copy()  # pylint: disable=protected-access
-            return other
+            return CMakeConfig.CMakeFlags(flags=self._flags.copy(), illegal_flags=self.illegal_flags.copy())
 
         def set(self, name: str, value: Union[str, bool, int], override=True):
             if name in self.illegal_flags:

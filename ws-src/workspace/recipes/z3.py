@@ -48,13 +48,13 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             repository="github://Z3Prover/z3.git",
             name=default_name,
             openmp=True,
-            cmake_adjustments=[]):
+            cmake_adjustments=None):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
         self.openmp = openmp
-        self.cmake_adjustments = cmake_adjustments
+        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self.paths = None
         self.cmake = None

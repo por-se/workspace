@@ -56,13 +56,13 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             branch=None,
             repository="github://llvm/llvm-project.git",
             name=default_name,
-            cmake_adjustments=[]):
+            cmake_adjustments=None):
         """Build LLVM."""
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
-        self.cmake_adjustments = cmake_adjustments
+        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self._release_build: Optional[LLVM] = None
         self.cmake = None

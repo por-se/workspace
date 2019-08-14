@@ -68,7 +68,7 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             z3_name=Z3.default_name,
             llvm_name=LLVM.default_name,
             klee_uclibc_name=KLEE_UCLIBC.default_name,
-            cmake_adjustments=[]):
+            cmake_adjustments=None):
 
         super().__init__(name)
         self.branch = branch
@@ -78,7 +78,7 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.z3_name = z3_name
         self.llvm_name = llvm_name
         self.klee_uclibc_name = klee_uclibc_name
-        self.cmake_adjustments = cmake_adjustments
+        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self.cmake = None
         self.paths = None
