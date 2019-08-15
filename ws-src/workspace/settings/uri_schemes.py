@@ -5,10 +5,16 @@ from cached_property import cached_property
 from .vyper import get
 
 
-class UriSchemes:  # pylint: disable=too-few-public-methods
+class UriSchemes:
     """The configured extra URI schemas (Dict[str, str])"""
 
     name = "uri-schemes"
+
+    def resolve(self, uri: str) -> str:
+        for (prefix, replacement) in self.value.items():
+            if uri.startswith(prefix):
+                return replacement + uri[len(prefix):]
+        return uri
 
     @cached_property
     def value(self) -> Dict[str, str]:

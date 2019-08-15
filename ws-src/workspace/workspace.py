@@ -15,10 +15,6 @@ class Workspace:
         self.builds = []
 
     @staticmethod
-    def get_repository_prefixes():
-        return settings.uri_schemes.value
-
-    @staticmethod
     def get_default_linker():
         return settings.default_linker.value
 

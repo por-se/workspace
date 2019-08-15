@@ -147,7 +147,7 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
+        self.repository = settings.uri_schemes.resolve(self.arguments["repository"])
 
         self.cmake = CMakeConfig(workspace)
 

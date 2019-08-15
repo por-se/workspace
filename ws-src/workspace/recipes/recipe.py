@@ -117,10 +117,3 @@ class Recipe(abc.ABC):
                 print(" (required)", end="")
 
             print()
-
-    @staticmethod
-    def concretize_repo_uri(repo_uri, workspace: Workspace):
-        for (prefix, replacement) in workspace.get_repository_prefixes().items():
-            if repo_uri.startswith(prefix):
-                repo_uri = replacement + repo_uri[len(prefix):]
-        return repo_uri
