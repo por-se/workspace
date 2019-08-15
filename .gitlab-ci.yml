@@ -6,20 +6,9 @@ variables:
   PIPENV_CACHE_DIR: /cache/pipenv
 
 before_script:
-  - echo $CI_JOB_ID
-  - echo $CI_RUNNER_ID
-  - echo $CI_RUNNER_REVISION
-  - echo $CI_RUNNER_TAGS
-  - echo $CI_RUNNER_VERSION
-  - echo $CI_RUNNER_DESCRIPTION
-  - echo "$CI_PROJECT_NAME"
-  - echo "$CI_PROJECT_NAMESPACE"
-  - echo "$CI_PROJECT_PATH"
-  - echo "$CI_PROJECT_PATH_SLUG"
-  - echo "$CI_COMMIT_REF_NAME"
-  - echo "$CI_COMMIT_REF_SLUG"
-  - echo "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-  - echo "$CI_MERGE_REQUEST_TITLE"
+  - | # setup netrc for usage in container
+      echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" >> ~/.netrc
+      chmod 0600 ~/.netrc
   - | # derive and print WS_JOBS
       export WS_JOBS=${CI_RUNNER_DESCRIPTION##*-j} # strip the longest match of *-j from the front of the description
       if [[ "$WS_JOBS" = "$CI_RUNNER_DESCRIPTION" ]] ; then # check if no match happened
@@ -103,9 +92,9 @@ build-master:
         )
     - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
 
-    - 'docker run --name ci -v /ccache:/ccache $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1'
+    - 'docker run --name ci -v ~/.netrc:/root/.netrc -v /ccache:/ccache $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1'
     - 'docker commit --change "CMD [\"shell\", \"-s\", \"fish\"]" ci $IMAGE_NAME:latest-prebuilt'
-    - echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
+    - 'echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push'
 
 test-build-debug:
   stage: test
