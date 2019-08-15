@@ -7,9 +7,10 @@
 - `recipes`: The set of recipes a command is to work on, with the additional option of `"all"` (list of strings) (env: `WS_RECIPES`, comma seperated)
 - `reference-repositories`: The location of the reference repositories (string) (env: `WS_REFERENCE_REPOSITORIES`)
 	- Running a command that tries to check out a repository while this is not set (the default) will prompt the user with an appropriate default value, that is then stored in the settings file
+- `shell`: The shell that is used by the `shell` command (one of `"auto"`, `"bash"`, `"fish"`, `"zsh"`) (env: `WS_SHELL`)
+- `until`: A build name after which processing of a configuration is stopped (string) (env: `WS_UNTI`)
+	- Compiling just LLVM can be achieved with the default configuration by `./ws build --until llvm`
 - `uri-schemes`: The configured extra URI schemas (dictionary of strings to strings)
 	- The default settings provide the schemes `github://` and `laboratory://`, both of which resolve to the `ssh` version of their respective destinations
 	- There is no way to set this setting to any sensible value outside of the settings file.
-- `shell`: The shell that is used by the `shell` command (one of `"auto"`, `"bash"`, `"fish"`, `"zsh"`) (env: `WS_SHELL`)
-	- This operation does *not* currently change the shell that is actually started by the command, but rather only overrides the detection
 - `X-git-clone`: Additional arguments to pass to the underlying git clone call (list of strings) (env: `WS_X_GIT_CLONE`, space separated)
