@@ -4,7 +4,9 @@ import shutil
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
+
+import schema
 
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
@@ -20,8 +22,11 @@ if TYPE_CHECKING:
     from workspace.workspace import Workspace
 
 
-class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    default_name = "klee"
+class KLEE(Recipe):  # pylint: disable=invalid-name
+    """
+    The [KLEE LLVM Execution Engine](https://klee.github.io/)
+    """
+
     profiles = {
         "release": {
             "cmake_args": {
@@ -61,33 +66,59 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         },
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            profile,
-            branch=None,
-            name=default_name,
-            repository="github://klee/klee.git",
-            stp_name=STP.default_name,
-            z3_name=Z3.default_name,
-            llvm_name=LLVM.default_name,
-            klee_uclibc_name=KLEE_UCLIBC.default_name,
-            cmake_adjustments=None):
+    default_arguments: Dict[str, Any] = {
+        "name": "klee",
+        "repository": "github://klee/klee.git",
+        "branch": None,
+        "klee-uclibc": KLEE_UCLIBC.default_arguments["name"],
+        "llvm": LLVM.default_arguments["name"],
+        "z3": Z3.default_arguments["name"],
+        "stp": STP.default_arguments["name"],
+        "cmake-adjustments": [],
+    }
 
-        super().__init__(name)
-        self.branch = branch
-        self.profile = profile
-        self.repository = repository
-        self.stp_name = stp_name
-        self.z3_name = z3_name
-        self.llvm_name = llvm_name
-        self.klee_uclibc_name = klee_uclibc_name
-        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
+    argument_schema: Dict[str, Any] = {
+        "name": str,
+        "repository": str,
+        "branch": schema.Or(str, None),
+        "profile": schema.Or(*profiles.keys()),
+        "klee-uclibc": str,
+        "llvm": str,
+        "z3": str,
+        "stp": str,
+        "cmake-adjustments": [str],
+    }
+
+    @property
+    def branch(self) -> str:
+        return self.arguments["branch"]
+
+    @property
+    def profile(self) -> str:
+        return self.arguments["profile"]
+
+    @property
+    def cmake_adjustments(self) -> List[str]:
+        return self.arguments["cmake-adjustments"]
+
+    def find_klee_uclibc(self, workspace: Workspace) -> KLEE_UCLIBC:
+        return self._find_previous_build(workspace, "klee-uclibc", KLEE_UCLIBC)
+
+    def find_llvm(self, workspace: Workspace) -> LLVM:
+        return self._find_previous_build(workspace, "llvm", LLVM)
+
+    def find_z3(self, workspace: Workspace) -> Z3:
+        return self._find_previous_build(workspace, "z3", Z3)
+
+    def find_stp(self, workspace: Workspace) -> STP:
+        return self._find_previous_build(workspace, "stp", STP)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.cmake = None
         self.paths = None
-
-        assert self.profile in self.profiles, (
-            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
+        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -101,20 +132,10 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            stp = workspace.find_build(build_name=self.stp_name, before=self)
-            z3 = workspace.find_build(build_name=self.z3_name, before=self)
-            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-            klee_uclibc = workspace.find_build(build_name=self.klee_uclibc_name, before=self)
-
-            assert stp, "klee requires stp"
-            assert z3, "klee requires z3"
-            assert llvm, "klee requires llvm"
-            assert klee_uclibc, "klee requires klee_uclibc"
-
-            digest.update(stp.digest.encode())
-            digest.update(z3.digest.encode())
-            digest.update(llvm.digest.encode())
-            digest.update(klee_uclibc.digest.encode())
+            digest.update(self.find_stp(workspace).digest.encode())
+            digest.update(self.find_z3(workspace).digest.encode())
+            digest.update(self.find_llvm(workspace).digest.encode())
+            digest.update(self.find_klee_uclibc(workspace).digest.encode())
 
             return digest.hexdigest()[:12]
 
@@ -130,7 +151,7 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
 
         self.cmake = CMakeConfig(workspace)
 
@@ -146,15 +167,10 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        stp = workspace.find_build(build_name=self.stp_name, before=self)
-        z3 = workspace.find_build(build_name=self.z3_name, before=self)
-        llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-        klee_uclibc = workspace.find_build(build_name=self.klee_uclibc_name, before=self)
-
-        assert stp, "klee requires stp"
-        assert z3, "klee requires z3"
-        assert llvm, "klee requires llvm"
-        assert klee_uclibc, "klee requires klee_uclibc"
+        stp = self.find_stp(workspace)
+        z3 = self.find_z3(workspace)
+        llvm = self.find_llvm(workspace)
+        klee_uclibc = self.find_klee_uclibc(workspace)
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
         self.cmake.set_flag('LLVM_DIR', str(llvm.paths.build_dir / "lib/cmake/llvm/"))

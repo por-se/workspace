@@ -4,7 +4,9 @@ import sys
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
+
+import schema
 
 from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import env_prepend_path
@@ -17,8 +19,7 @@ if TYPE_CHECKING:
     from workspace.workspace import Workspace
 
 
-class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    default_name = "stp"
+class STP(Recipe):  # pylint: disable=invalid-name
     profiles = {
         "release": {
             "cmake_args": {
@@ -49,26 +50,44 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         },
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            profile,
-            branch=None,
-            name=default_name,
-            repository="github://stp/stp.git",
-            minisat_name=MINISAT.default_name,
-            cmake_adjustments=None):
-        super().__init__(name)
-        self.branch = branch
-        self.profile = profile
-        self.repository = repository
-        self.minisat_name = minisat_name
-        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
+    default_arguments: Dict[str, Any] = {
+        "name": "stp",
+        "repository": "github://stp/stp.git",
+        "branch": None,
+        "minisat": MINISAT.default_arguments["name"],
+        "cmake-adjustments": [],
+    }
+
+    argument_schema: Dict[str, Any] = {
+        "name": str,
+        "repository": str,
+        "branch": schema.Or(str, None),
+        "profile": schema.Or(*profiles.keys()),
+        "minisat": str,
+        "cmake-adjustments": [str],
+    }
+
+    @property
+    def branch(self) -> str:
+        return self.arguments["branch"]
+
+    @property
+    def profile(self) -> str:
+        return self.arguments["profile"]
+
+    @property
+    def cmake_adjustments(self) -> List[str]:
+        return self.arguments["cmake-adjustments"]
+
+    def find_minisat(self, workspace: Workspace) -> MINISAT:
+        return self._find_previous_build(workspace, "minisat", MINISAT)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.cmake = None
         self.paths = None
-
-        assert self.profile in self.profiles, (
-            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
+        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -82,9 +101,7 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            minisat = workspace.find_build(build_name=self.minisat_name, before=self)
-            assert minisat, "STP requires minisat"
-            digest.update(minisat.digest.encode())
+            digest.update(self.find_minisat(workspace).digest.encode())
 
             return digest.hexdigest()[:12]
 
@@ -100,7 +117,7 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
 
         self.cmake = CMakeConfig(workspace)
         if self.cmake.linker == Linker.LLD:
@@ -121,8 +138,7 @@ class STP(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        minisat = workspace.find_build(build_name=self.minisat_name, before=self)
-        assert minisat, "STP requires minisat"
+        minisat = self.find_minisat(workspace)
         self.cmake.set_flag("MINISAT_LIBRARY", f"{minisat.paths.build_dir}/libminisat.a")
         self.cmake.set_flag("MINISAT_INCLUDE_DIR", str(minisat.paths.src_dir))
 

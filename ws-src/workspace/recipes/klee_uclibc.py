@@ -4,7 +4,9 @@ import subprocess
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
+
+import schema
 
 from workspace.settings import settings
 
@@ -16,21 +18,40 @@ if TYPE_CHECKING:
     from workspace.workspace import Workspace
 
 
-class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    default_name = "klee-uclibc"
+class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name
+    default_arguments: Dict[str, Any] = {
+        "name": "klee-uclibc",
+        "repository": "github://klee/klee-uclibc.git",
+        "branch": None,
+        "llvm": LLVM.default_arguments["name"],
+        "cmake-adjustments": [],
+    }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            branch=None,
-            repository="github://klee/klee-uclibc.git",
-            name=default_name,
-            llvm_name=LLVM.default_name):
-        super().__init__(name)
-        self.branch = branch
-        self.llvm_name = llvm_name
-        self.repository = repository
+    argument_schema: Dict[str, Any] = {
+        "name": str,
+        "repository": str,
+        "branch": schema.Or(str, None),
+        "llvm": str,
+        "cmake-adjustments": [str],
+    }
 
+    @property
+    def branch(self) -> str:
+        return self.arguments["branch"]
+
+    @property
+    def cmake_adjustments(self) -> List[str]:
+        return self.arguments["cmake-adjustments"]
+
+    def find_llvm(self, workspace: Workspace) -> LLVM:
+        return self._find_previous_build(workspace, "llvm", LLVM)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.cmake = None
         self.paths = None
+        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -40,9 +61,7 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-            assert llvm, "klee_uclibc requires llvm"
-            digest.update(llvm.digest.encode())
+            digest.update(self.find_llvm(workspace).digest.encode())
 
             return digest.hexdigest()[:12]
 
@@ -58,7 +77,7 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
 
     def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
@@ -72,8 +91,7 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-att
         env = workspace.get_env()
 
         if not (self.paths.build_dir / '.config').exists():
-            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-            assert llvm, "klee_uclibc requires llvm"
+            llvm = self.find_llvm(workspace)
 
             subprocess.run(
                 ["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],

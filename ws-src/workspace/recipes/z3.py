@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
+
+import schema
 
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
@@ -15,8 +17,8 @@ if TYPE_CHECKING:
     from workspace.workspace import Workspace
 
 
-class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    """The z3 constraint solver"""
+class Z3(Recipe):  # pylint: disable=invalid-name
+    """The [z3](https://github.com/Z3Prover/z3) constraint solver"""
 
     default_name = "z3"
     profiles = {
@@ -43,28 +45,51 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         },
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            profile,
-            branch=None,
-            repository="github://Z3Prover/z3.git",
-            name=default_name,
-            shared=True,
-            openmp=True,
-            cmake_adjustments=None):
-        super().__init__(name)
-        self.branch = branch
-        self.profile = profile
-        self.repository = repository
-        self.shared = shared
-        self.openmp = openmp
-        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
+    default_arguments: Dict[str, Any] = {
+        "name": "z3",
+        "repository": "github://Z3Prover/z3.git",
+        "branch": None,
+        "shared": True,
+        "openmp": True,
+        "cmake-adjustments": [],
+    }
 
-        self.paths = None
+    argument_schema: Dict[str, Any] = {
+        "name": str,
+        "repository": str,
+        "branch": schema.Or(str, None),
+        "profile": schema.Or(*profiles.keys()),
+        "shared": bool,
+        "openmp": bool,
+        "cmake-adjustments": [str],
+    }
+
+    @property
+    def branch(self) -> str:
+        return self.arguments["branch"]
+
+    @property
+    def profile(self) -> str:
+        return self.arguments["profile"]
+
+    @property
+    def shared(self) -> bool:
+        return self.arguments["shared"]
+
+    @property
+    def openmp(self) -> bool:
+        return self.arguments["openmp"]
+
+    @property
+    def cmake_adjustments(self) -> List[str]:
+        return self.arguments["cmake-adjustments"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
         self.cmake = None
-
-        assert self.profile in self.profiles, (
-            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
+        self.paths = None
+        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -99,7 +124,7 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
 
         self.cmake = CMakeConfig(workspace)
 

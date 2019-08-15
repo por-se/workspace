@@ -3,9 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 import psutil
+import schema
 
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
@@ -16,10 +17,14 @@ from .recipe import Recipe
 
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
+    from .z3 import Z3
 
 
-class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    default_name = "llvm"
+class LLVM(Recipe):  # pylint: disable=invalid-name
+    """
+    The [LLVM Compiler Infrastructure](https://llvm.org/) and [clang](https://clang.llvm.org/)
+    """
+
     profiles = {
         "release": {
             "cmake_args": {
@@ -53,28 +58,48 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         },
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            profile,
-            name=default_name,
-            repository="github://llvm/llvm-project.git",
-            branch=None,
-            z3_name=None,
-            cmake_adjustments=None):
-        """Build LLVM."""
-        super().__init__(name)
-        self.profile = profile
-        self.repository = repository
-        self.branch = branch
-        self.z3_name = z3_name
-        self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
+    default_arguments: Dict[str, Any] = {
+        "name": "llvm",
+        "repository": "github://llvm/llvm-project.git",
+        "branch": None,
+        "z3": None,
+        "cmake-adjustments": [],
+    }
+
+    argument_schema: Dict[str, Any] = {
+        "name": str,
+        "repository": str,
+        "branch": schema.Or(str, None),
+        "profile": schema.Or(*profiles.keys()),
+        "z3": schema.Or(str, None),
+        "cmake-adjustments": [str],
+    }
+
+    @property
+    def branch(self) -> str:
+        return self.arguments["branch"]
+
+    @property
+    def profile(self) -> str:
+        return self.arguments["profile"]
+
+    @property
+    def cmake_adjustments(self) -> List[str]:
+        return self.arguments["cmake-adjustments"]
+
+    def find_z3(self, workspace: Workspace) -> Optional[Z3]:
+        if self.arguments["z3"] is None:
+            return None
+        return self._find_previous_build(workspace, "z3", Z3)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self._release_build: Optional[LLVM] = None
+
         self.cmake = None
         self.paths = None
-
-        assert self.profile in self.profiles, (
-            f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!')
+        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -88,9 +113,8 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
 
-            if self.z3_name is not None:
-                z3 = workspace.find_build(build_name=self.z3_name, before=self)
-                assert z3, f'[{self.name}] "{self.z3_name}" could not be resolved as a valid z3 build name'
+            z3 = self.find_z3(workspace)
+            if z3:
                 assert z3.shared, (f'[{self.name}] The {z3.__class__.__name__} build named "{self.z3_name}" '
                                    f'must be built as shared to be usable by {self.__class__.__name__}')
                 digest.update(z3.digest.encode())
@@ -112,16 +136,17 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             return paths
 
         if not self.profiles[self.profile]["is_performance_build"]:
-            self._release_build = LLVM(profile="release",
-                                       branch=self.branch,
-                                       repository=self.repository,
-                                       name=self.name,
-                                       cmake_adjustments=[])
+            self._release_build = LLVM(
+                name=self.name,
+                repository=self.arguments["repository"],
+                branch=self.branch,
+                profile="release",
+            )
             self._release_build.initialize(workspace)
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        self.repository = Recipe.concretize_repo_uri(self.arguments["repository"], workspace)
 
         self.cmake = CMakeConfig(workspace)
 
@@ -144,9 +169,8 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        if self.z3_name is not None:
-            z3 = workspace.find_build(build_name=self.z3_name, before=self)
-            assert z3, f'[{self.name}] "{self.z3_name}" could not be resolved as a valid z3 build name'
+        z3 = self.find_z3(workspace)
+        if z3:
             self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths.src_dir / "src/api/"))
             self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.libz3))
 
