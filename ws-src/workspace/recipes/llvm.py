@@ -13,6 +13,7 @@ from workspace.util import env_prepend_path
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
+from .z3 import Z3
 
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
@@ -56,15 +57,17 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
             self,
             profile,
-            branch=None,
-            repository="github://llvm/llvm-project.git",
             name=default_name,
+            repository="github://llvm/llvm-project.git",
+            branch=None,
+            z3_name=Z3.default_name,
             cmake_adjustments=None):
         """Build LLVM."""
         super().__init__(name)
-        self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.branch = branch
+        self.z3_name = z3_name
         self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
         self._release_build: Optional[LLVM] = None
@@ -76,8 +79,6 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
-            del workspace  # unused parameter
-
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
@@ -87,6 +88,15 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
 
             # branch and repository need not be part of the digest, as we will build whatever
             # we find at the target path, no matter what it turns out to be at build time
+
+            if self.z3_name is not None:
+                z3 = workspace.find_build(build_name=self.z3_name, before=self)
+                assert z3, f'[{self.name}] "{self.z3_name}" could not be resolved as a valid z3 build name'
+                assert z3.shared, (f'[{self.name}] The {z3.__class__.__name__} build named "{self.z3_name}" '
+                                   f'must be built as shared to be usable by {self.__class__.__name__}')
+                digest.update(z3.digest.encode())
+            else:
+                digest.update("z3 disabled".encode())
 
             return digest.hexdigest()[:12]
 
@@ -134,6 +144,12 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
+
+        if self.z3_name is not None:
+            z3 = workspace.find_build(build_name=self.z3_name, before=self)
+            assert z3, f'[{self.name}] "{self.z3_name}" could not be resolved as a valid z3 build name'
+            self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths.src_dir / "src/api/"))
+            self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.libz3))
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths.src_dir / "clang"))
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")

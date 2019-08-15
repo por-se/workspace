@@ -49,12 +49,14 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             branch=None,
             repository="github://Z3Prover/z3.git",
             name=default_name,
+            shared=True,
             openmp=True,
             cmake_adjustments=None):
         super().__init__(name)
         self.branch = branch
         self.profile = profile
         self.repository = repository
+        self.shared = shared
         self.openmp = openmp
         self.cmake_adjustments = cmake_adjustments if cmake_adjustments is not None else []
 
@@ -71,6 +73,8 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             digest = blake2s()
             digest.update(self.name.encode())
             digest.update(self.profile.encode())
+            digest.update(f'shared:{self.shared}'.encode())
+            digest.update(f'openmp:{self.openmp}'.encode())
             for adjustment in self.cmake_adjustments:
                 digest.update("CMAKE_ADJUSTMENT:".encode())
                 digest.update(adjustment.encode())
@@ -85,9 +89,12 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             class InternalPaths:
                 src_dir: Path
                 build_dir: Path
+                libz3: Path
 
+            build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}'
             paths = InternalPaths(src_dir=workspace.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
+                                  build_dir=build_dir,
+                                  libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
             return paths
 
         self.digest = _compute_digest(self, workspace)
@@ -108,7 +115,7 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
-        self.cmake.set_flag("BUILD_LIBZ3_SHARED", False)
+        self.cmake.set_flag("BUILD_LIBZ3_SHARED", self.shared)
         self.cmake.set_flag("USE_OPENMP", self.openmp)
 
         for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():

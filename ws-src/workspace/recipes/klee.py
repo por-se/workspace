@@ -163,7 +163,7 @@ class KLEE(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
         self.cmake.set_flag('STP_STATIC_LIBRARY', str(stp.paths.build_dir / "lib/libstp.a"))
         self.cmake.set_flag('ENABLE_SOLVER_Z3', True)
         self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths.src_dir / "src/api/"))
-        self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.build_dir / "libz3.a"))
+        self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.libz3))
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', str(klee_uclibc.paths.build_dir))
