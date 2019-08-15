@@ -3,6 +3,7 @@ recipe = "Z3"
 name = "z3"
 branch = "Z3-4.8.5"
 profile = "rel+debinfo"
+shared = false
 openmp = false
 
 [[Recipe]]

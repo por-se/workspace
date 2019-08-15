@@ -13,7 +13,6 @@ from workspace.util import env_prepend_path
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
-from .z3 import Z3
 
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
@@ -60,7 +59,7 @@ class LLVM(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             name=default_name,
             repository="github://llvm/llvm-project.git",
             branch=None,
-            z3_name=Z3.default_name,
+            z3_name=None,
             cmake_adjustments=None):
         """Build LLVM."""
         super().__init__(name)
