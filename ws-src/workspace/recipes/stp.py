@@ -16,7 +16,7 @@ from .minisat import MINISAT
 from .recipe import Recipe
 
 if TYPE_CHECKING:
-    from workspace.workspace import Workspace
+    from workspace import Workspace
 
 
 class STP(Recipe):  # pylint: disable=invalid-name

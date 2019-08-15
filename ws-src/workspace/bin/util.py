@@ -4,8 +4,8 @@ from typing import Any, Set
 import toml
 
 import workspace.recipes as recipes
+from workspace import Workspace
 from workspace.settings import settings
-from workspace.workspace import Workspace
 
 
 def ws_from_config_name(config_name: str) -> Workspace:

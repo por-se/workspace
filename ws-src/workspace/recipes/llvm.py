@@ -16,7 +16,7 @@ from .all_recipes import register_recipe
 from .recipe import Recipe
 
 if TYPE_CHECKING:
-    from workspace.workspace import Workspace
+    from workspace import Workspace
     from .z3 import Z3
 
 

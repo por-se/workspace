@@ -7,7 +7,7 @@ import schema
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
-    from workspace.workspace import Workspace
+    from workspace import Workspace
 
 R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Union
 from .linker import Linker
 
 if TYPE_CHECKING:
-    from workspace.workspace import Workspace
+    from workspace import Workspace
 
 
 def _quote_sequence(seq: Sequence[str]):

@@ -19,7 +19,7 @@ from .stp import STP
 from .z3 import Z3
 
 if TYPE_CHECKING:
-    from workspace.workspace import Workspace
+    from workspace import Workspace
 
 
 class KLEE(Recipe):  # pylint: disable=invalid-name
