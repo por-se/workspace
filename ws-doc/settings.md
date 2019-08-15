@@ -9,7 +9,7 @@
 	- Running a command that tries to check out a repository while this is not set (the default) will prompt the user with an appropriate default value, that is then stored in the settings file
 - `shell`: The shell that is used by the `shell` command (one of `"auto"`, `"bash"`, `"fish"`, `"zsh"`) (env: `WS_SHELL`)
 - `until`: A build name after which processing of a configuration is stopped (string) (env: `WS_UNTI`)
-	- Compiling just LLVM can be achieved with the default configuration by `./ws build --until llvm`
+	- Compiling just Z3 (the first build in the default configuration) can be achieved with `./ws build --until z3`
 - `uri-schemes`: The configured extra URI schemas (dictionary of strings to strings)
 	- The default settings provide the schemes `github://` and `laboratory://`, both of which resolve to the `ssh` version of their respective destinations
 	- There is no way to set this setting to any sensible value outside of the settings file.
