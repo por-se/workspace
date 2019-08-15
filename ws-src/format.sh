@@ -13,4 +13,12 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws isort --apply -w 120 --recursive ws-src/workspace ws-src/setup.py
+exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
+	cd ws-src
+
+	# isort
+	isort --apply -w 120 --recursive workspace setup.py
+
+	# yapf
+	yapf --in-place --style=.style.yapf --recursive --parallel workspace setup.py
+"
