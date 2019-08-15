@@ -2,8 +2,8 @@ import os
 import sys
 from pathlib import Path
 
-from workspace.settings import settings
 from workspace.bin.util import ws_from_config_name
+from workspace.settings import settings
 
 
 def main():

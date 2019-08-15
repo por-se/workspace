@@ -1,9 +1,9 @@
 import os
-from pathlib import Path, PurePosixPath
-import sys
-import subprocess
 import re
 import shutil
+import subprocess
+import sys
+from pathlib import Path, PurePosixPath
 
 import workspace.util as util
 from workspace.build_systems.linker import Linker

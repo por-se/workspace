@@ -1,7 +1,7 @@
 import argparse
 
-from workspace.bin.util import ws_from_config_name
 import workspace.recipes as recipes
+from workspace.bin.util import ws_from_config_name
 from workspace.settings import settings
 
 

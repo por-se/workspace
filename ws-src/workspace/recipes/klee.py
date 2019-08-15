@@ -1,18 +1,21 @@
 from __future__ import annotations
+
+import shutil
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import shutil
-from typing import TYPE_CHECKING, cast, List, Dict
+from typing import TYPE_CHECKING, Dict, List, cast
 
 from workspace.build_systems import CMakeConfig
 from workspace.util import env_prepend_path
+
 from .all_recipes import register_recipe
-from .recipe import Recipe
-from .llvm import LLVM
-from .z3 import Z3
-from .stp import STP
 from .klee_uclibc import KLEE_UCLIBC
+from .llvm import LLVM
+from .recipe import Recipe
+from .stp import STP
+from .z3 import Z3
+
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
 

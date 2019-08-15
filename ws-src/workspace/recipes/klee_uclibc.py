@@ -1,14 +1,17 @@
 from __future__ import annotations
+
+import subprocess
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import subprocess
 from typing import TYPE_CHECKING
 
 from workspace.settings import settings
+
 from .all_recipes import register_recipe
-from .recipe import Recipe
 from .llvm import LLVM
+from .recipe import Recipe
+
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
 

@@ -1,10 +1,10 @@
-from argparse import ArgumentParser
 import multiprocessing
+from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
-from cached_property import cached_property
 import toml
+from cached_property import cached_property
 from vyper import v
 
 from workspace.build_systems.linker import Linker

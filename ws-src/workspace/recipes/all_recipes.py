@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Type, Dict
+
+from typing import TYPE_CHECKING, Dict, Type
 
 if TYPE_CHECKING:
     from .recipe import Recipe

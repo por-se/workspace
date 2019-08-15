@@ -1,15 +1,17 @@
 from __future__ import annotations
+
+import sys
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
-import sys
-from typing import TYPE_CHECKING, cast, List, Dict
+from typing import TYPE_CHECKING, Dict, List, cast
 
 from workspace.build_systems import CMakeConfig, Linker
 from workspace.util import env_prepend_path
+
 from .all_recipes import register_recipe
-from .recipe import Recipe
 from .minisat import MINISAT
+from .recipe import Recipe
 
 if TYPE_CHECKING:
     from workspace.workspace import Workspace

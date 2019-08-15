@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 from .shell import Shell
 

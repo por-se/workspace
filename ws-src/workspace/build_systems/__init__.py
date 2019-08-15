@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 import abc
 import shlex
 import subprocess
-from typing import List, Set, Dict, Optional, Sequence, Union, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Union
 
 from .linker import Linker
 

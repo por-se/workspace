@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from hashlib import blake2s
 from pathlib import Path
@@ -9,8 +10,10 @@ import psutil
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
 from workspace.util import env_prepend_path
+
 from .all_recipes import register_recipe
 from .recipe import Recipe
+
 if TYPE_CHECKING:
     from workspace.workspace import Workspace
 
