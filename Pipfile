@@ -17,9 +17,10 @@ shellingham = "*"
 toml = "*"
 vyper-config = "*"
 
+# the workspace itself
 workspace = { path = "ws-src", editable = true }
 
-# linters
+# linters and formatters
 flake8 = "*"
 "isort[pipfile]" = "*"
 mypy = "*"
