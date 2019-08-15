@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 import schema
 
 from workspace.build_systems import CMakeConfig
+from workspace.settings import settings
 from workspace.util import env_prepend_path
 
 from .all_recipes import register_recipe
@@ -117,7 +118,7 @@ class Z3(Recipe):  # pylint: disable=invalid-name
                 libz3: Path
 
             build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}'
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+            paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                   build_dir=build_dir,
                                   libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
             return paths

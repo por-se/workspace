@@ -130,7 +130,7 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
                 build_dir: Path
                 tablegen: Optional[Path] = None
 
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+            paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths

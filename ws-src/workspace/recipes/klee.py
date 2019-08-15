@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 import schema
 
 from workspace.build_systems import CMakeConfig
+from workspace.settings import settings
 from workspace.util import env_prepend_path
 
 from .all_recipes import register_recipe
@@ -145,7 +146,7 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+            paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
             return paths
 

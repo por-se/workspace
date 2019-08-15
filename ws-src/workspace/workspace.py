@@ -17,11 +17,9 @@ def _run(cmd, *args, **kwargs):
 
 class Workspace:
     def __init__(self):
-        self.ws_path = settings.ws_path
-
-        self.patch_dir = self.ws_path / 'ws-patch'
-        self.build_dir = self.ws_path / '.build'
-        self._bin_dir = self.ws_path / '.bin'
+        self.patch_dir = settings.ws_path / 'ws-patch'
+        self.build_dir = settings.ws_path / '.build'
+        self._bin_dir = settings.ws_path / '.bin'
         self._linker_dirs = {}
         self.builds = []
 
@@ -121,11 +119,12 @@ class Workspace:
                     print(line, file=file)
             _run(["git", "-C", target_path, "checkout", branch])
 
-    def git_add_exclude_path(self, path):
+    @staticmethod
+    def git_add_exclude_path(path):
         path = PurePosixPath(path)
-        path = path.relative_to(self.ws_path)
+        path = path.relative_to(settings.ws_path)
 
-        git_dir = self.ws_path / ".git"
+        git_dir = settings.ws_path / ".git"
         assert git_dir.is_dir()
 
         git_info_dir = git_dir / "info"
@@ -147,11 +146,12 @@ class Workspace:
                 file.write("\n")
             file.write(f'/{path}\n')
 
-    def git_remove_exclude_path(self, path):
+    @staticmethod
+    def git_remove_exclude_path(path):
         path = PurePosixPath(path)
-        path = path.relative_to(self.ws_path)
+        path = path.relative_to(settings.ws_path)
 
-        git_exclude_path = self.ws_path / ".git" / "info" / "exclude"
+        git_exclude_path = settings.ws_path / ".git" / "info" / "exclude"
         if not git_exclude_path.is_file():
             return  # nothing to un-exclude
 
@@ -205,9 +205,10 @@ class Workspace:
         if mypycache_dir.exists():
             shutil.rmtree(mypycache_dir)
 
-    def get_env(self):
+    @staticmethod
+    def get_env():
         env = os.environ.copy()
-        env["CCACHE_BASEDIR"] = str(self.ws_path.resolve())
+        env["CCACHE_BASEDIR"] = str(settings.ws_path.resolve())
         return env
 
     def add_linker_to_env(self, linker: Linker, env):

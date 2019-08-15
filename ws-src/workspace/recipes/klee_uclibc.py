@@ -71,7 +71,7 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name
                 src_dir: Path
                 build_dir: Path
 
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
+            paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                   build_dir=workspace.build_dir / f'{self.name}-{self.digest}')
             return paths
 

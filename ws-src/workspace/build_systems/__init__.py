@@ -97,6 +97,8 @@ class CMakeConfig(BuildSystemConfig):
         return build_dir.exists()
 
     def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
+        from workspace.settings import settings
+
         assert not self.is_configured(workspace, source_dir, build_dir)
 
         if not env:
@@ -115,7 +117,7 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
-        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(workspace.ws_path.resolve())}=."]
+        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(settings.ws_path.resolve())}=."]
         if self.linker:
             c_flags.append(f"-B{workspace.get_linker_dir(self.linker)}")
         cxx_flags = c_flags.copy()
