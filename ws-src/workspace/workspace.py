@@ -1,15 +1,9 @@
 import os
 import shutil
-import subprocess
 
 import workspace.util as util
 from workspace.build_systems.linker import Linker
 from workspace.settings import settings
-
-
-def _run(cmd, *args, **kwargs):
-    kwargs.setdefault("check", True)
-    subprocess.run(cmd, *args, **kwargs)
 
 
 class Workspace:
