@@ -1,15 +1,15 @@
 [[Recipe]]
-recipe = "LLVM"
-name = "llvm"
-branch = "llvmorg-8.0.1"
-profile = "release"
-
-[[Recipe]]
 recipe = "Z3"
 name = "z3"
 branch = "Z3-4.8.5"
 profile = "release"
 openmp = false
+
+[[Recipe]]
+recipe = "LLVM"
+name = "llvm"
+branch = "llvmorg-8.0.1"
+profile = "release"
 
 [[Recipe]]
 recipe = "MINISAT"
