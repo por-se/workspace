@@ -11,6 +11,7 @@ import schema
 from workspace.build_systems import CMakeConfig, Linker
 from workspace.settings import settings
 from workspace.util import env_prepend_path
+from workspace.vcs import git
 
 from .all_recipes import register_recipe
 from .minisat import MINISAT
@@ -129,9 +130,9 @@ class STP(Recipe):  # pylint: disable=invalid-name
 
     def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
-            workspace.git_add_exclude_path(self.paths.src_dir)
-            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            workspace.apply_patches("stp", self.paths.src_dir)
+            git.add_exclude_path(self.paths.src_dir)
+            git.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            git.apply_patches(workspace.patch_dir, "stp", self.paths.src_dir)
 
     def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])

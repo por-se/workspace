@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 import schema
 
 from workspace.settings import settings
+from workspace.vcs import git
 
 from .all_recipes import register_recipe
 from .llvm import LLVM
@@ -81,9 +82,9 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name
 
     def setup(self, workspace: Workspace):
         if not self.paths.src_dir.is_dir():
-            workspace.git_add_exclude_path(self.paths.src_dir)
-            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            workspace.apply_patches("klee-uclibc", self.paths.src_dir)
+            git.add_exclude_path(self.paths.src_dir)
+            git.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
+            git.apply_patches(workspace.patch_dir, "klee-uclibc", self.paths.src_dir)
 
     def build(self, workspace: Workspace):
         subprocess.run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir], check=True)

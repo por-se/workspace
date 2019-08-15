@@ -11,6 +11,7 @@ import schema
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
 from workspace.util import env_prepend_path
+from workspace.vcs import git
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
@@ -156,12 +157,12 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
             self._release_build.setup(workspace)
 
         if not self.paths.src_dir.is_dir():
-            workspace.git_add_exclude_path(self.paths.src_dir)
-            workspace.reference_clone(self.repository,
-                                      target_path=self.paths.src_dir,
-                                      branch=self.branch,
-                                      sparse=["/llvm", "/clang"])
-            workspace.apply_patches("llvm", self.paths.src_dir)
+            git.add_exclude_path(self.paths.src_dir)
+            git.reference_clone(self.repository,
+                                target_path=self.paths.src_dir,
+                                branch=self.branch,
+                                sparse=["/llvm", "/clang"])
+            git.apply_patches(workspace.patch_dir, "llvm", self.paths.src_dir)
 
     def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
