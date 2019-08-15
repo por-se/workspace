@@ -17,6 +17,7 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 	cd ws-src
 
 	# mypy
+	echo Running mypy checks...
 	mypy --config-file mypy.ini setup.py
 	mypy --config-file mypy.ini -p workspace
 
@@ -25,13 +26,16 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 	flake8 --max-line-len 120 -j ${WS_JOBS:-$(nproc)} setup.py workspace
 
 	# pylint
-	pylint workspace setup.py
+	echo Running pylint checks...
+	pylint -s n workspace setup.py
 
 	# isort
+	echo Running isort checks...
 	isort --check --diff -w 120 --recursive workspace setup.py \
 		|| (echo && echo Imports not properly sorted - run ws-src/format.sh! && false)
 
 	# yapf
+	echo Running yapf checks...
 	yapf --diff --style=.style.yapf --recursive --parallel workspace setup.py \
 		|| (echo && echo Code not properly formatted - run ws-src/format.sh! && false)
 "
