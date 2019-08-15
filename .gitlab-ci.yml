@@ -43,6 +43,7 @@ lint:
   script:
     - ws-src/mypy_check.sh
     - ws-src/pylint_check.sh
+    - ws-src/isort_check.sh || (echo && echo Imports not properly sorted - run ws-src/isort_format.sh! && false)
     - ws-src/yapf_check.sh || (echo && echo Code not properly formatted - run ws-src/yapf_format.sh! && false)
 
 editorconfig:

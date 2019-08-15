@@ -20,6 +20,7 @@ vyper-config = "*"
 workspace = { path = "ws-src", editable = true }
 
 # linters
+"isort[pipfile]" = "*"
 mypy = "*"
 pylint = "*"
 yapf = "*"
