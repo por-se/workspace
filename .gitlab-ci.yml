@@ -223,8 +223,8 @@ test-dist-clean-and-setup:
     - '[[ ! -e klee-uclibc ]]'
     - '[[ ! -e klee ]]'
 
-    - './ws setup --until llvm'
-    - '[[ -e llvm ]]'
+    - './ws setup --until z3'
+    - '[[ -e z3 ]]'
     - '[[ ! -e klee ]]'
 
     - './ws setup'
