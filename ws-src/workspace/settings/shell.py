@@ -16,12 +16,9 @@ class Shell:
     name = "shell"
     choices = ["auto", "bash", "fish", "zsh"]
 
-    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "The shell to invoke"):
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "The shell to invoke") -> None:
         uppercase_name = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-s',
-                                      '--shell',
-                                      choices=self.choices,
-                                      help=f'{help_message} (env: WS_{uppercase_name})')
+        argparser.add_argument('-s', '--shell', choices=self.choices, help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> str:

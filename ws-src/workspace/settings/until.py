@@ -17,9 +17,9 @@ class Until:
 
     def add_kwargument(self,
                        argparser: ArgumentParser,
-                       help_message: str = f'Abort processing after the given build name'):
+                       help_message: str = f'Abort processing after the given build name') -> None:
         uppercase_name = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-u', '--until', help=f'{help_message} (env: WS_{uppercase_name})')
+        argparser.add_argument('-u', '--until', help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> Optional[str]:

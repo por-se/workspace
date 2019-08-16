@@ -15,13 +15,13 @@ class PreserveSettings:
 
     name = "preserve-settings"
 
-    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "Preserve ws-settings.toml"):
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = "Preserve ws-settings.toml") -> None:
         uppercase_name = self.name.upper().replace("-", "_")
-        return argparser.add_argument('-p',
-                                      '--preserve-settings',
-                                      action='store_const',
-                                      const=True,
-                                      help=f'{help_message} (env: WS_{uppercase_name})')
+        argparser.add_argument('-p',
+                               '--preserve-settings',
+                               action='store_const',
+                               const=True,
+                               help=f'{help_message} (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> bool:

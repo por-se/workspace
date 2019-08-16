@@ -18,13 +18,12 @@ class DefaultLinker:
     name = "default-linker"
     choices = [str(linker.value) for linker in Linker]
 
-    def add_kwargument(self, argparser: ArgumentParser, help_message: str = f'The default linker'):
+    def add_kwargument(self, argparser: ArgumentParser, help_message: str = f'The default linker') -> None:
         uppercase_name = self.name.upper().replace("-", "_")
-        return argparser.add_argument(
-            '--default-linker',
-            choices=self.choices,
-            metavar=uppercase_name,
-            help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
+        argparser.add_argument('--default-linker',
+                               choices=self.choices,
+                               metavar=uppercase_name,
+                               help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     @cached_property
     def value(self) -> Linker:
