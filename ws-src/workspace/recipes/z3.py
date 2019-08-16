@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import blake2s
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, cast
 
@@ -16,6 +15,7 @@ from .all_recipes import register_recipe
 from .recipe import Recipe
 
 if TYPE_CHECKING:
+    import hashlib
     from workspace import Workspace
 
 
@@ -84,22 +84,7 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = None
 
     def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            del workspace  # unused parameter
-
-            digest = blake2s()
-            digest.update(self.name.encode())
-            digest.update(self.profile.encode())
-            digest.update(f'shared:{self.shared}'.encode())
-            digest.update(f'openmp:{self.openmp}'.encode())
-            for adjustment in self.cmake_adjustments:
-                digest.update("CMAKE_ADJUSTMENT:".encode())
-                digest.update(adjustment.encode())
-
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
-
-            return digest.hexdigest()[:12]
+        Recipe.initialize(self, workspace)
 
         def _make_internal_paths(self, workspace: Workspace):
             @dataclass
@@ -108,16 +93,25 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                 build_dir: Path
                 libz3: Path
 
-            build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}'
+            build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
             paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                   build_dir=build_dir,
                                   libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
             return paths
 
-        self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
 
         self.cmake = CMakeConfig(workspace)
+
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+
+        digest.update(self.profile.encode())
+        digest.update(f'shared:{self.shared}'.encode())
+        digest.update(f'openmp:{self.openmp}'.encode())
+        for adjustment in self.cmake_adjustments:
+            digest.update("CMAKE_ADJUSTMENT:".encode())
+            digest.update(adjustment.encode())
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "z3")

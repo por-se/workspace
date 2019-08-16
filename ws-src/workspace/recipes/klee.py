@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass
-from hashlib import blake2s
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, cast
 
@@ -21,6 +20,7 @@ from .stp import STP
 from .z3 import Z3
 
 if TYPE_CHECKING:
+    import hashlib
     from workspace import Workspace
 
 
@@ -113,24 +113,8 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.cmake = None
         self.paths = None
 
-    def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            digest = blake2s()
-            digest.update(self.name.encode())
-            digest.update(self.profile.encode())
-            for adjustment in self.cmake_adjustments:
-                digest.update("CMAKE_ADJUSTMENT:".encode())
-                digest.update(adjustment.encode())
-
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
-
-            digest.update(self.find_stp(workspace).digest.encode())
-            digest.update(self.find_z3(workspace).digest.encode())
-            digest.update(self.find_llvm(workspace).digest.encode())
-            digest.update(self.find_klee_uclibc(workspace).digest.encode())
-
-            return digest.hexdigest()[:12]
+    def initialize(self, workspace: Workspace) -> None:
+        Recipe.initialize(self, workspace)
 
         def _make_internal_paths(self, workspace: Workspace):
             @dataclass
@@ -139,13 +123,25 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                 build_dir: Path
 
             paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
             return paths
 
-        self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
 
         self.cmake = CMakeConfig(workspace)
+
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+
+        digest.update(self.profile.encode())
+        for adjustment in self.cmake_adjustments:
+            digest.update("CMAKE_ADJUSTMENT:".encode())
+            digest.update(adjustment.encode())
+
+        digest.update(self.find_stp(workspace).digest)
+        digest.update(self.find_z3(workspace).digest)
+        digest.update(self.find_llvm(workspace).digest)
+        digest.update(self.find_klee_uclibc(workspace).digest)
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "klee")

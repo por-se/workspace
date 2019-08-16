@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import blake2s
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
@@ -17,6 +16,7 @@ from .all_recipes import register_recipe
 from .recipe import Recipe
 
 if TYPE_CHECKING:
+    import hashlib
     from workspace import Workspace
     from .z3 import Z3
 
@@ -94,26 +94,7 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = None
 
     def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            digest = blake2s()
-            digest.update(self.name.encode())
-            digest.update(self.profile.encode())
-            for adjustment in self.cmake_adjustments:
-                digest.update("CMAKE_ADJUSTMENT:".encode())
-                digest.update(adjustment.encode())
-
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
-
-            z3 = self.find_z3(workspace)
-            if z3:
-                assert z3.shared, (f'[{self.name}] The {z3.__class__.__name__} build named "{self.z3_name}" '
-                                   f'must be built as shared to be usable by {self.__class__.__name__}')
-                digest.update(z3.digest.encode())
-            else:
-                digest.update("z3 disabled".encode())
-
-            return digest.hexdigest()[:12]
+        Recipe.initialize(self, workspace)
 
         def _make_internal_paths(self, workspace: Workspace):
             @dataclass
@@ -123,7 +104,7 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                 tablegen: Optional[Path] = None
 
             paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
             paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
             return paths
 
@@ -136,10 +117,25 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
             )
             self._release_build.initialize(workspace)
 
-        self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
 
         self.cmake = CMakeConfig(workspace)
+
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+
+        digest.update(self.profile.encode())
+        for adjustment in self.cmake_adjustments:
+            digest.update("CMAKE_ADJUSTMENT:".encode())
+            digest.update(adjustment.encode())
+
+        z3 = self.find_z3(workspace)
+        if z3:
+            assert z3.shared, (f'[{self.name}] The {z3.__class__.__name__} build named "{z3.name}" '
+                               f'must be built as shared to be usable by {self.__class__.__name__}')
+            digest.update(z3.digest)
+        else:
+            digest.update("z3 disabled".encode())
 
     def setup(self, workspace: Workspace):
         if not self.profiles[self.profile]["is_performance_build"]:

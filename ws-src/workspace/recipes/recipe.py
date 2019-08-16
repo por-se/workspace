@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import abc
+import hashlib
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Type, TypeVar
 
 import schema
+from base58 import b58encode
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -15,7 +17,6 @@ R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 class Recipe(abc.ABC):
     default_arguments: Dict[str, Any] = {}
     argument_schema: Dict[str, Any] = {}
-    digest: Optional[str] = None
 
     def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
         self.default_arguments.update(default_arguments)
@@ -31,6 +32,18 @@ class Recipe(abc.ABC):
     def name(self) -> str:
         return self.arguments["name"]
 
+    __digest: Optional[bytes] = None
+
+    @property
+    def digest(self) -> bytes:
+        if not self.__digest:
+            raise Exception(f'[{self.name}] Digest requested before it was computed')
+        return self.__digest
+
+    @property
+    def digest_str(self) -> str:
+        return b58encode(self.digest).decode("utf-8")[:16]  # slightly more than 41 chars would be available (blake2s)
+
     def __init__(self, **kwargs):
         self.__arguments = dict(self.default_arguments, **kwargs)
         argument_schema = dict({"name": str}, **self.argument_schema)
@@ -38,8 +51,6 @@ class Recipe(abc.ABC):
             schema.Schema(argument_schema).validate(self.arguments)
         except schema.SchemaError as error:
             raise Exception(f'[{self.name}] Could not validate configuration: {error}')
-
-        self.digest = None
 
     def _find_previous_build(self, workspace: Workspace, name: str, typ: Type[R]) -> R:
         build = workspace.find_build(build_name=self.arguments[name], before=self)
@@ -52,9 +63,15 @@ class Recipe(abc.ABC):
 
         return build
 
-    @abc.abstractmethod
-    def initialize(self, workspace: Workspace):
-        raise NotImplementedError
+    def initialize(self, workspace: Workspace) -> None:
+        digest = hashlib.blake2s()
+        self.compute_digest(workspace, digest)
+        self.__digest = digest.digest()
+
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        del workspace
+
+        digest.update(self.name.encode())
 
     @abc.abstractmethod
     def setup(self, workspace: Workspace):

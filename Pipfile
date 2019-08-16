@@ -10,6 +10,7 @@ tabulate = "*"
 wllvm = "*"
 
 # workspace dependencies
+base58 = "*"
 cached-property = "*"
 psutil = "*"
 schema = "*"

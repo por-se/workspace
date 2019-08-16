@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import subprocess
 from dataclasses import dataclass
-from hashlib import blake2s
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -15,6 +14,7 @@ from .llvm import LLVM
 from .recipe import Recipe
 
 if TYPE_CHECKING:
+    import hashlib
     from workspace import Workspace
 
 
@@ -45,16 +45,7 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = None
 
     def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            digest = blake2s()
-            digest.update(self.name.encode())
-
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
-
-            digest.update(self.find_llvm(workspace).digest.encode())
-
-            return digest.hexdigest()[:12]
+        Recipe.initialize(self, workspace)
 
         def _make_internal_paths(self, workspace: Workspace):
             @dataclass
@@ -64,12 +55,16 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                 locale_file: Path
 
             paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}',
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest_str}',
                                   locale_file=workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz")
             return paths
 
-        self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
+
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+
+        digest.update(self.find_llvm(workspace).digest)
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "klee-uclibc")
