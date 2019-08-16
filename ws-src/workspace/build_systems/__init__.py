@@ -26,11 +26,17 @@ class BuildSystemConfig(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path):
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env: Optional[Dict[str, str]] = None):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, workspace: Workspace, source_dir: Path, build_dir: Path, target=None):
+    def build(  # pylint: disable=too-many-arguments
+            self,
+            workspace: Workspace,
+            source_dir: Path,
+            build_dir: Path,
+            target: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None):
         raise NotImplementedError
 
 
@@ -46,7 +52,7 @@ class CMakeConfig(BuildSystemConfig):
         def set(self, name: str, value: Union[str, bool, int], override=True):
             if name in self.illegal_flags:
                 raise ValueError(f"changing cmake flag {name} is illegal")
-            if override or not name in self._flags:
+            if override or name not in self._flags:
                 self._flags[name] = value
 
         def unset(self, name: str):
@@ -96,7 +102,7 @@ class CMakeConfig(BuildSystemConfig):
     def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env: Optional[Dict[str, str]] = None):
         from workspace.settings import settings
 
         assert not self.is_configured(workspace, source_dir, build_dir)
@@ -130,7 +136,13 @@ class CMakeConfig(BuildSystemConfig):
 
         subprocess.run(config_call, env=env, check=True)
 
-    def build(self, workspace: Workspace, source_dir: Path, build_dir: Path, target=None, env=None):  # pylint: disable=arguments-differ,too-many-arguments
+    def build(  # pylint: disable=too-many-arguments
+            self,
+            workspace: Workspace,
+            source_dir: Path,
+            build_dir: Path,
+            target: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None):
         assert self.is_configured(workspace, source_dir, build_dir)
 
         from workspace.settings import settings
@@ -139,7 +151,7 @@ class CMakeConfig(BuildSystemConfig):
             env = workspace.get_env()
 
         build_call = ["cmake", "--build", str(build_dir.resolve()), "-j", str(settings.jobs.value)]
-        if target is not None:
+        if target:
             build_call += ['--target', target]
 
         subprocess.run(build_call, env=env, check=True)

@@ -72,7 +72,8 @@ def _check_create_ref_dir():
         os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
 
 
-def reference_clone(repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=None):  # pylint: disable=too-many-arguments
+def reference_clone(  # pylint: disable=too-many-arguments
+        repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=None):
     if not branch:
         raise ValueError("'branch' is required but not given")
 

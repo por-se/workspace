@@ -123,7 +123,7 @@ class Workspace:
         util.env_prepend_path(env, "PATH", linker_dir.resolve())
 
     def get_linker_dir(self, linker: Linker):
-        if not linker in self._linker_dirs:
+        if linker not in self._linker_dirs:
             linker_name = linker.value
             main_linker_dir = self._bin_dir / "linkers"
             linker_dir = main_linker_dir / linker_name

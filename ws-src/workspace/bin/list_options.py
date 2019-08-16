@@ -23,7 +23,7 @@ def main():
         for rep in workspace.builds:
             clas = rep.__class__
             name = clas.__name__
-            if not name in recipes_to_list:
+            if name not in recipes_to_list:
                 continue
             if len(settings.recipes.value) != 1:
                 print(f"{name}:")

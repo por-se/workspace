@@ -5,9 +5,8 @@ from workspace.settings import settings
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=
-        "Clean the workspace. Removes all build artifacts, to ensure that the next build starts from scratch.")
+    parser = argparse.ArgumentParser(description="Clean the workspace. "
+                                     "Removes all build artifacts, to ensure that the next build starts from scratch.")
 
     settings.bind_args(parser)
 
