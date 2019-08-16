@@ -78,7 +78,6 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "profile": schema.Or(*profiles.keys()),
         "klee-uclibc": str,
         "llvm": str,

@@ -54,7 +54,6 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "profile": schema.Or(*profiles.keys()),
         "shared": bool,
         "openmp": bool,

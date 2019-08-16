@@ -24,7 +24,6 @@ class MINISAT(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "cmake-adjustments": [str],
     }
 

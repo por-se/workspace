@@ -59,7 +59,6 @@ class STP(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "profile": schema.Or(*profiles.keys()),
         "minisat": str,
         "cmake-adjustments": [str],

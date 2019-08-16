@@ -66,7 +66,6 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "profile": schema.Or(*profiles.keys()),
         "z3": schema.Or(str, None),
         "cmake-adjustments": [str],

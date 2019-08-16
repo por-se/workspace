@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Type, TypeVar
 
 import schema
 
@@ -14,10 +14,8 @@ R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 
 class Recipe(abc.ABC):
     default_arguments: Dict[str, Any] = {}
-
-    argument_schema: Dict[str, Any] = {
-        "name": str,
-    }
+    argument_schema: Dict[str, Any] = {}
+    digest: Optional[str] = None
 
     def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
         self.default_arguments.update(default_arguments)
@@ -35,8 +33,9 @@ class Recipe(abc.ABC):
 
     def __init__(self, **kwargs):
         self.__arguments = dict(self.default_arguments, **kwargs)
+        argument_schema = dict({"name": str}, **self.argument_schema)
         try:
-            schema.Schema(self.argument_schema).validate(self.arguments)
+            schema.Schema(argument_schema).validate(self.arguments)
         except schema.SchemaError as error:
             raise Exception(f'[{self.name}] Could not validate configuration: {error}')
 

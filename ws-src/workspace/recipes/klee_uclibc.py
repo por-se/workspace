@@ -26,7 +26,6 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     argument_schema: Dict[str, Any] = {
-        "name": str,
         "llvm": str,
         "cmake-adjustments": [str],
     }
