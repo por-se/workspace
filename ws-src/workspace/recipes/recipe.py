@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Type, TypeVar
 
 import schema
 
@@ -19,12 +19,22 @@ class Recipe(abc.ABC):
         "name": str,
     }
 
+    def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
+        self.default_arguments.update(default_arguments)
+
+    def update_argument_schema(self, argument_schema: Dict[str, Any]) -> None:
+        self.argument_schema.update(argument_schema)
+
+    @property
+    def arguments(self) -> Mapping[str, Any]:
+        return self.__arguments
+
     @property
     def name(self) -> str:
         return self.arguments["name"]
 
     def __init__(self, **kwargs):
-        self.arguments = dict(self.default_arguments, **kwargs)
+        self.__arguments = dict(self.default_arguments, **kwargs)
         try:
             schema.Schema(self.argument_schema).validate(self.arguments)
         except schema.SchemaError as error:

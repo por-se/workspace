@@ -11,7 +11,7 @@ import schema
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
 from workspace.util import env_prepend_path
-from workspace.vcs import git
+from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
 from .klee_uclibc import KLEE_UCLIBC
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class KLEE(Recipe):  # pylint: disable=invalid-name
+class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     """
     The [KLEE LLVM Execution Engine](https://klee.github.io/)
     """
@@ -70,8 +70,6 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
 
     default_arguments: Dict[str, Any] = {
         "name": "klee",
-        "repository": "github://klee/klee.git",
-        "branch": None,
         "klee-uclibc": KLEE_UCLIBC.default_arguments["name"],
         "llvm": LLVM.default_arguments["name"],
         "z3": Z3.default_arguments["name"],
@@ -81,8 +79,6 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
 
     argument_schema: Dict[str, Any] = {
         "name": str,
-        "repository": str,
-        "branch": schema.Or(str, None),
         "profile": schema.Or(*profiles.keys()),
         "klee-uclibc": str,
         "llvm": str,
@@ -90,10 +86,6 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
         "stp": str,
         "cmake-adjustments": [str],
     }
-
-    @property
-    def branch(self) -> str:
-        return self.arguments["branch"]
 
     @property
     def profile(self) -> str:
@@ -116,11 +108,11 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
         return self._find_previous_build(workspace, "stp", STP)
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        GitRecipeMixin.__init__(self, "github://klee/klee.git")
+        Recipe.__init__(self, **kwargs)
 
         self.cmake = None
         self.paths = None
-        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -153,15 +145,11 @@ class KLEE(Recipe):  # pylint: disable=invalid-name
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = settings.uri_schemes.resolve(self.arguments["repository"])
 
         self.cmake = CMakeConfig(workspace)
 
     def setup(self, workspace: Workspace):
-        if not self.paths.src_dir.is_dir():
-            git.add_exclude_path(self.paths.src_dir)
-            git.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            git.apply_patches(workspace.patch_dir, "klee", self.paths.src_dir)
+        self.setup_git(self.paths.src_dir, workspace.patch_dir / "klee")
 
     def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])

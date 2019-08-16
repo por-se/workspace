@@ -11,7 +11,7 @@ import schema
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
 from workspace.util import env_prepend_path
-from workspace.vcs import git
+from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from .z3 import Z3
 
 
-class LLVM(Recipe):  # pylint: disable=invalid-name
+class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     """
     The [LLVM Compiler Infrastructure](https://llvm.org/) and [clang](https://clang.llvm.org/)
     """
@@ -61,24 +61,16 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
 
     default_arguments: Dict[str, Any] = {
         "name": "llvm",
-        "repository": "github://llvm/llvm-project.git",
-        "branch": None,
         "z3": None,
         "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "name": str,
-        "repository": str,
-        "branch": schema.Or(str, None),
         "profile": schema.Or(*profiles.keys()),
         "z3": schema.Or(str, None),
         "cmake-adjustments": [str],
     }
-
-    @property
-    def branch(self) -> str:
-        return self.arguments["branch"]
 
     @property
     def profile(self) -> str:
@@ -94,13 +86,13 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
         return self._find_previous_build(workspace, "z3", Z3)
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        GitRecipeMixin.__init__(self, "github://llvm/llvm-project.git", sparse=["/llvm", "/clang"])
+        Recipe.__init__(self, **kwargs)
 
         self._release_build: Optional[LLVM] = None
 
         self.cmake = None
         self.paths = None
-        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -147,7 +139,6 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = settings.uri_schemes.resolve(self.arguments["repository"])
 
         self.cmake = CMakeConfig(workspace)
 
@@ -156,13 +147,7 @@ class LLVM(Recipe):  # pylint: disable=invalid-name
             assert self._release_build is not None
             self._release_build.setup(workspace)
 
-        if not self.paths.src_dir.is_dir():
-            git.add_exclude_path(self.paths.src_dir)
-            git.reference_clone(self.repository,
-                                target_path=self.paths.src_dir,
-                                branch=self.branch,
-                                sparse=["/llvm", "/clang"])
-            git.apply_patches(workspace.patch_dir, "llvm", self.paths.src_dir)
+        self.setup_git(self.paths.src_dir, workspace.patch_dir / "llvm")
 
     def _configure(self, workspace: Workspace):
         cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])

@@ -1,10 +1,13 @@
+import abc
 import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
-from typing import List, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+
+import schema
 
 from workspace.settings import settings
 
@@ -91,11 +94,8 @@ def reference_clone(  # pylint: disable=too-many-arguments
     def check_ref_dir(ref_dir: Path) -> bool:
         if not ref_dir.is_dir():
             return False
-        try:
-            subprocess.run(["git", "fsck", "--root", "--no-full"], cwd=ref_dir, check=True)
-            return True
-        except subprocess.CalledProcessError:
-            return False
+        result = subprocess.run(["git", "fsck", "--root", "--no-full"], cwd=ref_dir)
+        return result.returncode == 0
 
     ref_path = make_ref_path(repo_uri)
 
@@ -139,6 +139,77 @@ def reference_clone(  # pylint: disable=too-many-arguments
         subprocess.run(checkout_command, check=True)
 
 
-def apply_patches(patch_dir: Path, name: Union[str, Path], target_path: Path) -> None:
-    for patch in (patch_dir / name).glob("*.patch"):
+def apply_patches(patch_dir: Path, target_path: Path) -> None:
+    for patch in (patch_dir).glob("*.patch"):
         subprocess.run(f"git apply < {patch}", shell=True, cwd=target_path, check=True)
+
+
+class GitRecipeMixin(abc.ABC):
+    """
+    The `GitRecipeMixin` must be initialized before the `Recipe` base class.
+
+    Parameters
+    ----------
+    repository: str, optional
+        The repository to clone. It is never optional in the schema: If not provided by the mixin user, it must be
+        provided by the workspace user in their configuration.
+    branch: str, optional
+        The branch to check out. If it is passed as `None`, the schema notes it as optional (i.e., `None` is a valid
+        value), but if a value other than `None` is passed, the schema will require this value to be a `str`. Note that
+        it is pretty much impossible for a workspace user to pass a `None` value directly, as TOML does not support
+        the notion of a null type.
+    checkout: bool, optional
+        When set to `False`, disables actually checking out the repository.
+    sparse: sequence of str, optional
+        When not `None`, enables a sparse checkout of the elements of the sequence. E.g., when passing
+        `["/foo", "/bar"]`, only the subpaths `/foo` and `/bar` are checked out.
+    """
+    @property
+    @abc.abstractmethod
+    def arguments(self) -> Mapping[str, Any]:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def update_argument_schema(self, argument_schema: Dict[str, Any]) -> None:
+        raise NotImplementedError()
+
+    def __init__(self,
+                 repository: Optional[str] = None,
+                 branch: Optional[str] = None,
+                 checkout: bool = True,
+                 sparse: Optional[Sequence[str]] = None):
+        self.update_argument_schema({
+            "repository": str,
+            "branch": schema.Or(str, None) if branch is None else str,
+        })
+
+        default_arguments = {"branch": branch}
+        if repository is not None:
+            default_arguments["repository"] = repository
+        self.update_default_arguments(default_arguments)
+
+        self.__checkout = checkout
+        self.__sparse = sparse
+
+    @property
+    def repository(self) -> str:
+        return settings.uri_schemes.resolve(self.arguments["repository"])
+
+    @property
+    def branch(self) -> Optional[str]:
+        return self.arguments["branch"]
+
+    def setup_git(self, source_dir: Path, patch_dir: Optional[Path]):
+        if not source_dir.is_dir():
+            add_exclude_path(source_dir)
+            reference_clone(self.repository,
+                            source_dir,
+                            branch=self.branch,
+                            checkout=self.__checkout,
+                            sparse=self.__sparse)
+            if patch_dir:
+                apply_patches(patch_dir, source_dir)

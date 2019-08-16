@@ -5,12 +5,10 @@ from hashlib import blake2s
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
-import schema
-
 from workspace.build_systems import CMakeConfig
 from workspace.settings import settings
 from workspace.util import env_prepend_path
-from workspace.vcs import git
+from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
@@ -19,35 +17,27 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class MINISAT(Recipe):  # pylint: disable=invalid-name
+class MINISAT(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "name": "minisat",
-        "repository": "github://stp/minisat.git",
-        "branch": None,
         "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "name": str,
-        "repository": str,
-        "branch": schema.Or(str, None),
         "cmake-adjustments": [str],
     }
-
-    @property
-    def branch(self) -> str:
-        return self.arguments["branch"]
 
     @property
     def cmake_adjustments(self) -> List[str]:
         return self.arguments["cmake-adjustments"]
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        GitRecipeMixin.__init__(self, "github://stp/minisat.git")
+        Recipe.__init__(self, **kwargs)
 
         self.cmake = None
         self.paths = None
-        self.repository = None
 
     def initialize(self, workspace: Workspace):
         def _compute_digest(self, workspace: Workspace):
@@ -76,15 +66,11 @@ class MINISAT(Recipe):  # pylint: disable=invalid-name
 
         self.digest = _compute_digest(self, workspace)
         self.paths = _make_internal_paths(self, workspace)
-        self.repository = settings.uri_schemes.resolve(self.arguments["repository"])
 
         self.cmake = CMakeConfig(workspace)
 
     def setup(self, workspace: Workspace):
-        if not self.paths.src_dir.is_dir():
-            git.add_exclude_path(self.paths.src_dir)
-            git.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            git.apply_patches(workspace.patch_dir, "minisat", self.paths.src_dir)
+        self.setup_git(self.paths.src_dir, workspace.patch_dir / "minisat")
 
     def _configure(self, workspace: Workspace):
         self.cmake.set_extra_cxx_flags(["-std=c++11"])
