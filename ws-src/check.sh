@@ -20,6 +20,10 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 	mypy --config-file mypy.ini setup.py
 	mypy --config-file mypy.ini -p workspace
 
+	# flake8
+	echo Running flake8 checks...
+	flake8 --max-line-len 120 -j ${WS_JOBS:-$(nproc)} setup.py workspace
+
 	# pylint
 	pylint workspace setup.py
 
