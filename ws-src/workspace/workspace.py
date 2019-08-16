@@ -1,34 +1,34 @@
+from __future__ import annotations
+
 import os
 import shutil
+from pathlib import Path
+from typing import Dict, List
 
 import workspace.util as util
 from workspace.build_systems.linker import Linker
+from workspace.recipes.recipe import Recipe
 from workspace.settings import settings
 
 
 class Workspace:
-    def __init__(self):
-        self.patch_dir = settings.ws_path / 'ws-patch'
-        self.build_dir = settings.ws_path / '.build'
-        self._bin_dir = settings.ws_path / '.bin'
-        self._linker_dirs = {}
-        self.builds = []
+    patch_dir: Path = settings.ws_path / 'ws-patch'
+    build_dir: Path = settings.ws_path / '.build'
+    _bin_dir: Path = settings.ws_path / '.bin'
+    _linker_dirs: Dict[Linker, Path] = {}
+    builds: List[Recipe] = []
 
     @staticmethod
     def get_default_linker():
         return settings.default_linker.value
 
     def find_build(self, build_name, before=None):
-        i = 0
-
-        while i < len(self.builds):
-            if before and self.builds[i] == before:
+        for build in self.builds:
+            if before and before == build:
                 return None
 
-            if self.builds[i].name == build_name:
-                return self.builds[i]
-
-            i += 1
+            if build.name == build_name:
+                return build
 
         return None
 
