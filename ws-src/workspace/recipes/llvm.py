@@ -96,18 +96,6 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
 
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
-                tablegen: Optional[Path] = None
-
-            paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
-            paths.tablegen = paths.build_dir / 'bin/llvm-tblgen'
-            return paths
-
         if not self.profiles[self.profile]["is_performance_build"]:
             self._release_build = LLVM(
                 name=self.name,
@@ -117,7 +105,16 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
             )
             self._release_build.initialize(workspace)
 
-        self.paths = _make_internal_paths(self, workspace)
+        @dataclass
+        class InternalPaths:
+            src_dir: Path
+            build_dir: Path
+            tablegen: Optional[Path] = None
+
+        build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
+        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
+                                   build_dir=build_dir,
+                                   tablegen=build_dir / "bin" / "llvm-tblgen")
 
         self.cmake = CMakeConfig(workspace)
 

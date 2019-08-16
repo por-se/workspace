@@ -116,17 +116,13 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
 
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
+        @dataclass
+        class InternalPaths:
+            src_dir: Path
+            build_dir: Path
 
-            paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
-            return paths
-
-        self.paths = _make_internal_paths(self, workspace)
+        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
+                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
 
         self.cmake = CMakeConfig(workspace)
 

@@ -47,19 +47,15 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
 
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
-                locale_file: Path
+        @dataclass
+        class InternalPaths:
+            src_dir: Path
+            build_dir: Path
+            locale_file: Path
 
-            paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest_str}',
-                                  locale_file=workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz")
-            return paths
-
-        self.paths = _make_internal_paths(self, workspace)
+        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
+                                   build_dir=workspace.build_dir / f'{self.name}-{self.digest_str}',
+                                   locale_file=workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz")
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)

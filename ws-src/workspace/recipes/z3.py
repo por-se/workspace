@@ -86,20 +86,16 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
 
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
-                libz3: Path
+        @dataclass
+        class InternalPaths:
+            src_dir: Path
+            build_dir: Path
+            libz3: Path
 
-            build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
-            paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=build_dir,
-                                  libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
-            return paths
-
-        self.paths = _make_internal_paths(self, workspace)
+        build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
+        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
+                                   build_dir=build_dir,
+                                   libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
 
         self.cmake = CMakeConfig(workspace)
 
