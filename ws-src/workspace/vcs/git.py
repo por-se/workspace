@@ -4,11 +4,12 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
+from typing import List, Optional, Sequence, Union
 
 from workspace.settings import settings
 
 
-def add_exclude_path(path):
+def add_exclude_path(path: Union[Path, PurePosixPath, str]) -> None:
     path = PurePosixPath(path)
     path = path.relative_to(settings.ws_path)
 
@@ -35,7 +36,7 @@ def add_exclude_path(path):
         file.write(f'/{path}\n')
 
 
-def remove_exclude_path(path):
+def remove_exclude_path(path: Union[Path, PurePosixPath, str]) -> None:
     path = PurePosixPath(path)
     path = path.relative_to(settings.ws_path)
 
@@ -52,40 +53,42 @@ def remove_exclude_path(path):
         file.write(lines)
 
 
-def _check_create_ref_dir():
-    if settings.reference_repositories.value is None:
-        ref_target_path = Path.home() / '.cache' / 'reference-repos'
-        input_res = input(f"Where would you like to store reference repository data? [{ref_target_path}] ")
+def _check_create_ref_dir() -> None:
+    reference_repositories = settings.reference_repositories.value
+    if reference_repositories is None:
+        default_path = Path.home() / '.cache' / 'reference-repos'
+        input_res = input(f"Where would you like to store reference repository data? [{default_path}] ")
         if input_res:
-            ref_target_path = Path(input_res)
+            reference_repositories = Path(input_res)
+        else:
+            reference_repositories = default_path
 
-        ref_target_path = ref_target_path.resolve()
+        reference_repositories = reference_repositories.resolve()
+        settings.reference_repositories.update(reference_repositories)
 
-        os.makedirs(ref_target_path, exist_ok=True)
-
-        settings.reference_repositories.update(str(ref_target_path))
-
-    if not settings.reference_repositories.value.is_dir():
-        if settings.reference_repositories.value.exists():
-            raise RuntimeError(
-                f"reference-repository path '{settings.reference_repositories.value}' exists but is not a directory")
-        os.makedirs(settings.reference_repositories.value.resolve(), exist_ok=True)
+    if not reference_repositories.is_dir():
+        if reference_repositories.exists():
+            raise RuntimeError(f"reference-repository path '{reference_repositories}' exists but is not a directory")
+        os.makedirs(reference_repositories.resolve(), exist_ok=True)
 
 
 def reference_clone(  # pylint: disable=too-many-arguments
-        repo_uri, target_path, branch, checkout=True, sparse=None, clone_args=None):
-    if not branch:
-        raise ValueError("'branch' is required but not given")
+        repo_uri: str,
+        target_path: Path,
+        branch: Optional[str],
+        checkout: bool = True,
+        sparse: Optional[Sequence[str]] = None,
+        clone_args: Optional[Sequence[str]] = None) -> None:
 
     _check_create_ref_dir()
 
-    def make_ref_path(git_path):
-        name = re.sub("^https://|^ssh://([^/]+@)?|^[^/]+@", "", str(git_path))
+    def make_ref_path(git_path: str) -> Path:
+        name = re.sub("^https://|^ssh://([^/]+@)?|^[^/]+@", "", git_path)
         name = re.sub("\\.git$", "", name)
         name = re.sub(":", "/", name)
         return settings.reference_repositories.value / "v1" / name
 
-    def check_ref_dir(ref_dir):
+    def check_ref_dir(ref_dir: Path) -> bool:
         if not ref_dir.is_dir():
             return False
         try:
@@ -112,10 +115,11 @@ def reference_clone(  # pylint: disable=too-many-arguments
                        cwd=ref_path,
                        check=True)
 
-    clone_command = [
-        "git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--reference", ref_path, repo_uri, target_path,
-        "--branch", branch
+    clone_command: List[Union[str, Path]] = [
+        "git", "-c", f'pack.threads={settings.jobs.value}', "clone", "--reference", ref_path, repo_uri, target_path
     ]
+    if branch:
+        clone_command += ["--branch", branch]
     if not checkout or sparse is not None:
         clone_command += ["--no-checkout"]
     clone_command += settings.x_git_clone.value
@@ -128,9 +132,13 @@ def reference_clone(  # pylint: disable=too-many-arguments
         with open(target_path / ".git/info/sparse-checkout", "wt") as file:
             for line in sparse:
                 print(line, file=file)
-        subprocess.run(["git", "-C", target_path, "checkout", branch], check=True)
+
+        checkout_command: List[Union[str, Path]] = ["git", "-C", target_path, "checkout"]
+        if branch:
+            checkout_command.append(branch)
+        subprocess.run(checkout_command, check=True)
 
 
-def apply_patches(patch_dir, name, target_path):
+def apply_patches(patch_dir: Path, name: Union[str, Path], target_path: Path) -> None:
     for patch in (patch_dir / name).glob("*.patch"):
         subprocess.run(f"git apply < {patch}", shell=True, cwd=target_path, check=True)

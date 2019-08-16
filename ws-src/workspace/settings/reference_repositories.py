@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import toml
 from cached_property import cached_property
@@ -33,9 +33,11 @@ class ReferenceRepositories:
         if value is None:
             return value
 
-        return Path(value)
+        return Path(value).resolve()
 
-    def update(self, path: str) -> None:
+    def update(self, path: Union[str, Path]) -> None:
+        if isinstance(path, Path):
+            path = str(path.resolve())
         with open(ws_path / "ws-settings.toml", "r") as file:
             settings_dict = toml.load(file)
         if self.name not in settings_dict or settings_dict[self.name] != path:
