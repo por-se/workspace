@@ -23,15 +23,15 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 
 	# flake8
 	echo Running flake8 checks...
-	flake8 --max-line-len 120 -j ${WS_JOBS:-$(nproc)} setup.py workspace
+	flake8 --max-line-len 120 -j '${WS_JOBS:-$(nproc)}' setup.py workspace
 
 	# pylint
 	echo Running pylint checks...
-	pylint -j ${WS_JOBS:-$(nproc)} -s n workspace setup.py
+	pylint -j '${WS_JOBS:-$(nproc)}' -s n workspace setup.py
 
 	# isort
 	echo Running isort checks...
-	isort -j ${WS_JOBS:-$(nproc)} --check --diff -w 120 --recursive workspace setup.py \
+	isort -j '${WS_JOBS:-$(nproc)}' --check --diff -w 120 --recursive workspace setup.py \
 		|| (echo && echo Imports not properly sorted - run ws-src/format.sh! && false)
 
 	# yapf

@@ -18,7 +18,7 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 
 	# isort
 	echo Sorting imports with isort...
-	isort -j ${WS_JOBS:-$(nproc)} --apply -w 120 --recursive workspace setup.py
+	isort -j '${WS_JOBS:-$(nproc)}' --apply -w 120 --recursive workspace setup.py
 
 	# yapf
 	echo Formatting code with yapf...
