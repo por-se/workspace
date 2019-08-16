@@ -1,0 +1,13 @@
+diff --git a/klee-premade-configs/x86_64/config b/klee-premade-configs/x86_64/config
+index 00ec863bb..a6481093c 100644
+--- a/klee-premade-configs/x86_64/config
++++ b/klee-premade-configs/x86_64/config
+@@ -107,7 +107,7 @@ UCLIBC_HAS_CTYPE_UNSAFE=y
+ UCLIBC_HAS_WCHAR=y
+ UCLIBC_HAS_LOCALE=y
+ UCLIBC_PREGENERATED_LOCALE_DATA=y
+-UCLIBC_DOWNLOAD_PREGENERATED_LOCALE_DATA=y
++UCLIBC_DOWNLOAD_PREGENERATED_LOCALE_DATA=n
+ UCLIBC_HAS_XLOCALE=y
+ # UCLIBC_HAS_HEXADECIMAL_FLOATS is not set
+ # UCLIBC_HAS_GLIBC_DIGIT_GROUPING is not set

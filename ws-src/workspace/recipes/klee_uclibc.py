@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 from hashlib import blake2s
@@ -71,9 +72,11 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name
             class InternalPaths:
                 src_dir: Path
                 build_dir: Path
+                locale_file: Path
 
             paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}')
+                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}',
+                                  locale_file=workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz")
             return paths
 
         self.digest = _compute_digest(self, workspace)
@@ -86,8 +89,31 @@ class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name
             git.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
             git.apply_patches(workspace.patch_dir, "klee-uclibc", self.paths.src_dir)
 
+        if not self.paths.locale_file.is_file():
+            import urllib.request
+            import shutil
+
+            attempt, attempts = 0, 5
+            while attempt < attempts:
+                with urllib.request.urlopen("https://www.uclibc.org/downloads/uClibc-locale-030818.tgz") as response:
+                    os.makedirs(self.paths.locale_file.parent, exist_ok=True)
+                    with open(self.paths.locale_file, "wb") as locale_file:
+                        shutil.copyfileobj(response, locale_file)
+                result = subprocess.run(["tar", "-xOf", self.paths.locale_file], stdout=subprocess.DEVNULL)
+                if result.returncode != 0:
+                    os.remove(self.paths.locale_file)
+                    attempt += 1
+                    print(f'Failed downloading uclibc locale data in attempt {attempt}/{attempts}')
+                else:
+                    break
+            if attempt >= attempts:
+                raise Exception("Failure downloading locale data")
+
     def build(self, workspace: Workspace):
         subprocess.run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir], check=True)
+        locale_build_path = self.paths.build_dir / "extra" / "locale" / self.paths.locale_file.name
+        if not locale_build_path.is_file():
+            os.symlink(self.paths.locale_file.resolve(), locale_build_path.resolve())
 
         env = workspace.get_env()
 

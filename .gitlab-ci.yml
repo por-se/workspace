@@ -169,7 +169,7 @@ test-clean:
   image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
   script:
     - 'cd /workspace'
-    - 'mkdir .build .bin'
+    - 'mkdir -p .build .bin'
     - './ws clean'
     - '[[ -e ws-settings.toml ]]'
     - '[[ ! -e .bin ]]'
