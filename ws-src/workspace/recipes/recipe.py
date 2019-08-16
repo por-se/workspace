@@ -25,7 +25,10 @@ class Recipe(abc.ABC):
 
     def __init__(self, **kwargs):
         self.arguments = dict(self.default_arguments, **kwargs)
-        schema.Schema(self.argument_schema).validate(self.arguments)
+        try:
+            schema.Schema(self.argument_schema).validate(self.arguments)
+        except schema.SchemaError as error:
+            raise Exception(f'[{self.name}] Could not validate configuration: {error}')
 
         self.digest = None
 
