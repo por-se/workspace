@@ -27,7 +27,7 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 
 	# pylint
 	echo Running pylint checks...
-	pylint -s n workspace setup.py
+	pylint -j ${WS_JOBS:-$(nproc)} -s n workspace setup.py
 
 	# isort
 	echo Running isort checks...
