@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import schema
 
-from workspace.build_systems import CMakeConfig
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     """
     The [KLEE LLVM Execution Engine](https://klee.github.io/)
     """
@@ -74,7 +74,6 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         "llvm": LLVM.default_arguments["name"],
         "z3": Z3.default_arguments["name"],
         "stp": STP.default_arguments["name"],
-        "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
@@ -83,16 +82,11 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         "llvm": str,
         "z3": str,
         "stp": str,
-        "cmake-adjustments": [str],
     }
 
     @property
     def profile(self) -> str:
         return self.arguments["profile"]
-
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
 
     def find_klee_uclibc(self, workspace: Workspace) -> KLEE_UCLIBC:
         return self._find_previous_build(workspace, "klee-uclibc", KLEE_UCLIBC)
@@ -108,13 +102,14 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://klee/klee.git")
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
         @dataclass
         class InternalPaths:
@@ -124,16 +119,11 @@ class KLEE(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                    build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
 
-        self.cmake = CMakeConfig(workspace)
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
         digest.update(self.profile.encode())
-        for adjustment in self.cmake_adjustments:
-            digest.update("CMAKE_ADJUSTMENT:".encode())
-            digest.update(adjustment.encode())
-
         digest.update(self.find_stp(workspace).digest)
         digest.update(self.find_z3(workspace).digest)
         digest.update(self.find_llvm(workspace).digest)

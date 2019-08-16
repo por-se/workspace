@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import schema
 
-from workspace.build_systems import CMakeConfig
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     """The [z3](https://github.com/Z3Prover/z3) constraint solver"""
 
     profiles = {
@@ -50,14 +50,12 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         "name": "z3",
         "shared": True,
         "openmp": True,
-        "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "profile": schema.Or(*profiles.keys()),
         "shared": bool,
         "openmp": bool,
-        "cmake-adjustments": [str],
     }
 
     @property
@@ -72,19 +70,16 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     def openmp(self) -> bool:
         return self.arguments["openmp"]
 
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
-
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://Z3Prover/z3.git")
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
         @dataclass
         class InternalPaths:
@@ -97,17 +92,13 @@ class Z3(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                                    build_dir=build_dir,
                                    libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
 
-        self.cmake = CMakeConfig(workspace)
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
         digest.update(self.profile.encode())
         digest.update(f'shared:{self.shared}'.encode())
         digest.update(f'openmp:{self.openmp}'.encode())
-        for adjustment in self.cmake_adjustments:
-            digest.update("CMAKE_ADJUSTMENT:".encode())
-            digest.update(adjustment.encode())
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "z3")

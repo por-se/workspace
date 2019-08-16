@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import schema
 
-from workspace.build_systems import CMakeConfig, Linker
+from workspace.build_systems import Linker
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class STP(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     profiles = {
         "release": {
             "cmake_args": {
@@ -55,35 +56,36 @@ class STP(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "name": "stp",
         "minisat": MINISAT.default_arguments["name"],
-        "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "profile": schema.Or(*profiles.keys()),
         "minisat": str,
-        "cmake-adjustments": [str],
     }
 
     @property
     def profile(self) -> str:
         return self.arguments["profile"]
 
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
-
     def find_minisat(self, workspace: Workspace) -> MINISAT:
         return self._find_previous_build(workspace, "minisat", MINISAT)
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://stp/stp.git")
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
+
+        if self.cmake.linker == Linker.LLD:
+            msg = ("warning: linking STP with lld may cause crashes, falling back to gold.\n"
+                   "         see https://laboratory.comsys.rwth-aachen.de/symbiosys/projects/workspace_base/issues/34")
+            print(msg, file=sys.stderr)
+            self.cmake.linker = Linker.GOLD
 
         @dataclass
         class InternalPaths:
@@ -93,21 +95,11 @@ class STP(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                    build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
 
-        self.cmake = CMakeConfig(workspace)
-        if self.cmake.linker == Linker.LLD:
-            msg = ("warning: linking STP with lld may cause crashes, falling back to gold.\n"
-                   "         see https://laboratory.comsys.rwth-aachen.de/symbiosys/projects/workspace_base/issues/34")
-            print(msg, file=sys.stderr)
-            self.cmake.linker = Linker.GOLD
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
         digest.update(self.profile.encode())
-        for adjustment in self.cmake_adjustments:
-            digest.update("CMAKE_ADJUSTMENT:".encode())
-            digest.update(adjustment.encode())
-
         digest.update(self.find_minisat(workspace).digest)
 
     def setup(self, workspace: Workspace):

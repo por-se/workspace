@@ -69,7 +69,7 @@ class Recipe(abc.ABC):
         self.__digest = digest.digest()
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
-        del workspace
+        del workspace  # unused parameter
 
         digest.update(self.name.encode())
 

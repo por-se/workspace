@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict
 
-from workspace.build_systems import CMakeConfig
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
@@ -17,29 +17,21 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
-class MINISAT(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class MINISAT(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "name": "minisat",
-        "cmake-adjustments": [],
     }
-
-    argument_schema: Dict[str, Any] = {
-        "cmake-adjustments": [str],
-    }
-
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://stp/minisat.git")
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
         @dataclass
         class InternalPaths:
@@ -49,14 +41,9 @@ class MINISAT(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                    build_dir=workspace.build_dir / f'{self.name}-{self.digest_str}')
 
-        self.cmake = CMakeConfig(workspace)
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
-
-        for adjustment in self.cmake_adjustments:
-            digest.update("CMAKE_ADJUSTMENT:".encode())
-            digest.update(adjustment.encode())
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "minisat")

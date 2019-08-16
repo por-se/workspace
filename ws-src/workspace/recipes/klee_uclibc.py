@@ -4,7 +4,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.settings import settings
 from workspace.vcs.git import GitRecipeMixin
@@ -22,17 +22,11 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "name": "klee-uclibc",
         "llvm": LLVM.default_arguments["name"],
-        "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "llvm": str,
-        "cmake-adjustments": [str],
     }
-
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
 
     def find_llvm(self, workspace: Workspace) -> LLVM:
         return self._find_previous_build(workspace, "llvm", LLVM)
@@ -41,7 +35,6 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         GitRecipeMixin.__init__(self, "github://klee/klee-uclibc.git")
         Recipe.__init__(self, **kwargs)
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace):

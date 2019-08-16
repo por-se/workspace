@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 import psutil
 import schema
 
-from workspace.build_systems import CMakeConfig
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from .z3 import Z3
 
 
-class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     """
     The [LLVM Compiler Infrastructure](https://llvm.org/) and [clang](https://clang.llvm.org/)
     """
@@ -62,22 +62,16 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "name": "llvm",
         "z3": None,
-        "cmake-adjustments": [],
     }
 
     argument_schema: Dict[str, Any] = {
         "profile": schema.Or(*profiles.keys()),
         "z3": schema.Or(str, None),
-        "cmake-adjustments": [str],
     }
 
     @property
     def profile(self) -> str:
         return self.arguments["profile"]
-
-    @property
-    def cmake_adjustments(self) -> List[str]:
-        return self.arguments["cmake-adjustments"]
 
     def find_z3(self, workspace: Workspace) -> Optional[Z3]:
         if self.arguments["z3"] is None:
@@ -86,15 +80,16 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://llvm/llvm-project.git", sparse=["/llvm", "/clang"])
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
         self._release_build: Optional[LLVM] = None
 
-        self.cmake = None
         self.paths = None
 
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
         if not self.profiles[self.profile]["is_performance_build"]:
             self._release_build = LLVM(
@@ -116,15 +111,11 @@ class LLVM(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                                    build_dir=build_dir,
                                    tablegen=build_dir / "bin" / "llvm-tblgen")
 
-        self.cmake = CMakeConfig(workspace)
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
         digest.update(self.profile.encode())
-        for adjustment in self.cmake_adjustments:
-            digest.update("CMAKE_ADJUSTMENT:".encode())
-            digest.update(adjustment.encode())
 
         z3 = self.find_z3(workspace)
         if z3:
