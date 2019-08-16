@@ -13,9 +13,9 @@ def ws_from_config_name(config_name: str) -> Workspace:
 
 
 def validate_config(config: Any) -> None:
-    from schema import Schema, Or
+    from schema import Schema, Or, Optional
 
-    Schema({"Recipe": [{"recipe": Or(*recipes.ALL.keys()), str: object}]}).validate(config)
+    Schema({"Recipe": [{"recipe": Or(*recipes.ALL.keys()), Optional(str): object}]}).validate(config)
 
 
 def ws_from_config_path(config_path: Path) -> Workspace:

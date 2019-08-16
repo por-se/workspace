@@ -13,9 +13,7 @@ R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 
 
 class Recipe(abc.ABC):
-    default_arguments: Dict[str, Any] = {
-        "name": "klee",
-    }
+    default_arguments: Dict[str, Any] = {}
 
     argument_schema: Dict[str, Any] = {
         "name": str,
