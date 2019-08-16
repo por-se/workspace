@@ -17,4 +17,4 @@ Multiple tags are pushed, the purposes of which are:
 - `:latest` provides a fully setup workspace with the sources checked out for the dependent projects based on the master branch
 - `:latest-prebuilt` additionally contains a built release version
 - `:ci` is used internally for layer-caching the ci steps
-- `:$COMMIT_HASH` is an *expering* version of that specific commit hash
+- `:$COMMIT_HASH` is an *expiring* version of that specific commit hash
