@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 class Z3(Recipe):  # pylint: disable=invalid-name
     """The [z3](https://github.com/Z3Prover/z3) constraint solver"""
 
-    default_name = "z3"
     profiles = {
         "release": {
             "cmake_args": {
