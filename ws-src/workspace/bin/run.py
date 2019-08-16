@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from workspace.bin.util import ws_from_config_name
+from workspace import Workspace
 from workspace.settings import settings
 
 
@@ -36,7 +36,7 @@ Example (for using a value from the settings file): ./ws run which klee''',
         print('No command specified')
         sys.exit(1)
 
-    workspace = ws_from_config_name(config_name)
+    workspace = Workspace(config_name)
     env = workspace.get_env()
     workspace.add_to_env(env)
     env["WS_CONFIG"] = config_name

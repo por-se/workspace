@@ -1,6 +1,6 @@
 import argparse
 
-from workspace.bin.util import ws_from_config_name
+from workspace import Workspace
 from workspace.settings import settings
 
 
@@ -25,5 +25,5 @@ def main():
         print()
 
     for config in settings.configs.value:
-        workspace = ws_from_config_name(config)
+        workspace = Workspace(config)
         workspace.build()

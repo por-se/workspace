@@ -3,10 +3,14 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
+
+import schema
+import toml
 
 import workspace.util as util
 from workspace.build_systems.linker import Linker
+from workspace.recipes.all_recipes import ALL as all_recipes
 from workspace.recipes.recipe import Recipe
 from workspace.settings import settings
 
@@ -17,6 +21,44 @@ class Workspace:
     _bin_dir: Path = settings.ws_path / '.bin'
     _linker_dirs: Dict[Linker, Path] = {}
     builds: List[Recipe] = []
+
+    def __init__(self, config_name: str):
+        config_path = settings.ws_path / "ws-config" / f'{config_name}.toml'
+
+        assert config_path.exists(), f'given config "{config_name}" does not exist at location "{config_path}"'
+
+        with open(config_path) as file:
+            config = toml.load(file)
+        schema.Schema({
+            "Recipe": [{
+                "recipe": schema.Or(*all_recipes.keys()),
+                schema.Optional(str): object
+            }]
+        }).validate(config)
+        items = config["Recipe"]
+        if not items:
+            raise Exception(f'The configuration at location "{config_path}" is empty.')
+
+        seen_names: Set[str] = set()
+        for item in items:
+            options = dict(item)  # shallow copy
+            del options["recipe"]
+            rep = all_recipes[item["recipe"]](**options)
+
+            if rep.name in seen_names:
+                raise RuntimeError(f'two recipe variations with same name "{rep.name}" '
+                                   f'found in configuration at location "{config_path}"')
+            seen_names.add(rep.name)
+
+            self.builds.append(rep)
+
+            if rep.name == settings.until.value:
+                break
+
+        if settings.until.value and settings.until.value not in seen_names:
+            raise Exception(f'The configuration at location "{config_path}" '
+                            f'does not contain a build named "{settings.until.value}" '
+                            f'which should terminate processing.')
 
     @staticmethod
     def get_default_linker():

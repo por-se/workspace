@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from workspace.bin.util import ws_from_config_name
+from workspace import Workspace
 from workspace.settings import settings
 
 
@@ -31,7 +31,7 @@ def main():
         print("Cannot determine required setting: Configuration is not set", file=sys.stderr)
         sys.exit(1)
 
-    workspace = ws_from_config_name(settings.config.value)
+    workspace = Workspace(settings.config.value)
     workspace.initialize_builds()
     build = [build.paths.build_dir for build in workspace.builds if build.name == settings.build_name.value]
     assert len(build) <= 1

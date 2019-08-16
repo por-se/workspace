@@ -1,7 +1,7 @@
 import argparse
 
 import workspace.recipes as recipes
-from workspace.bin.util import ws_from_config_name
+from workspace import Workspace
 from workspace.settings import settings
 
 
@@ -19,7 +19,7 @@ def main():
         recipes_to_list = {k: recipes_to_list[k] for k in settings.recipes.value}
 
     if settings.config.value:
-        workspace = ws_from_config_name(settings.config.value)
+        workspace = Workspace(settings.config.value)
         for rep in workspace.builds:
             clas = rep.__class__
             name = clas.__name__
