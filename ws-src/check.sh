@@ -13,8 +13,9 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
+exec ../ws /bin/bash -c 'set -e ; set -u ; set -o pipefail
 	cd ws-src
+	JOBS="$(_ws_jobs)"
 
 	# mypy
 	echo Running mypy checks...
@@ -23,19 +24,19 @@ exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 
 	# flake8
 	echo Running flake8 checks...
-	flake8 --max-line-len 120 -j '${WS_JOBS:-$(nproc)}' setup.py workspace
+	flake8 --max-line-len 120 -j "$JOBS" setup.py workspace
 
 	# pylint
 	echo Running pylint checks...
-	pylint -j '${WS_JOBS:-$(nproc)}' -s n workspace setup.py
+	pylint -j "$JOBS" -s n workspace setup.py
 
 	# isort
 	echo Running isort checks...
-	isort -j '${WS_JOBS:-$(nproc)}' --check --diff -w 120 --recursive workspace setup.py \
+	isort -j "$JOBS" --check --diff -w 120 --recursive workspace setup.py \
 		|| (echo && echo Imports not properly sorted - run ws-src/format.sh! && false)
 
 	# yapf
 	echo Running yapf checks...
 	yapf --diff --style=.style.yapf --recursive --parallel workspace setup.py \
 		|| (echo && echo Code not properly formatted - run ws-src/format.sh! && false)
-"
+'

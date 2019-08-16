@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../../ws isort -j "${WS_JOBS:-$(nproc)}" --check --diff -w 120 --recursive ws-src/workspace ws-src/setup.py
+exec ../../ws bash -c 'exec isort -j "$(_ws_jobs)" --check --diff -w 120 --recursive ws-src/workspace ws-src/setup.py'

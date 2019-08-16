@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../../ws flake8 --max-line-len 120 -j "${WS_JOBS:-$(nproc)}" ws-src/setup.py ws-src/workspace
+exec ../../ws bash -c 'exec flake8 --max-line-len 120 -j "$(_ws_jobs)" ws-src/setup.py ws-src/workspace'

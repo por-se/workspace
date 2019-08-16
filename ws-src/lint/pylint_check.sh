@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../../ws /bin/bash -c "cd ws-src && exec pylint -j '${WS_JOBS:-$(nproc)}' -s n workspace setup.py"
+exec ../../ws /bin/bash -c 'cd ws-src && exec pylint -j "$(_ws_jobs)" -s n workspace setup.py'

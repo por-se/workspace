@@ -13,14 +13,14 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
+exec ../ws /bin/bash -c 'set -e ; set -u ; set -o pipefail
 	cd ws-src
 
 	# isort
 	echo Sorting imports with isort...
-	isort -j '${WS_JOBS:-$(nproc)}' --apply -w 120 --recursive workspace setup.py
+	isort -j "$(_ws_jobs)" --apply -w 120 --recursive workspace setup.py
 
 	# yapf
 	echo Formatting code with yapf...
 	yapf --in-place --style=.style.yapf --recursive --parallel workspace setup.py
-"
+'
