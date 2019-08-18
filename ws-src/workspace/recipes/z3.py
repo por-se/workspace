@@ -47,7 +47,6 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
     }
 
     default_arguments: Dict[str, Any] = {
-        "name": "z3",
         "shared": True,
         "openmp": True,
     }

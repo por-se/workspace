@@ -30,7 +30,15 @@ class Recipe(abc.ABC):
 
     @property
     def name(self) -> str:
-        return self.arguments["name"]
+        result = self.arguments["name"]
+        assert isinstance(result, str)
+        return result
+
+    @property
+    def default_name(self) -> str:
+        result = self.default_arguments["name"]
+        assert isinstance(result, str)
+        return result
 
     __digest: Optional[bytes] = None
 
@@ -45,10 +53,18 @@ class Recipe(abc.ABC):
         return b58encode(self.digest).decode("utf-8")[:16]  # slightly more than 41 chars would be available (blake2s)
 
     def __init__(self, **kwargs):
+        """
+        Call the Recipe `__init__` once all `default_arguments` and `argument_schema`s are set up and pass in the actual
+        arguments. This is typically the case after calling `__init__` on all Mixins.
+        """
+
+        self.default_arguments = dict({"name": type(self).__name__.lower().replace("_", "-")}, **self.default_arguments)
         self.__arguments = dict(self.default_arguments, **kwargs)
-        argument_schema = dict({"name": str}, **self.argument_schema)
+        self.argument_schema = dict({"name": str}, **self.argument_schema)
+
+    def __validate(self):
         try:
-            schema.Schema(argument_schema).validate(self.arguments)
+            schema.Schema(self.argument_schema).validate(self.arguments)
         except schema.SchemaError as error:
             raise Exception(f'[{self.name}] Could not validate configuration: {error}')
 
@@ -64,27 +80,38 @@ class Recipe(abc.ABC):
         return build
 
     def initialize(self, workspace: Workspace) -> None:
+        """Override `initialize` in your recipe, but call the base version in the beginning"""
+        self.__validate()
+
         digest = hashlib.blake2s()
         self.compute_digest(workspace, digest)
         self.__digest = digest.digest()
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        """Override `compute_digest` in your recipe, but call the base version in the beginning"""
         del workspace  # unused parameter
 
         digest.update(self.name.encode())
 
     @abc.abstractmethod
     def setup(self, workspace: Workspace):
+        """Override `setup` in your recipe, to check out repositories, prepare code, etc."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def build(self, workspace: Workspace):
+        """Override `build` in your recipe, to build the recipe"""
         raise NotImplementedError
 
     def add_to_env(self, env, workspace: Workspace):
+        """
+        Override `add_to_env` in your recipe, to set up the environment that allows your build artifacts to be used
+        """
+
         pass
 
     def clean(self, workspace: Workspace):
+        """Override `clean` in your recipe, if you need to perform additional cleanup"""
         pass
 
     @staticmethod
@@ -131,17 +158,19 @@ class Recipe(abc.ABC):
     def list_options(cls, instance=None):
         from inspect import cleandoc
 
+        self = instance if instance is not None else cls()
+
         print(f'Description:\n  {cleandoc(cls.__doc__) if cls.__doc__ else ""}')
         print("Available options:")
-        for argument, typ in cls.argument_schema.items():  # skip first entry which is always 'self
+        for argument, typ in self.argument_schema.items():
             print(f'  {argument}: ', end="")
             Recipe.__print_schema_type(typ)
 
             if instance and argument in instance.arguments:
                 print(f' = {instance.arguments[argument]!r}', end="")
 
-            if argument in cls.default_arguments:
-                print(f" (defaults to {cls.default_arguments[argument]!r})", end="")
+            if argument in self.default_arguments:
+                print(f" (defaults to {self.default_arguments[argument]!r})", end="")
             else:
                 print(" (required)", end="")
 

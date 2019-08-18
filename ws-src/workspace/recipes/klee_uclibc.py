@@ -20,8 +20,7 @@ if TYPE_CHECKING:
 
 class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
-        "name": "klee-uclibc",
-        "llvm": LLVM.default_arguments["name"],
+        "llvm": LLVM().default_name,
     }
 
     argument_schema: Dict[str, Any] = {

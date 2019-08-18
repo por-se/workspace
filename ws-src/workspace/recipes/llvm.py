@@ -60,7 +60,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     }
 
     default_arguments: Dict[str, Any] = {
-        "name": "llvm",
         "z3": None,
     }
 

@@ -69,11 +69,10 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     }
 
     default_arguments: Dict[str, Any] = {
-        "name": "klee",
-        "klee-uclibc": KLEE_UCLIBC.default_arguments["name"],
-        "llvm": LLVM.default_arguments["name"],
-        "z3": Z3.default_arguments["name"],
-        "stp": STP.default_arguments["name"],
+        "klee-uclibc": KLEE_UCLIBC().default_name,
+        "llvm": LLVM().default_name,
+        "z3": Z3().default_name,
+        "stp": STP().default_name,
     }
 
     argument_schema: Dict[str, Any] = {

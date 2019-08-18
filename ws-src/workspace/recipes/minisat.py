@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
@@ -18,10 +18,6 @@ if TYPE_CHECKING:
 
 
 class MINISAT(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
-    default_arguments: Dict[str, Any] = {
-        "name": "minisat",
-    }
-
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://stp/minisat.git")
         CMakeRecipeMixin.__init__(self)

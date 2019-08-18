@@ -54,8 +54,7 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
     }
 
     default_arguments: Dict[str, Any] = {
-        "name": "stp",
-        "minisat": MINISAT.default_arguments["name"],
+        "minisat": MINISAT().default_name,
     }
 
     argument_schema: Dict[str, Any] = {
