@@ -1,34 +1,17 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from workspace.build_systems import CMakeConfig
+from workspace.recipes.irecipe import IRecipe
 
 if TYPE_CHECKING:
     import hashlib
     from workspace import Workspace
 
 
-class CMakeRecipeMixin(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    @abc.abstractmethod
-    def arguments(self) -> Mapping[str, Any]:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def update_argument_schema(self, argument_schema: Dict[str, Any]) -> None:
-        raise NotImplementedError()
-
+class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     def __init__(self, cmake_adjustments: Optional[List[str]] = None):
         self.update_argument_schema({"cmake-adjustments": [str]})
 

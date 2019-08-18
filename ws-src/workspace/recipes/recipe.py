@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Type, TypeVar
 import schema
 from base58 import b58encode
 
+from .irecipe import IRecipe
+
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from workspace import Workspace
@@ -14,7 +16,14 @@ if TYPE_CHECKING:
 R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 
 
-class Recipe(abc.ABC):
+class Recipe(IRecipe, abc.ABC):
+    """
+    Abstract base class for recipes.
+
+    If you wish to provide a custom recipe, consider deriving Recipe.
+    If you wish to use a generic recipe, consider using IRecipe instead.
+    """
+
     default_arguments: Dict[str, Any] = {}
     argument_schema: Dict[str, Any] = {}
 

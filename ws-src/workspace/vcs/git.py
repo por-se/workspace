@@ -5,10 +5,11 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 import schema
 
+from workspace.recipes.irecipe import IRecipe
 from workspace.settings import settings
 
 
@@ -144,7 +145,7 @@ def apply_patches(patch_dir: Path, target_path: Path) -> None:
         subprocess.run(f"git apply < {patch}", shell=True, cwd=target_path, check=True)
 
 
-class GitRecipeMixin(abc.ABC):
+class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     """
     The `GitRecipeMixin` must be initialized before the `Recipe` base class.
 
@@ -164,19 +165,6 @@ class GitRecipeMixin(abc.ABC):
         When not `None`, enables a sparse checkout of the elements of the sequence. E.g., when passing
         `["/foo", "/bar"]`, only the subpaths `/foo` and `/bar` are checked out.
     """
-    @property
-    @abc.abstractmethod
-    def arguments(self) -> Mapping[str, Any]:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def update_argument_schema(self, argument_schema: Dict[str, Any]) -> None:
-        raise NotImplementedError()
-
     def __init__(self,
                  repository: Optional[str] = None,
                  branch: Optional[str] = None,
