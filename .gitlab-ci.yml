@@ -258,3 +258,14 @@ test-shell:
     - '! <bad.tmp ./ws shell -s bash'
     - '! <bad.tmp ./ws shell -s fish'
     - '! <bad.tmp ./ws shell -s zsh'
+
+test-nop-and-jobs:
+  stage: test
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  script:
+    - 'cd /workspace'
+    - './ws _ws_nop'
+    - '[[ "$WS_JOBS" -ge 1 ]]'
+    - './ws _ws_jobs && [[ "$WS_JOBS" -eq "$(./ws _ws_jobs)" ]]'
+    - 'echo "jobs = 123" > tmp.toml && cat ws-settings.toml >> tmp.toml && mv tmp.toml ws-settings.toml'
+    - './ws _ws_jobs && [[ 123 -eq "$(env -u WS_JOBS ./ws _ws_jobs)" ]]'
