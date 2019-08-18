@@ -41,8 +41,8 @@ editorconfig:
       - paths.log
     expire_in: 1 day
   script:
-    - '/ec -spaces-after-tabs -e "\\.py$" -dry-run >paths.log'
-    - '/ec -spaces-after-tabs -e "\\.py$"'
+    - '/ec -exclude "\\.py$" -dry-run >paths.log'
+    - '/ec -exclude "\\.py$"'
 
 build-not-master:
   stage: build
