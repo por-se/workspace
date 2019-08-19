@@ -6,7 +6,7 @@ from workspace.settings import settings
 
 
 def main():
-    if sys.argv[1] != "--cd-build-dir":
+    if len(sys.argv) <= 1 or sys.argv[1] != "--cd-build-dir":
         cd_build_dir = False
         description = "Print the path of the build directory of a given build as used inside a configuration"
     else:
