@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, cast
 
-import schema
-
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
 from workspace.util import env_prepend_path
@@ -52,14 +50,9 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
     }
 
     argument_schema: Dict[str, Any] = {
-        "profile": schema.Or(*profiles.keys()),
         "shared": bool,
         "openmp": bool,
     }
-
-    @property
-    def profile(self) -> str:
-        return self.arguments["profile"]
 
     @property
     def shared(self) -> bool:
@@ -86,7 +79,7 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
             build_dir: Path
             libz3: Path
 
-        build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
+        build_dir = workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}'
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                    build_dir=build_dir,
                                    libz3=build_dir / "libz3.so" if self.shared else build_dir / "libz3.a")
@@ -95,7 +88,6 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
-        digest.update(self.profile.encode())
         digest.update(f'shared:{self.shared}'.encode())
         digest.update(f'openmp:{self.openmp}'.encode())
 
@@ -103,15 +95,15 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "z3")
 
     def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
-        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        cxx_flags = cast(List[str], self.profile["cxx_flags"])
+        c_flags = cast(List[str], self.profile["c_flags"])
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
         self.cmake.set_flag("BUILD_LIBZ3_SHARED", self.shared)
         self.cmake.set_flag("USE_OPENMP", self.openmp)
 
-        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+        for name, value in cast(Dict, self.profile["cmake_args"]).items():
             self.cmake.set_flag(name, value)
         self.cmake.adjust_flags(self.cmake_adjustments)
 

@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, cast
 
-import schema
-
 from workspace.build_systems import Linker
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.settings import settings
@@ -58,13 +56,8 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
     }
 
     argument_schema: Dict[str, Any] = {
-        "profile": schema.Or(*profiles.keys()),
         "minisat": str,
     }
-
-    @property
-    def profile(self) -> str:
-        return self.arguments["profile"]
 
     def find_minisat(self, workspace: Workspace) -> MINISAT:
         return self._find_previous_build(workspace, "minisat", MINISAT)
@@ -92,21 +85,20 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
             build_dir: Path
 
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}')
+                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}')
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
-        digest.update(self.profile.encode())
         digest.update(self.find_minisat(workspace).digest)
 
     def setup(self, workspace: Workspace):
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "stp")
 
     def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
-        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        cxx_flags = cast(List[str], self.profile["cxx_flags"])
+        c_flags = cast(List[str], self.profile["c_flags"])
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
@@ -119,7 +111,7 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
         self.cmake.set_flag("BUILD_SHARED_LIBS", False)
         self.cmake.set_flag("ENABLE_PYTHON_INTERFACE", False)
 
-        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+        for name, value in cast(Dict, self.profile["cmake_args"]).items():
             self.cmake.set_flag(name, value)
         self.cmake.adjust_flags(self.cmake_adjustments)
 

@@ -64,13 +64,8 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     }
 
     argument_schema: Dict[str, Any] = {
-        "profile": schema.Or(*profiles.keys()),
         "z3": schema.Or(str, None),
     }
-
-    @property
-    def profile(self) -> str:
-        return self.arguments["profile"]
 
     def find_z3(self, workspace: Workspace) -> Optional[Z3]:
         if self.arguments["z3"] is None:
@@ -90,7 +85,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
-        if not self.profiles[self.profile]["is_performance_build"]:
+        if not self.profile["is_performance_build"]:
             self._release_build = LLVM(
                 name=self.name,
                 repository=self.arguments["repository"],
@@ -105,7 +100,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             build_dir: Path
             tablegen: Optional[Path] = None
 
-        build_dir = workspace.build_dir / f'{self.name}-{self.profile}-{self.digest_str}'
+        build_dir = workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}'
         self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
                                    build_dir=build_dir,
                                    tablegen=build_dir / "bin" / "llvm-tblgen")
@@ -113,8 +108,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
-
-        digest.update(self.profile.encode())
 
         z3 = self.find_z3(workspace)
         if z3:
@@ -125,15 +118,15 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             digest.update("z3 disabled".encode())
 
     def setup(self, workspace: Workspace):
-        if not self.profiles[self.profile]["is_performance_build"]:
+        if not self.profile["is_performance_build"]:
             assert self._release_build is not None
             self._release_build.setup(workspace)
 
         self.setup_git(self.paths.src_dir, workspace.patch_dir / "llvm")
 
     def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
-        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
+        cxx_flags = cast(List[str], self.profile["cxx_flags"])
+        c_flags = cast(List[str], self.profile["c_flags"])
         self.cmake.set_extra_c_flags(c_flags)
         self.cmake.set_extra_cxx_flags(cxx_flags)
 
@@ -147,26 +140,25 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
 
-        if not self.profiles[self.profile]["is_performance_build"]:
+        if not self.profile["is_performance_build"]:
             assert self._release_build is not None
             self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
 
         avail_mem = psutil.virtual_memory().available
-        if self.profiles[self.profile][
-                "has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
+        if self.profile["has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
             print(f'[{self.__class__.__name__}] less than 12G memory per thread (or 35G total) available '
                   'during a build containing debug information; '
                   'restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]')
             self.cmake.set_flag("LLVM_PARALLEL_LINK_JOBS", 1)
 
-        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
+        for name, value in cast(Dict, self.profile["cmake_args"]).items():
             self.cmake.set_flag(name, value)
         self.cmake.adjust_flags(self.cmake_adjustments)
 
         self.cmake.configure(workspace, self.paths.src_dir / "llvm", self.paths.build_dir)
 
     def build_target(self, workspace: Workspace, target):
-        if not self.profiles[self.profile]["is_performance_build"]:
+        if not self.profile["is_performance_build"]:
             assert self._release_build is not None
             self._release_build.build_target(workspace, target='bin/llvm-tblgen')
 

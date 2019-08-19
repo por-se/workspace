@@ -26,6 +26,7 @@ class Recipe(IRecipe, abc.ABC):
 
     default_arguments: Dict[str, Any] = {}
     argument_schema: Dict[str, Any] = {}
+    profiles: Dict[str, Dict[str, Any]] = {"default": {}}
 
     def update_default_arguments(self, default_arguments: Dict[str, Any]) -> None:
         self.default_arguments.update(default_arguments)
@@ -67,15 +68,29 @@ class Recipe(IRecipe, abc.ABC):
         arguments. This is typically the case after calling `__init__` on all Mixins.
         """
 
-        self.default_arguments = dict({"name": type(self).__name__.lower().replace("_", "-")}, **self.default_arguments)
+        default_arguments = {"name": type(self).__name__.lower().replace("_", "-")}
+        if "default" in self.profiles:
+            default_arguments["profile"] = "default"
+        self.default_arguments = dict(default_arguments, **self.default_arguments)
         self.__arguments = dict(self.default_arguments, **kwargs)
-        self.argument_schema = dict({"name": str}, **self.argument_schema)
+        self.argument_schema = dict({"name": str, "profile": schema.Or(*self.profiles.keys())}, **self.argument_schema)
 
     def __validate(self):
         try:
             schema.Schema(self.argument_schema).validate(self.arguments)
         except schema.SchemaError as error:
             raise Exception(f'[{self.name}] Could not validate configuration: {error}')
+
+    @property
+    def profile_name(self) -> str:
+        result = self.arguments["profile"]
+        if not result or not isinstance(result, str):
+            raise Exception(f'[{self.name}] Could not acquire current profile')
+        return result
+
+    @property
+    def profile(self) -> Mapping[str, Any]:
+        return self.profiles[self.profile_name]
 
     def _find_previous_build(self, workspace: Workspace, name: str, typ: Type[R]) -> R:
         build = workspace.find_build(build_name=self.arguments[name], before=self)
@@ -101,6 +116,7 @@ class Recipe(IRecipe, abc.ABC):
         del workspace  # unused parameter
 
         digest.update(self.name.encode())
+        digest.update(self.profile_name.encode())
 
     @abc.abstractmethod
     def setup(self, workspace: Workspace):
