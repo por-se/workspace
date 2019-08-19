@@ -9,6 +9,10 @@
 	"python.linting.pylintArgs": [
 		"--rcfile=ws-src/pylintrc",
 	],
+	"python.linting.flake8Enabled": true,
+	"python.linting.flake8Args": [
+		"--max-line-len", "120",
+	],
 	"python.sortImports.path": "${workspaceFolder}/.venv/bin/isort",
 	"python.sortImports.args": [
 		"-w", "120",
