@@ -15,9 +15,16 @@ cd "$DIR"
 
 cd "${DIR}/../../.."
 
-git stash -k -u
+if git status --porcelain | grep -q '^.[^ ]' ; then
+	HAVE_STASHED=1
+	git stash -k -u
+else
+	HAVE_STASHED=0
+fi
 function finish {
-	git stash pop
+	if [[ "$HAVE_STASHED" -ne 0 ]] ; then
+		git stash pop
+	fi
 }
 trap finish EXIT
 
