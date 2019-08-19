@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import psutil
 import schema
@@ -32,8 +30,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'CMAKE_BUILD_TYPE': 'Release',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "c_flags": [],
-            "cxx_flags": [],
             "is_performance_build": True,
             "has_debug_info": False,
         },
@@ -52,8 +48,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'CMAKE_BUILD_TYPE': 'Debug',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "c_flags": [],
-            "cxx_flags": [],
             "is_performance_build": False,
             "has_debug_info": True,
         },
@@ -79,11 +73,12 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         self._release_build: Optional[LLVM] = None
 
-        self.paths = None
-
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
+
+        self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
+        self.paths["configure_src_dir"] = self.paths["src_dir"] / "llvm"
 
         if not self.profile["is_performance_build"]:
             self._release_build = LLVM(
@@ -93,17 +88,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 profile="release",
             )
             self._release_build.initialize(workspace)
-
-        @dataclass
-        class InternalPaths:
-            src_dir: Path
-            build_dir: Path
-            tablegen: Optional[Path] = None
-
-        build_dir = workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}'
-        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                   build_dir=build_dir,
-                                   tablegen=build_dir / "bin" / "llvm-tblgen")
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
@@ -122,27 +106,24 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             assert self._release_build is not None
             self._release_build.setup(workspace)
 
-        self.setup_git(self.paths.src_dir, workspace.patch_dir / "llvm")
+        self.setup_git(self.paths["src_dir"], workspace.patch_dir / self.default_name)
 
-    def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profile["cxx_flags"])
-        c_flags = cast(List[str], self.profile["c_flags"])
-        self.cmake.set_extra_c_flags(c_flags)
-        self.cmake.set_extra_cxx_flags(cxx_flags)
+    def configure(self, workspace: Workspace):
+        CMakeRecipeMixin.configure(self, workspace)
 
         z3 = self.find_z3(workspace)
         if z3:
-            self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths.src_dir / "src/api/"))
-            self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.libz3))
+            self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths["src_dir"] / "src/api/"))
+            self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths["libz3"]))
 
-        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths.src_dir / "clang"))
+        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths["src_dir"] / "clang"))
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
 
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
-            self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths.tablegen))
+            self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths["tablegen"]))
 
         avail_mem = psutil.virtual_memory().available
         if self.profile["has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
@@ -151,26 +132,15 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                   'restricting link-parallelism to 1 [-DLLVM_PARALLEL_LINK_JOBS=1]')
             self.cmake.set_flag("LLVM_PARALLEL_LINK_JOBS", 1)
 
-        for name, value in cast(Dict, self.profile["cmake_args"]).items():
-            self.cmake.set_flag(name, value)
-        self.cmake.adjust_flags(self.cmake_adjustments)
-
-        self.cmake.configure(workspace, self.paths.src_dir / "llvm", self.paths.build_dir)
-
-    def build_target(self, workspace: Workspace, target):
+    def build(self, workspace: Workspace):
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
             self._release_build.build_target(workspace, target='bin/llvm-tblgen')
 
-        if not self.cmake.is_configured(workspace, self.paths.src_dir / "llvm", self.paths.build_dir):
-            self._configure(workspace)
-        self.cmake.build(workspace, self.paths.src_dir / "llvm", self.paths.build_dir, target=target)
-
-    def build(self, workspace: Workspace):
-        self.build_target(workspace, target=None)
+        CMakeRecipeMixin.build(self, workspace)
 
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
+        env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin")
 
 
 register_recipe(LLVM)

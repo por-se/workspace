@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.build_systems import Linker
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
-from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -28,8 +25,6 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
                 'ENABLE_ASSERTIONS': True,
                 'SANITIZE': False,
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
         "rel+debinfo": {
             "cmake_args": {
@@ -46,8 +41,6 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
                 'ENABLE_ASSERTIONS': True,
                 'SANITIZE': False,
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
     }
 
@@ -67,8 +60,6 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.paths = None
-
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
@@ -79,51 +70,26 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
             print(msg, file=sys.stderr)
             self.cmake.linker = Linker.GOLD
 
-        @dataclass
-        class InternalPaths:
-            src_dir: Path
-            build_dir: Path
-
-        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}')
-
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
         digest.update(self.find_minisat(workspace).digest)
 
-    def setup(self, workspace: Workspace):
-        self.setup_git(self.paths.src_dir, workspace.patch_dir / "stp")
-
-    def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profile["cxx_flags"])
-        c_flags = cast(List[str], self.profile["c_flags"])
-        self.cmake.set_extra_c_flags(c_flags)
-        self.cmake.set_extra_cxx_flags(cxx_flags)
+    def configure(self, workspace: Workspace):
+        CMakeRecipeMixin.configure(self, workspace)
 
         minisat = self.find_minisat(workspace)
-        self.cmake.set_flag("MINISAT_LIBRARY", f"{minisat.paths.build_dir}/libminisat.a")
-        self.cmake.set_flag("MINISAT_INCLUDE_DIR", str(minisat.paths.src_dir))
+        self.cmake.set_flag("MINISAT_LIBRARY", str(minisat.paths["build_dir"] / "libminisat.a"))
+        self.cmake.set_flag("MINISAT_INCLUDE_DIR", str(minisat.paths["src_dir"]))
 
         self.cmake.set_flag("NOCRYPTOMINISAT", True)
         self.cmake.set_flag("STATICCOMPILE", True)
         self.cmake.set_flag("BUILD_SHARED_LIBS", False)
         self.cmake.set_flag("ENABLE_PYTHON_INTERFACE", False)
 
-        for name, value in cast(Dict, self.profile["cmake_args"]).items():
-            self.cmake.set_flag(name, value)
-        self.cmake.adjust_flags(self.cmake_adjustments)
-
-        self.cmake.configure(workspace, self.paths.src_dir, self.paths.build_dir)
-
-    def build(self, workspace: Workspace):
-        if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
-            self._configure(workspace)
-        self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
-
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths.build_dir)
+        env_prepend_path(env, "PATH", self.paths["build_dir"])
 
 
 register_recipe(STP)

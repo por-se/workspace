@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import os
 import re
@@ -5,12 +7,15 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
-from typing import List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
 import schema
 
 from workspace.recipes.irecipe import IRecipe
 from workspace.settings import settings
+
+if TYPE_CHECKING:
+    from workspace import Workspace
 
 
 def add_exclude_path(path: Union[Path, PurePosixPath, str]) -> None:
@@ -61,7 +66,7 @@ def _check_create_ref_dir() -> None:
     reference_repositories = settings.reference_repositories.value
     if reference_repositories is None:
         default_path = Path.home() / '.cache' / 'reference-repos'
-        input_res = input(f"Where would you like to store reference repository data? [{default_path}] ")
+        input_res = input(f'Where would you like to store reference repository data? [{default_path}] ')
         if input_res:
             reference_repositories = Path(input_res)
         else:
@@ -72,7 +77,7 @@ def _check_create_ref_dir() -> None:
 
     if not reference_repositories.is_dir():
         if reference_repositories.exists():
-            raise RuntimeError(f"reference-repository path '{reference_repositories}' exists but is not a directory")
+            raise RuntimeError(f'reference-repository path "{reference_repositories}" exists but is not a directory')
         os.makedirs(reference_repositories.resolve(), exist_ok=True)
 
 
@@ -201,3 +206,6 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
                             sparse=self.__sparse)
             if patch_dir:
                 apply_patches(patch_dir, source_dir)
+
+    def setup(self, workspace: Workspace):
+        self.setup_git(self.paths["src_dir"], workspace.patch_dir / self.default_name)

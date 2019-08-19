@@ -33,7 +33,7 @@ def main():
 
     workspace = Workspace(settings.config.value)
     workspace.initialize_builds()
-    build = [build.paths.build_dir for build in workspace.builds if build.name == settings.build_name.value]
+    build = [build.paths["build_dir"] for build in workspace.builds if build.name == settings.build_name.value]
     assert len(build) <= 1
     if not build:
         print(

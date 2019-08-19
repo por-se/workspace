@@ -2,21 +2,23 @@ from __future__ import annotations
 
 import abc
 import hashlib
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Type, TypeVar
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, Mapping, MutableMapping, Optional, Type, TypeVar
 
 import schema
 from base58 import b58encode
 
+from workspace.settings import settings
+
 from .irecipe import IRecipe
 
 if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
     from workspace import Workspace
 
 R = TypeVar('R', bound="Recipe")  # pylint: disable=invalid-name
 
 
-class Recipe(IRecipe, abc.ABC):
+class Recipe(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     """
     Abstract base class for recipes.
 
@@ -50,7 +52,20 @@ class Recipe(IRecipe, abc.ABC):
         assert isinstance(result, str)
         return result
 
-    __digest: Optional[bytes] = None
+    @property
+    def profile_name(self) -> str:
+        result = self.arguments["profile"]
+        if not result or not isinstance(result, str):
+            raise Exception(f'[{self.name}] Could not acquire current profile')
+        return result
+
+    @property
+    def profile(self) -> Mapping[str, Any]:
+        return self.profiles[self.profile_name]
+
+    @property
+    def paths(self) -> MutableMapping[str, Path]:
+        return self.__paths
 
     @property
     def digest(self) -> bytes:
@@ -68,6 +83,9 @@ class Recipe(IRecipe, abc.ABC):
         arguments. This is typically the case after calling `__init__` on all Mixins.
         """
 
+        self.__paths: Dict[str, Path] = {}
+        self.__digest: Optional[bytes] = None
+
         default_arguments = {"name": type(self).__name__.lower().replace("_", "-")}
         if "default" in self.profiles:
             default_arguments["profile"] = "default"
@@ -80,17 +98,6 @@ class Recipe(IRecipe, abc.ABC):
             schema.Schema(self.argument_schema).validate(self.arguments)
         except schema.SchemaError as error:
             raise Exception(f'[{self.name}] Could not validate configuration: {error}')
-
-    @property
-    def profile_name(self) -> str:
-        result = self.arguments["profile"]
-        if not result or not isinstance(result, str):
-            raise Exception(f'[{self.name}] Could not acquire current profile')
-        return result
-
-    @property
-    def profile(self) -> Mapping[str, Any]:
-        return self.profiles[self.profile_name]
 
     def _find_previous_build(self, workspace: Workspace, name: str, typ: Type[R]) -> R:
         build = workspace.find_build(build_name=self.arguments[name], before=self)
@@ -111,33 +118,17 @@ class Recipe(IRecipe, abc.ABC):
         self.compute_digest(workspace, digest)
         self.__digest = digest.digest()
 
+        if "src_dir" not in self.paths:
+            self.paths["src_dir"] = settings.ws_path / self.name
+        if "build_dir" not in self.paths:
+            self.paths["build_dir"] = workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}'
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         """Override `compute_digest` in your recipe, but call the base version in the beginning"""
         del workspace  # unused parameter
 
         digest.update(self.name.encode())
         digest.update(self.profile_name.encode())
-
-    @abc.abstractmethod
-    def setup(self, workspace: Workspace):
-        """Override `setup` in your recipe, to check out repositories, prepare code, etc."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def build(self, workspace: Workspace):
-        """Override `build` in your recipe, to build the recipe"""
-        raise NotImplementedError
-
-    def add_to_env(self, env, workspace: Workspace):
-        """
-        Override `add_to_env` in your recipe, to set up the environment that allows your build artifacts to be used
-        """
-
-        pass
-
-    def clean(self, workspace: Workspace):
-        """Override `clean` in your recipe, if you need to perform additional cleanup"""
-        pass
 
     @staticmethod
     def __print_schema_or(obj: schema.Or):

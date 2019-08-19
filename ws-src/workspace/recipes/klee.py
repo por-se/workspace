@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
-from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -34,8 +31,6 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'KLEE_RUNTIME_BUILD_TYPE': 'Release+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
         "rel+debinfo": {
             "cmake_args": {
@@ -52,8 +47,6 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'KLEE_RUNTIME_BUILD_TYPE': 'Debug+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
         "sanitized": {
             "cmake_args": {
@@ -97,19 +90,9 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        self.paths = None
-
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
-
-        @dataclass
-        class InternalPaths:
-            src_dir: Path
-            build_dir: Path
-
-        self.paths = InternalPaths(src_dir=settings.ws_path / self.name,
-                                   build_dir=workspace.build_dir / f'{self.name}-{self.profile_name}-{self.digest_str}')
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
@@ -120,14 +103,8 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         digest.update(self.find_llvm(workspace).digest)
         digest.update(self.find_klee_uclibc(workspace).digest)
 
-    def setup(self, workspace: Workspace):
-        self.setup_git(self.paths.src_dir, workspace.patch_dir / "klee")
-
-    def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profile["cxx_flags"])
-        c_flags = cast(List[str], self.profile["c_flags"])
-        self.cmake.set_extra_c_flags(c_flags)
-        self.cmake.set_extra_cxx_flags(cxx_flags)
+    def configure(self, workspace: Workspace):
+        CMakeRecipeMixin.configure(self, workspace)
 
         stp = self.find_stp(workspace)
         z3 = self.find_z3(workspace)
@@ -135,16 +112,16 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         klee_uclibc = self.find_klee_uclibc(workspace)
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
-        self.cmake.set_flag('LLVM_DIR', str(llvm.paths.build_dir / "lib/cmake/llvm/"))
+        self.cmake.set_flag('LLVM_DIR', str(llvm.paths["build_dir"] / "lib/cmake/llvm/"))
         self.cmake.set_flag('ENABLE_SOLVER_STP', True)
-        self.cmake.set_flag('STP_DIR', str(stp.paths.src_dir))
-        self.cmake.set_flag('STP_STATIC_LIBRARY', str(stp.paths.build_dir / "lib/libstp.a"))
+        self.cmake.set_flag('STP_DIR', str(stp.paths["src_dir"]))
+        self.cmake.set_flag('STP_STATIC_LIBRARY', str(stp.paths["build_dir"] / "lib/libstp.a"))
         self.cmake.set_flag('ENABLE_SOLVER_Z3', True)
-        self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths.src_dir / "src/api/"))
-        self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths.libz3))
+        self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths["src_dir"] / "src/api/"))
+        self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths["libz3"]))
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
-        self.cmake.set_flag('KLEE_UCLIBC_PATH', str(klee_uclibc.paths.build_dir))
+        self.cmake.set_flag('KLEE_UCLIBC_PATH', str(klee_uclibc.paths["build_dir"]))
 
         lit = shutil.which("lit")
         assert lit, "lit is not installed"
@@ -153,20 +130,9 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
 
-        for name, value in cast(Dict, self.profile["cmake_args"]).items():
-            self.cmake.set_flag(name, value)
-        self.cmake.adjust_flags(self.cmake_adjustments)
-
-        self.cmake.configure(workspace, self.paths.src_dir, self.paths.build_dir)
-
-    def build(self, workspace: Workspace):
-        if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
-            self._configure(workspace)
-        self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
-
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths.build_dir / "bin")
-        env_prepend_path(env, "C_INCLUDE_PATH", self.paths.src_dir / "include")
+        env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin")
+        env_prepend_path(env, "C_INCLUDE_PATH", self.paths["src_dir"] / "include")
 
 
 register_recipe(KLEE)

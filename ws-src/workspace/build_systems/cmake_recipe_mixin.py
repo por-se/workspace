@@ -41,3 +41,43 @@ class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
         if self.__cmake is None:
             raise Exception(f'[{self.name}] CMake object requested before it was created')
         return self.__cmake
+
+    def configure(self, workspace: Workspace):
+        """
+        Override this function to provide custom CMake arguments and settings
+        """
+        del workspace  # unused parameter
+
+        if "c_flags" in self.profile:
+            c_flags = self.profile["c_flags"]
+            assert isinstance(c_flags, list)
+            for flag in c_flags:
+                assert isinstance(flag, str)
+            self.cmake.set_extra_c_flags(c_flags)
+
+        if "cxx_flags" in self.profile:
+            cxx_flags = self.profile["cxx_flags"]
+            assert isinstance(cxx_flags, list)
+            for flag in cxx_flags:
+                assert isinstance(flag, str)
+            self.cmake.set_extra_cxx_flags(cxx_flags)
+
+        if "cmake_args" in self.profile:
+            cmake_args = self.profile["cmake_args"]
+            assert isinstance(cmake_args, dict)
+            for name, value in cmake_args.items():
+                assert isinstance(name, str)
+                assert isinstance(value, (bool, int, str))
+                self.cmake.set_flag(name, value)
+
+    def build_target(self, workspace: Workspace, target=None):
+        configure_src_dir = self.paths["configure_src_dir"] if "configure_src_dir" in self.paths else self.paths[
+            "src_dir"]
+        if not self.cmake.is_configured(workspace, configure_src_dir, self.paths["build_dir"]):
+            self.configure(workspace)
+            self.cmake.adjust_flags(self.cmake_adjustments)
+            self.cmake.configure(workspace, configure_src_dir, self.paths["build_dir"])
+        self.cmake.build(workspace, configure_src_dir, self.paths["build_dir"], target=target)
+
+    def build(self, workspace: Workspace):
+        self.build_target(workspace)
