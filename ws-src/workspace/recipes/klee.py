@@ -112,16 +112,16 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         klee_uclibc = self.find_klee_uclibc(workspace)
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
-        self.cmake.set_flag('LLVM_DIR', str(llvm.paths["build_dir"] / "lib/cmake/llvm/"))
+        self.cmake.set_flag('LLVM_DIR', llvm.paths["build_dir"] / "lib/cmake/llvm/")
         self.cmake.set_flag('ENABLE_SOLVER_STP', True)
-        self.cmake.set_flag('STP_DIR', str(stp.paths["src_dir"]))
-        self.cmake.set_flag('STP_STATIC_LIBRARY', str(stp.paths["build_dir"] / "lib/libstp.a"))
+        self.cmake.set_flag('STP_DIR', stp.paths["src_dir"])
+        self.cmake.set_flag('STP_STATIC_LIBRARY', stp.paths["build_dir"] / "lib/libstp.a")
         self.cmake.set_flag('ENABLE_SOLVER_Z3', True)
-        self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths["src_dir"] / "src/api/"))
-        self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths["libz3"]))
+        self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["src_dir"] / "src/api/")
+        self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
-        self.cmake.set_flag('KLEE_UCLIBC_PATH', str(klee_uclibc.paths["build_dir"]))
+        self.cmake.set_flag('KLEE_UCLIBC_PATH', klee_uclibc.paths["build_dir"])
 
         lit = shutil.which("lit")
         assert lit, "lit is not installed"

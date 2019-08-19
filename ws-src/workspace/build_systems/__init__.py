@@ -156,7 +156,9 @@ class CMakeConfig(BuildSystemConfig):
 
         subprocess.run(build_call, env=env, check=True)
 
-    def set_flag(self, name: str, value: Union[str, bool, int]):
+    def set_flag(self, name: str, value: Union[bool, int, str, Path]):
+        if isinstance(value, Path):
+            value = str(value)
         self._cmake_flags.set(name, value)
 
     def unset_flag(self, name: str):

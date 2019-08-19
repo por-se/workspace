@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
 from workspace.build_systems import CMakeConfig
@@ -67,7 +68,7 @@ class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
             assert isinstance(cmake_args, dict)
             for name, value in cmake_args.items():
                 assert isinstance(name, str)
-                assert isinstance(value, (bool, int, str))
+                assert isinstance(value, (bool, int, str, Path))
                 self.cmake.set_flag(name, value)
 
     def build_target(self, workspace: Workspace, target=None):

@@ -113,17 +113,17 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         z3 = self.find_z3(workspace)
         if z3:
-            self.cmake.set_flag('Z3_INCLUDE_DIRS', str(z3.paths["src_dir"] / "src/api/"))
-            self.cmake.set_flag('Z3_LIBRARIES', str(z3.paths["libz3"]))
+            self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["src_dir"] / "src/api/")
+            self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
 
-        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", str(self.paths["src_dir"] / "clang"))
+        self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
 
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
-            self.cmake.set_flag("LLVM_TABLEGEN", str(self._release_build.paths["tablegen"]))
+            self.cmake.set_flag("LLVM_TABLEGEN", self._release_build.paths["tablegen"])
 
         avail_mem = psutil.virtual_memory().available
         if self.profile["has_debug_info"] and avail_mem < settings.jobs.value * 12000000000 and avail_mem < 35000000000:
