@@ -15,6 +15,7 @@ cd "$DIR"
 
 exec ../../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
 	cd ws-src
+	mypy --config-file mypy.ini lint/jobs.py
 	mypy --config-file mypy.ini setup.py
 	exec mypy --config-file mypy.ini -p workspace
 "

@@ -15,28 +15,29 @@ cd "$DIR"
 
 exec ../ws /bin/bash -c 'set -e ; set -u ; set -o pipefail
 	cd ws-src
-	JOBS="$(_ws_jobs)"
+	JOBS="$(lint/jobs.py)"
 
 	# mypy
 	echo Running mypy checks...
+	mypy --config-file mypy.ini lint/jobs.py
 	mypy --config-file mypy.ini setup.py
 	mypy --config-file mypy.ini -p workspace
 
 	# flake8
 	echo Running flake8 checks...
-	flake8 --max-line-len 120 -j "$JOBS" setup.py workspace
+	flake8 --max-line-len 120 -j "$JOBS" lint/jobs.py setup.py workspace
 
 	# pylint
 	echo Running pylint checks...
-	pylint -j "$JOBS" -s n workspace setup.py
+	pylint -j "$JOBS" --score n lint/jobs.py setup.py workspace
 
 	# isort
 	echo Running isort checks...
-	isort -j "$JOBS" --check --diff -w 120 --recursive workspace setup.py \
+	isort -j "$JOBS" --check --diff -w 120 --recursive lint/jobs.py setup.py workspace \
 		|| (echo && echo Imports not properly sorted - run ws-src/format.sh! && false)
 
 	# yapf
 	echo Running yapf checks...
-	yapf --diff --style=.style.yapf --recursive --parallel workspace setup.py \
+	yapf --diff --style=.style.yapf --recursive --parallel lint/jobs.py setup.py workspace \
 		|| (echo && echo Code not properly formatted - run ws-src/format.sh! && false)
 '

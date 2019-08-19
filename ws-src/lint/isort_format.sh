@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../../ws bash -c 'exec isort -j "$(_ws_jobs)" --apply -w 120 --recursive ws-src/workspace ws-src/setup.py'
+exec ../../ws bash -c 'exec isort -j "$(ws-src/lint/jobs.py)" --apply -w 120 --recursive ws-src/lint/jobs.py ws-src/setup.py ws-src/workspace'

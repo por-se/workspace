@@ -20,7 +20,6 @@ setup(
             "list-options   = workspace.bin.list_options:main",
             "clean          = workspace.bin.clean:main",
             "dist-clean     = workspace.bin.dist_clean:main",
-            "_ws_jobs       = workspace.bin.jobs:main",
             "_ws_nop        = workspace.bin.nop:main",
         ],
     },

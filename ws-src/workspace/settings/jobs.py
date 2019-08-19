@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class Jobs:
     """The number of parallel jobs to start (int > 0 with 0 resolved as the number of CPUs)"""
+    # NOTE: Any changes to how jobs are processed should also be reflected in /ws-src/lint/jobs.py!
 
     name = "jobs"
 
