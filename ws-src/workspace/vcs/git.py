@@ -145,6 +145,16 @@ def reference_clone(  # pylint: disable=too-many-arguments
         subprocess.run(checkout_command, check=True)
 
 
+def add_remote(path: Path, remote_name: str, remote_uri: str, fetch: bool = True) -> None:
+    subprocess.run(
+        ["git", "-c", f'pack.threads={settings.jobs.value}', "-C", path, "remote", "add", remote_name, remote_uri],
+        check=True)
+
+    if fetch:
+        subprocess.run(["git", "-c", f'pack.threads={settings.jobs.value}', "-C", path, "fetch", remote_name],
+                       check=True)
+
+
 def apply_patches(patch_dir: Path, target_path: Path) -> None:
     for patch in (patch_dir).glob("*.patch"):
         subprocess.run(f"git apply < {patch}", shell=True, cwd=target_path, check=True)
@@ -169,18 +179,26 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     sparse: sequence of str, optional
         When not `None`, enables a sparse checkout of the elements of the sequence. E.g., when passing
         `["/foo", "/bar"]`, only the subpaths `/foo` and `/bar` are checked out.
+    upstream: str, optional
+        An URI to register as an additional remote called "upstream". If it is passed as `None`, the schema notes it as
+        optional (i.e., `None` is a valid value), but if a value other than `None` is passed, the schema will require
+        this value to be a `str`. Note that it is pretty much impossible for a workspace user to pass a `None` value
+        directly, as TOML does not support the notion of a null type.
     """
-    def __init__(self,
-                 repository: Optional[str] = None,
-                 branch: Optional[str] = None,
-                 checkout: bool = True,
-                 sparse: Optional[Sequence[str]] = None):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            repository: Optional[str] = None,
+            branch: Optional[str] = None,
+            checkout: bool = True,
+            sparse: Optional[Sequence[str]] = None,
+            upstream: Optional[str] = None) -> None:
         self.update_argument_schema({
             "repository": str,
             "branch": schema.Or(str, None) if branch is None else str,
+            "upstream": schema.Or(str, None) if upstream is None else str,
         })
 
-        default_arguments = {"branch": branch}
+        default_arguments = {"branch": branch, "upstream": upstream}
         if repository is not None:
             default_arguments["repository"] = repository
         self.update_default_arguments(default_arguments)
@@ -190,11 +208,21 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
 
     @property
     def repository(self) -> str:
-        return settings.uri_schemes.resolve(self.arguments["repository"])
+        result = settings.uri_schemes.resolve(self.arguments["repository"])
+        assert isinstance(result, str)
+        return result
 
     @property
     def branch(self) -> Optional[str]:
-        return self.arguments["branch"]
+        result = self.arguments["branch"]
+        assert result is None or isinstance(result, str)
+        return result
+
+    @property
+    def upstream(self) -> Optional[str]:
+        result = self.arguments["upstream"]
+        assert result is None or isinstance(result, str)
+        return result
 
     def setup_git(self, source_dir: Path, patch_dir: Optional[Path]):
         if not source_dir.is_dir():
@@ -204,6 +232,8 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
                             branch=self.branch,
                             checkout=self.__checkout,
                             sparse=self.__sparse)
+            if self.upstream:
+                add_remote(source_dir, "upstream", self.upstream)
             if patch_dir:
                 apply_patches(patch_dir, source_dir)
 
