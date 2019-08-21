@@ -58,7 +58,7 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
         CMakeRecipeMixin.configure(self, workspace)
 
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin/random-graph")
+        env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin" / "random-graph")
 
 
 register_recipe(SIMULATOR)
