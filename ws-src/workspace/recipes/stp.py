@@ -70,6 +70,8 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
             print(msg, file=sys.stderr)
             self.cmake.linker = Linker.GOLD
 
+        self.paths["libstp"] = self.paths["build_dir"] / "lib" / "libstp.a"
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
@@ -80,8 +82,8 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
         CMakeRecipeMixin.configure(self, workspace)
 
         minisat = self.find_minisat(workspace)
-        self.cmake.set_flag("MINISAT_LIBRARY", minisat.paths["build_dir"] / "libminisat.a")
-        self.cmake.set_flag("MINISAT_INCLUDE_DIR", minisat.paths["src_dir"])
+        self.cmake.set_flag("MINISAT_LIBRARY", minisat.paths["libminisat"])
+        self.cmake.set_flag("MINISAT_INCLUDE_DIR", minisat.paths["include_dir"])
 
         self.cmake.set_flag("NOCRYPTOMINISAT", True)
         self.cmake.set_flag("STATICCOMPILE", True)

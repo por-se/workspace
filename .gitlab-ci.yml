@@ -221,21 +221,21 @@ test-dist-clean-and-setup:
     - '[[ ! -e minisat ]]'
     - '[[ ! -e stp ]]'
     - '[[ ! -e klee-uclibc ]]'
-    - '[[ ! -e klee ]]'
+    - '[[ ! -e porse ]]'
 
     - './ws setup --until z3'
     - '[[ -e z3 ]]'
-    - '[[ ! -e klee ]]'
+    - '[[ ! -e porse ]]'
 
     - './ws setup'
-    - '[[ -e klee ]]'
+    - '[[ -e porse ]]'
 
     - 'touch foo'
     - 'echo y | ./ws dist-clean'
     - '[[ ! -e ws-settings.toml ]]'
     - '[[ ! -e .venv ]]'
     - '[[ ! -e llvm ]]'
-    - '[[ ! -e klee ]]'
+    - '[[ ! -e porse ]]'
     - '[[ ! -e foo ]]'
 
 test-shell:

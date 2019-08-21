@@ -69,6 +69,8 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
         else:
             self.paths["libz3"] = self.paths["build_dir"] / "libz3.a"
 
+        self.paths["include_dir"] = self.paths["src_dir"] / "src" / "api"
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)

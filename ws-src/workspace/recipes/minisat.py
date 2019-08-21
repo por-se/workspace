@@ -26,6 +26,9 @@ class MINISAT(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=inva
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
+        self.paths["libminisat"] = self.paths["build_dir"] / "libminisat.a"
+        self.paths["include_dir"] = self.paths["src_dir"]
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)

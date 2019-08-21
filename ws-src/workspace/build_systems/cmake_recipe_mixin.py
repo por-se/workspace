@@ -72,13 +72,12 @@ class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
                 self.cmake.set_flag(name, value)
 
     def build_target(self, workspace: Workspace, target=None):
-        configure_src_dir = self.paths["configure_src_dir"] if "configure_src_dir" in self.paths else self.paths[
-            "src_dir"]
-        if not self.cmake.is_configured(workspace, configure_src_dir, self.paths["build_dir"]):
+        cmake_src_dir = self.paths["cmake_src_dir"] if "cmake_src_dir" in self.paths else self.paths["src_dir"]
+        if not self.cmake.is_configured(workspace, cmake_src_dir, self.paths["build_dir"]):
             self.configure(workspace)
             self.cmake.adjust_flags(self.cmake_adjustments)
-            self.cmake.configure(workspace, configure_src_dir, self.paths["build_dir"])
-        self.cmake.build(workspace, configure_src_dir, self.paths["build_dir"], target=target)
+            self.cmake.configure(workspace, cmake_src_dir, self.paths["build_dir"])
+        self.cmake.build(workspace, cmake_src_dir, self.paths["build_dir"], target=target)
 
     def build(self, workspace: Workspace):
         self.build_target(workspace)
