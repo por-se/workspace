@@ -78,7 +78,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         CMakeRecipeMixin.initialize(self, workspace)
 
         self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
-        self.paths["configure_src_dir"] = self.paths["src_dir"] / "llvm"
+        self.paths["cmake_src_dir"] = self.paths["src_dir"] / "llvm"
 
         if not self.profile["is_performance_build"]:
             self._release_build = LLVM(
