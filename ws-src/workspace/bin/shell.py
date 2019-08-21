@@ -3,7 +3,7 @@ import sys
 
 import shellingham
 
-from workspace.bin.util import ws_from_config_name
+from workspace import Workspace
 from workspace.settings import settings
 from workspace.shells import Bash, Fish, Zsh
 
@@ -23,7 +23,7 @@ def main():
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    workspace = ws_from_config_name(settings.config.value)
+    workspace = Workspace(settings.config.value)
     env = workspace.get_env()
     workspace.add_to_env(env)
     env["WS_CONFIG"] = config
@@ -47,7 +47,7 @@ def main():
     else:
         raise Exception(f'Unknown shell: "{shell}"')
 
-    prompt_prefix = f"({workspace.ws_path.name}: {settings.config.value}) "
+    prompt_prefix = f"({settings.ws_path.name}: {settings.config.value}) "
     shell_obj.set_prompt_prefix(prompt_prefix)
-    shell_obj.add_cd_build(workspace.builds)
+    shell_obj.add_cd_build_dir()
     shell_obj.spawn(env)

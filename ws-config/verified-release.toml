@@ -45,4 +45,4 @@ name = "porse"
 branch = "master"
 profile = "rel+debinfo"
 # WARNING: this is very memory intensive, even for small example programs
-cmake_adjustments = ["-DVERIFIED_FINGERPRINTS=On"]
+cmake-adjustments = ["-DVERIFIED_FINGERPRINTS=On"]

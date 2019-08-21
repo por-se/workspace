@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "cd ws-src && exec yapf --diff --style=.style.yapf --recursive --parallel workspace setup.py"
+exec ../../ws bash -c 'exec isort -j "$(ws-src/lint/jobs.py)" --check --diff -w 120 --recursive ws-src/lint/jobs.py ws-src/setup.py ws-src/workspace'

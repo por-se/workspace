@@ -15,10 +15,6 @@ DOCKERD_PID="$(jobs -l -p)" && echo "dockerd starting with pid $DOCKERD_PID..."
 
 ########################### room to prepare image while starting docker ###########################
 
-# setup netrc for usage in container
-echo -e "machine laboratory.comsys.rwth-aachen.de\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/netrc
-chmod 0600 ~/netrc
-
 # setup apk caching
 mkdir -p /cache/apk
 ln -s /cache/apk /etc/apk/cache
@@ -37,7 +33,7 @@ echo started dockerd with driver "\"$DOCKER_DRIVER\""
 
 set -v # print commands to CI output
 
-docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" $DOCKER_REGISTRY
+docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" "$PRIVATE_DOCKER_REGISTRY"
 docker info
 
 if [[ -e /cache/image.tar.zst ]] ; then

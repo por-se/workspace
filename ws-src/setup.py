@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name="workspace",
@@ -16,9 +16,11 @@ setup(
             "deactivate-cfg = workspace.bin.deactivate_cfg:main",
             "shell          = workspace.bin.shell:main",
             "run            = workspace.bin.run:main",
+            "build-dir      = workspace.bin.build_dir:main",
             "list-options   = workspace.bin.list_options:main",
             "clean          = workspace.bin.clean:main",
             "dist-clean     = workspace.bin.dist_clean:main",
+            "_ws_nop        = workspace.bin.nop:main",
         ],
     },
 )

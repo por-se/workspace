@@ -13,4 +13,4 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "cd ws-src && exec pylint workspace"
+exec ../../ws bash -c 'exec flake8 --max-line-len 120 -j "$(ws-src/lint/jobs.py)" ws-src/lint/jobs.py ws-src/setup.py ws-src/workspace'

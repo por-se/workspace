@@ -13,6 +13,13 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "cd ws-src &&
-                        mypy --config-file mypy.ini setup.py &&
-                        exec mypy --config-file mypy.ini -p workspace"
+cd ../../
+
+for hook in ws-src/lint/hooks/* ; do
+	name="$(basename "${hook%.*}")"
+	if [[ ! "$(readlink .git/hooks/${name})" -ef "${hook}" ]] ; then
+		echo Installing "${name}" hook...
+		rm -f ".git/hooks/${name}"
+		ln -s ../../"${hook}" ".git/hooks/${name}"
+	fi
+done

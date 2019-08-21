@@ -1,25 +1,27 @@
-from dataclasses import dataclass
-from hashlib import blake2s
-from pathlib import Path
-from typing import cast, List, Dict
+from __future__ import annotations
 
-from workspace.workspace import Workspace
-from workspace.build_systems import CMakeConfig
+from typing import TYPE_CHECKING, Any, Dict
+
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.util import env_prepend_path
-from . import Recipe
+from workspace.vcs.git import GitRecipeMixin
+
+from .all_recipes import register_recipe
+from .recipe import Recipe
+
+if TYPE_CHECKING:
+    import hashlib
+    from workspace import Workspace
 
 
-class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    """The z3 constraint solver"""
+class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
+    """The [z3](https://github.com/Z3Prover/z3) constraint solver"""
 
-    default_name = "z3"
     profiles = {
         "release": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Release',
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
         "rel+debinfo": {
             "cmake_args": {
@@ -32,88 +34,56 @@ class Z3(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
             },
-            "c_flags": [],
-            "cxx_flags": [],
         },
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            profile,
-            branch=None,
-            repository="github://Z3Prover/z3.git",
-            name=default_name,
-            openmp=True,
-            cmake_adjustments=[]):
-        super().__init__(name)
-        self.branch = branch
-        self.profile = profile
-        self.repository = repository
-        self.openmp = openmp
-        self.cmake_adjustments = cmake_adjustments
+    default_arguments: Dict[str, Any] = {
+        "shared": True,
+        "openmp": True,
+    }
 
-        self.paths = None
-        self.cmake = None
+    argument_schema: Dict[str, Any] = {
+        "shared": bool,
+        "openmp": bool,
+    }
 
-        assert self.profile in self.profiles, f'[{self.__class__.__name__}] the recipe for {self.name} does not contain a profile "{self.profile}"!'
+    @property
+    def shared(self) -> bool:
+        return self.arguments["shared"]
+
+    @property
+    def openmp(self) -> bool:
+        return self.arguments["openmp"]
+
+    def __init__(self, **kwargs):
+        GitRecipeMixin.__init__(self, "github://Z3Prover/z3.git")
+        CMakeRecipeMixin.__init__(self)
+        Recipe.__init__(self, **kwargs)
 
     def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            del workspace  # unused parameter
+        Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
-            digest = blake2s()
-            digest.update(self.name.encode())
-            digest.update(self.profile.encode())
-            for adjustment in self.cmake_adjustments:
-                digest.update("CMAKE_ADJUSTMENT:".encode())
-                digest.update(adjustment.encode())
+        if self.shared:
+            self.paths["libz3"] = self.paths["build_dir"] / "libz3.so"
+        else:
+            self.paths["libz3"] = self.paths["build_dir"] / "libz3.a"
 
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
-            return digest.hexdigest()[:12]
+        digest.update(f'shared:{self.shared}'.encode())
+        digest.update(f'openmp:{self.openmp}'.encode())
 
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
+    def configure(self, workspace: Workspace):
+        CMakeRecipeMixin.configure(self, workspace)
 
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.profile}-{self.digest}')
-            return paths
-
-        self.digest = _compute_digest(self, workspace)
-        self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
-
-        self.cmake = CMakeConfig(workspace)
-
-    def setup(self, workspace: Workspace):
-        if not self.paths.src_dir.is_dir():
-            workspace.git_add_exclude_path(self.paths.src_dir)
-            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            workspace.apply_patches("z3", self.paths.src_dir)
-
-    def _configure(self, workspace: Workspace):
-        cxx_flags = cast(List[str], self.profiles[self.profile]["cxx_flags"])
-        c_flags = cast(List[str], self.profiles[self.profile]["c_flags"])
-        self.cmake.set_extra_c_flags(c_flags)
-        self.cmake.set_extra_cxx_flags(cxx_flags)
-
-        self.cmake.set_flag("BUILD_LIBZ3_SHARED", False)
+        self.cmake.set_flag("BUILD_LIBZ3_SHARED", self.shared)
         self.cmake.set_flag("USE_OPENMP", self.openmp)
 
-        for name, value in cast(Dict, self.profiles[self.profile]["cmake_args"]).items():
-            self.cmake.set_flag(name, value)
-        self.cmake.adjust_flags(self.cmake_adjustments)
-
-        self.cmake.configure(workspace, self.paths.src_dir, self.paths.build_dir)
-
-    def build(self, workspace: Workspace):
-        if not self.cmake.is_configured(workspace, self.paths.src_dir, self.paths.build_dir):
-            self._configure(workspace)
-        self.cmake.build(workspace, self.paths.src_dir, self.paths.build_dir)
-
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths.build_dir)
+        env_prepend_path(env, "PATH", self.paths["build_dir"])
+
+
+register_recipe(Z3)

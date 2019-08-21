@@ -13,4 +13,9 @@ done
 DIR="$( cd -P "$(dirname "$SOURCE")" && pwd )"
 cd "$DIR"
 
-exec ../ws /bin/bash -c "cd ws-src && exec yapf --in-place --style=.style.yapf --recursive --parallel workspace setup.py"
+exec ../../ws /bin/bash -c "set -e ; set -u ; set -o pipefail
+	cd ws-src
+	mypy --config-file mypy.ini lint/jobs.py
+	mypy --config-file mypy.ini setup.py
+	exec mypy --config-file mypy.ini -p workspace
+"

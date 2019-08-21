@@ -1,76 +1,88 @@
-from dataclasses import dataclass
-from hashlib import blake2s
-from pathlib import Path
+from __future__ import annotations
+
+import os
 import subprocess
+from typing import TYPE_CHECKING, Any, Dict
 
-from workspace.workspace import Workspace
 from workspace.settings import settings
-from . import Recipe, LLVM
+from workspace.vcs.git import GitRecipeMixin
+
+from .all_recipes import register_recipe
+from .llvm import LLVM
+from .recipe import Recipe
+
+if TYPE_CHECKING:
+    import hashlib
+    from workspace import Workspace
 
 
-class KLEE_UCLIBC(Recipe):  # pylint: disable=invalid-name,too-many-instance-attributes
-    default_name = "klee-uclibc"
+class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+    default_arguments: Dict[str, Any] = {
+        "llvm": LLVM().default_name,
+    }
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            branch=None,
-            repository="github://klee/klee-uclibc.git",
-            name=default_name,
-            llvm_name=LLVM.default_name):
-        super().__init__(name)
-        self.branch = branch
-        self.llvm_name = llvm_name
-        self.repository = repository
+    argument_schema: Dict[str, Any] = {
+        "llvm": str,
+    }
 
-        self.paths = None
+    def find_llvm(self, workspace: Workspace) -> LLVM:
+        return self._find_previous_build(workspace, "llvm", LLVM)
+
+    def __init__(self, **kwargs):
+        GitRecipeMixin.__init__(self, "github://klee/klee-uclibc.git")
+        Recipe.__init__(self, **kwargs)
 
     def initialize(self, workspace: Workspace):
-        def _compute_digest(self, workspace: Workspace):
-            digest = blake2s()
-            digest.update(self.name.encode())
+        Recipe.initialize(self, workspace)
 
-            # branch and repository need not be part of the digest, as we will build whatever
-            # we find at the target path, no matter what it turns out to be at build time
+        self.paths["locale_file"] = workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz"
 
-            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-            assert llvm, "klee_uclibc requires llvm"
-            digest.update(llvm.digest.encode())
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
 
-            return digest.hexdigest()[:12]
-
-        def _make_internal_paths(self, workspace: Workspace):
-            @dataclass
-            class InternalPaths:
-                src_dir: Path
-                build_dir: Path
-
-            paths = InternalPaths(src_dir=workspace.ws_path / self.name,
-                                  build_dir=workspace.build_dir / f'{self.name}-{self.digest}')
-            return paths
-
-        self.digest = _compute_digest(self, workspace)
-        self.paths = _make_internal_paths(self, workspace)
-        self.repository = Recipe.concretize_repo_uri(self.repository, workspace)
+        digest.update(self.find_llvm(workspace).digest)
 
     def setup(self, workspace: Workspace):
-        if not self.paths.src_dir.is_dir():
-            workspace.git_add_exclude_path(self.paths.src_dir)
-            workspace.reference_clone(self.repository, target_path=self.paths.src_dir, branch=self.branch)
-            workspace.apply_patches("klee-uclibc", self.paths.src_dir)
+        self.setup_git(self.paths["src_dir"], workspace.patch_dir / self.default_name)
+
+        if not self.paths["locale_file"].is_file():
+            import urllib.request
+            import shutil
+
+            attempt, attempts = 0, 5
+            while attempt < attempts:
+                with urllib.request.urlopen("https://www.uclibc.org/downloads/uClibc-locale-030818.tgz") as response:
+                    os.makedirs(self.paths["locale_file"].parent, exist_ok=True)
+                    with open(self.paths["locale_file"], "wb") as locale_file:
+                        shutil.copyfileobj(response, locale_file)
+                result = subprocess.run(["tar", "-xOf", self.paths["locale_file"]], stdout=subprocess.DEVNULL)
+                if result.returncode != 0:
+                    os.remove(self.paths["locale_file"])
+                    attempt += 1
+                    print(f'Failed downloading uclibc locale data in attempt {attempt}/{attempts}')
+                else:
+                    break
+            if attempt >= attempts:
+                raise Exception("Failure downloading locale data")
 
     def build(self, workspace: Workspace):
-        subprocess.run(["rsync", "-a", f'{self.paths.src_dir}/', self.paths.build_dir], check=True)
+        subprocess.run(["rsync", "-a", f'{self.paths["src_dir"]}/', self.paths["build_dir"]], check=True)
+        locale_build_path = self.paths["build_dir"] / "extra" / "locale" / self.paths["locale_file"].name
+        if not locale_build_path.is_file():
+            os.symlink(self.paths["locale_file"].resolve(), locale_build_path.resolve())
 
         env = workspace.get_env()
 
-        if not (self.paths.build_dir / '.config').exists():
-            llvm = workspace.find_build(build_name=self.llvm_name, before=self)
-            assert llvm, "klee_uclibc requires llvm"
+        if not (self.paths["build_dir"] / '.config').exists():
+            llvm = self.find_llvm(workspace)
 
             subprocess.run(
-                ["./configure", "--make-llvm-lib", f"--with-llvm-config={llvm.paths.build_dir}/bin/llvm-config"],
-                cwd=self.paths.build_dir,
+                ["./configure", "--make-llvm-lib", f'--with-llvm-config={llvm.paths["build_dir"]}/bin/llvm-config'],
+                cwd=self.paths["build_dir"],
                 env=env,
                 check=True)
 
-        subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths.build_dir, env=env, check=True)
+        subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths["build_dir"], env=env, check=True)
+
+
+register_recipe(KLEE_UCLIBC)

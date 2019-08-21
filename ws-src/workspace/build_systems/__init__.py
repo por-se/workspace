@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import abc
-import enum
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Union
+
+from .linker import Linker
 
 if TYPE_CHECKING:
-    from workspace.workspace import Workspace
+    from workspace import Workspace
 
 
 def _quote_sequence(seq: Sequence[str]):
@@ -14,44 +17,42 @@ def _quote_sequence(seq: Sequence[str]):
         yield shlex.quote(item)
 
 
-class Linker(enum.Enum):
-    LD = "ld"
-    GOLD = "gold"
-    LLD = "lld"
-
-
 class BuildSystemConfig(abc.ABC):
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         self.linker = workspace.get_default_linker()
 
     @abc.abstractmethod
-    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env: Optional[Dict[str, str]] = None):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None):
+    def build(  # pylint: disable=too-many-arguments
+            self,
+            workspace: Workspace,
+            source_dir: Path,
+            build_dir: Path,
+            target: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None):
         raise NotImplementedError
 
 
 class CMakeConfig(BuildSystemConfig):
     class CMakeFlags:
-        def __init__(self, illegal_flags=set()):
-            self._flags = {}
-            self.illegal_flags = illegal_flags
+        def __init__(self, flags: Optional[Dict] = None, illegal_flags: Optional[Set] = None):
+            self._flags = flags if flags is not None else {}
+            self.illegal_flags = illegal_flags if illegal_flags is not None else set()
 
         def copy(self):
-            other = CMakeConfig.CMakeFlags(illegal_flags=self.illegal_flags.copy())
-            other._flags = self._flags.copy()  # pylint: disable=protected-access
-            return other
+            return CMakeConfig.CMakeFlags(flags=self._flags.copy(), illegal_flags=self.illegal_flags.copy())
 
         def set(self, name: str, value: Union[str, bool, int], override=True):
             if name in self.illegal_flags:
                 raise ValueError(f"changing cmake flag {name} is illegal")
-            if override or not name in self._flags:
+            if override or name not in self._flags:
                 self._flags[name] = value
 
         def unset(self, name: str):
@@ -60,8 +61,9 @@ class CMakeConfig(BuildSystemConfig):
         def adjust(self, adjustments: List[str]):
             """
             Apply a list of adjustments of the form ['-DFOO=BLUB', '-UBAR', '-DNEW=VAL'] to the currently stored flags.
-            These adjustment can only contain '-DXXX=yyy' and '-UXXX' entries. Changed entries will be changed, new entries will be appended,
-            and '-U'-entries will be removed from the result, which otherwise is a copy of 'original_args'.
+            These adjustment can only contain '-DXXX=yyy' and '-UXXX' entries. Changed entries will be changed, new
+            entries will be appended, and '-U'-entries will be removed from the result, which otherwise is a copy of
+            'original_args'.
             """
             for adj in adjustments:
                 if adj.startswith("-D"):
@@ -73,9 +75,8 @@ class CMakeConfig(BuildSystemConfig):
                     name = adj[2:]
                     self.unset(name)
                 else:
-                    raise ValueError(
-                        f"adjust: currently only adjustments starting with '-D' or '-U' are possible, but got '{adj}' instead. Please open an issue if required."
-                    )
+                    raise ValueError('adjust: currently only adjustments starting with "-D" or "-U" are possible, '
+                                     f'but got "{adj}" instead. Please open an issue if required.')
 
         def generate(self):
             output = []
@@ -91,17 +92,19 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         super().__init__(workspace)
         self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
         self._linker_flags: Optional[Dict[str, List[str]]] = None
 
-    def is_configured(self, workspace: "Workspace", source_dir: Path, build_dir: Path):
+    def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
         return build_dir.exists()
 
-    def configure(self, workspace: "Workspace", source_dir: Path, build_dir: Path, env=None):  # pylint: disable=arguments-differ
+    def configure(self, workspace: Workspace, source_dir: Path, build_dir: Path, env: Optional[Dict[str, str]] = None):
+        from workspace.settings import settings
+
         assert not self.is_configured(workspace, source_dir, build_dir)
 
         if not env:
@@ -120,7 +123,9 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
-        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(workspace.ws_path.resolve())}=."]
+        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(settings.ws_path.resolve())}=."]
+        if self.linker:
+            c_flags.append(f"-B{workspace.get_linker_dir(self.linker)}")
         cxx_flags = c_flags.copy()
         c_flags += self._extra_c_flags
         cxx_flags += self._extra_cxx_flags
@@ -129,12 +134,15 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        if self.linker:
-            workspace.add_linker_to_env(self.linker, env)
-
         subprocess.run(config_call, env=env, check=True)
 
-    def build(self, workspace: "Workspace", source_dir: Path, build_dir: Path, target=None, env=None):  # pylint: disable=arguments-differ,too-many-arguments
+    def build(  # pylint: disable=too-many-arguments
+            self,
+            workspace: Workspace,
+            source_dir: Path,
+            build_dir: Path,
+            target: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None):
         assert self.is_configured(workspace, source_dir, build_dir)
 
         from workspace.settings import settings
@@ -143,15 +151,14 @@ class CMakeConfig(BuildSystemConfig):
             env = workspace.get_env()
 
         build_call = ["cmake", "--build", str(build_dir.resolve()), "-j", str(settings.jobs.value)]
-        if target is not None:
+        if target:
             build_call += ['--target', target]
-
-        if self.linker:
-            workspace.add_linker_to_env(self.linker, env)
 
         subprocess.run(build_call, env=env, check=True)
 
-    def set_flag(self, name: str, value: Union[str, bool, int]):
+    def set_flag(self, name: str, value: Union[bool, int, str, Path]):
+        if isinstance(value, Path):
+            value = str(value)
         self._cmake_flags.set(name, value)
 
     def unset_flag(self, name: str):

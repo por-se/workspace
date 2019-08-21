@@ -1,14 +1,15 @@
 import argparse
-import subprocess
-import sys
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 
 def _emergency_cleanup():
     print(
-        "WARNING: This workspace seems to be broken (dependencies could not be loaded). Will try to remove the virtualenv, so it can be recreated..",
+        "WARNING: This workspace seems to be broken (dependencies could not be loaded). "
+        "Will try to remove the virtualenv, so it can be recreated..",
         file=sys.stderr)
     venv_path = Path(".venv")
     if venv_path.exists():
@@ -39,9 +40,8 @@ def _confirm(query):
 
 def main():
     parser = argparse.ArgumentParser(
-        description=
-        "Fully clean the workspace. REMOVE EVERYTHING that is not part of the workspace itself. That includes any sources checked out inside it."
-    )
+        description="Fully clean the workspace. "
+        "REMOVE EVERYTHING that is not part of the workspace itself. That includes any sources checked out inside it.")
 
     settings.preserve_settings.add_kwargument(parser)
     settings.bind_args(parser)

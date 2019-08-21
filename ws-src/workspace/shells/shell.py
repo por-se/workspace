@@ -13,7 +13,7 @@ class Shell(abc.ABC):
         self.additional_commands += commands
 
     @abc.abstractmethod
-    def add_cd_build(self, builds):
+    def add_cd_build_dir(self):
         raise NotImplementedError
 
     @abc.abstractmethod

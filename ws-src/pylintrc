@@ -1,10 +1,7 @@
 [MESSAGES CONTROL]
 disable=
-	cyclic-import,
 	duplicate-code,
-	line-too-long,
-	missing-docstring,
-	dangerous-default-value
+	missing-docstring
 
 [FORMAT]
 max-line-length=120
