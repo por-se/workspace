@@ -208,8 +208,9 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
 
     @property
     def repository(self) -> str:
-        result = settings.uri_schemes.resolve(self.arguments["repository"])
+        result = self.arguments["repository"]
         assert isinstance(result, str)
+        result = settings.uri_schemes.resolve(result)
         return result
 
     @property
@@ -222,6 +223,8 @@ class GitRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     def upstream(self) -> Optional[str]:
         result = self.arguments["upstream"]
         assert result is None or isinstance(result, str)
+        if result is not None:
+            result = settings.uri_schemes.resolve(result)
         return result
 
     def setup_git(self, source_dir: Path, patch_dir: Optional[Path]):
