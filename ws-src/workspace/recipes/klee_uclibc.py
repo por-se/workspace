@@ -76,11 +76,10 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         if not (self.paths["build_dir"] / '.config').exists():
             llvm = self.find_llvm(workspace)
 
-            subprocess.run(
-                ["./configure", "--make-llvm-lib", f'--with-llvm-config={llvm.paths["build_dir"]}/bin/llvm-config'],
-                cwd=self.paths["build_dir"],
-                env=env,
-                check=True)
+            subprocess.run(["./configure", "--make-llvm-lib", f'--with-llvm-config={llvm.paths["llvm-config"]}'],
+                           cwd=self.paths["build_dir"],
+                           env=env,
+                           check=True)
 
         subprocess.run(["make", "-j", str(settings.jobs.value)], cwd=self.paths["build_dir"], env=env, check=True)
 

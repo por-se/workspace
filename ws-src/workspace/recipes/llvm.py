@@ -78,7 +78,9 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         CMakeRecipeMixin.initialize(self, workspace)
 
         self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
+        self.paths["llvm-config"] = self.paths["build_dir"] / "bin" / "llvm-config"
         self.paths["cmake_src_dir"] = self.paths["src_dir"] / "llvm"
+        self.paths["cmake_export_dir"] = self.paths["build_dir"] / "lib" / "cmake" / "llvm"
 
         if not self.profile["is_performance_build"]:
             self._release_build = LLVM(
@@ -113,7 +115,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         z3 = self.find_z3(workspace)
         if z3:
-            self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["src_dir"] / "src/api/")
+            self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["include_dir"])
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
