@@ -1,4 +1,7 @@
 import argparse
+import shutil
+
+from pyfiglet import Figlet
 
 from workspace import Workspace
 from workspace.settings import settings
@@ -19,12 +22,14 @@ def main():
     if not settings.configs.value:
         print("Warning: No configurations specified for setup command.")
     elif len(settings.configs.value) == 1:
-        print("Setting up", settings.configs.value[0])
-        print()
+        pass  # No need to print out a list in advance
     else:
         print("Setting up", ", ".join(settings.configs.value[:-1]), "and", settings.configs.value[-1])
         print()
 
+    figlet = Figlet(font="doom", width=80)
     for config in settings.configs.value:
+        figlet.width = shutil.get_terminal_size(fallback=(9999, 24))[0]
+        print(figlet.renderText(f'Setting up {config}'))
         workspace = Workspace(config)
         workspace.setup()
