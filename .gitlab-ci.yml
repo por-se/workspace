@@ -69,7 +69,7 @@ build:
             docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
             echo "Saved new copy of $IMAGE_NAME to cache"
           ) &
-          truncate -s 0 build.log # ensure CI succeeds when no build takes place
+          truncate -s 0 build.log # ensure CI succeeds when no build takes place, making sure that no possible remnants of old logs remain
           if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
             docker tag base $IMAGE_NAME:latest
             docker run --name ci \
@@ -83,7 +83,7 @@ build:
           wait
         )
     - |
-      if [[ "$CI_COMMIT_REF_NAME" = "MASTER" ]] ; then
+      if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
         echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
       fi
 
@@ -147,14 +147,6 @@ test-build-sanitized:
   after_script:
     - 'mv /workspace/build.log build.log'
 
-test-build-dir:
-  extends: .workspace
-  script:
-    - 'cd /workspace'
-    - './ws build-dir llvm'
-    - '! ./ws build-dir'
-    - '! ./ws build-dir lllvm'
-
 test-clean:
   extends: .workspace
   script:
@@ -165,38 +157,13 @@ test-clean:
     - '[[ ! -e .bin ]]'
     - '[[ ! -e .build ]]'
 
-test-list-options:
+test-dist-clean-setup-reset-settings:
   extends: .workspace
   script:
     - 'cd /workspace'
-    - './ws list-options LLVM Z3'
-    - '! ./ws list-options Z4'
-    - './ws list-options'
 
-test-reset-settings:
-  extends: .workspace
-  script:
-    - 'cd /workspace'
-    - 'cp ws-settings.toml ws-settings.bak'
-    - './ws reset-settings'
-    - '! cmp --silent ws-settings.toml ws-settings.bak'
-
-test-run:
-  extends: .workspace
-  script:
-    - 'cd /workspace'
-    - './ws run -h'
-    - './ws run --help'
-    - './ws run echo'
-    - './ws run -- echo'
-    - './ws run profile echo'
-    - './ws run profile -- echo'
-    - '! ./ws run false'
-
-test-dist-clean-and-setup:
-  extends: .workspace
-  script:
-    - 'cd /workspace'
+    # dist-clean -p
+    - 'mkdir -p .build .bin'
     - 'echo y | ./ws dist-clean -p'
     - '[[ -e ws-settings.toml ]]'
     - '[[ ! -e .bin ]]'
@@ -209,13 +176,21 @@ test-dist-clean-and-setup:
     - '[[ ! -e klee-uclibc ]]'
     - '[[ ! -e klee ]]'
 
+    # setup -u
     - './ws setup --until z3'
     - '[[ -e z3 ]]'
     - '[[ ! -e klee ]]'
 
+    # setup
     - './ws setup'
     - '[[ -e klee ]]'
 
+    # reset-settings
+    - 'cp ws-settings.toml ws-settings.bak'
+    - './ws reset-settings'
+    - '! cmp --silent ws-settings.toml ws-settings.bak'
+
+    # dist-clean
     - 'touch foo'
     - 'echo y | ./ws dist-clean'
     - '[[ ! -e ws-settings.toml ]]'
@@ -244,8 +219,29 @@ test-shell:
     - '! <bad.tmp ./ws shell -s fish'
     - '! <bad.tmp ./ws shell -s zsh'
 
-test-nop:
+test-pure:
   extends: .workspace
   script:
     - 'cd /workspace'
+
+    # nop
     - './ws _ws_nop'
+
+    # run
+    - './ws run -h'
+    - './ws run --help'
+    - './ws run echo'
+    - './ws run -- echo'
+    - './ws run profile echo'
+    - './ws run profile -- echo'
+    - '! ./ws run false'
+
+    # list-options
+    - './ws list-options LLVM Z3'
+    - '! ./ws list-options Z4'
+    - './ws list-options'
+
+    # build-dir
+    - './ws build-dir llvm'
+    - '! ./ws build-dir'
+    - '! ./ws build-dir lllvm'
