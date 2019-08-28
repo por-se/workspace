@@ -5,4 +5,5 @@ disable=
 
 [FORMAT]
 max-line-length=120
-variable-rgx=(?:z3|[a-z_][a-z0-9_]{2,30})$
+argument-rgx=(?:fd|z3|[a-z_][a-z0-9_]{2,30})$
+variable-rgx=(?:fd|z3|[a-z_][a-z0-9_]{2,30})$

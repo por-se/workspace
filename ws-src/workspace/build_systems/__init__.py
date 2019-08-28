@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import abc
 import shlex
-import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Union
+
+from workspace.util import run_with_prefix
 
 from .linker import Linker
 
@@ -134,7 +135,7 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        subprocess.run(config_call, env=env, check=True)
+        run_with_prefix(config_call, f'[{build_dir.relative_to(workspace.build_dir)}] ', env=env, check=True)
 
     def build(  # pylint: disable=too-many-arguments
             self,
@@ -154,7 +155,7 @@ class CMakeConfig(BuildSystemConfig):
         if target:
             build_call += ['--target', target]
 
-        subprocess.run(build_call, env=env, check=True)
+        run_with_prefix(build_call, f'[{build_dir.relative_to(workspace.build_dir)}] ', env=env, check=True)
 
     def set_flag(self, name: str, value: Union[bool, int, str, Path]):
         if isinstance(value, Path):
