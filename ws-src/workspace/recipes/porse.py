@@ -99,7 +99,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self,
-                                "laboratory://concurrent-symbolic-execution/klee.git",
+                                "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee.git",
                                 upstream="github://klee/klee.git")
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)

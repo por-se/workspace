@@ -42,7 +42,7 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
     }
 
     def __init__(self, **kwargs):
-        GitRecipeMixin.__init__(self, "laboratory://concurrent-symbolic-execution/simulator.git")
+        GitRecipeMixin.__init__(self, "laboratory://symbiosys/projects/concurrent-symbolic-execution/simulator.git")
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 

@@ -31,7 +31,7 @@ class PSEUDOALLOC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     }
 
     def __init__(self, **kwargs):
-        GitRecipeMixin.__init__(self, "laboratory://concurrent-symbolic-execution/pseudoalloc.git")
+        GitRecipeMixin.__init__(self, "laboratory://symbiosys/projects/concurrent-symbolic-execution/pseudoalloc.git")
         Recipe.__init__(self, **kwargs)
 
     def initialize(self, workspace: Workspace):
