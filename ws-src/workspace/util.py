@@ -76,6 +76,14 @@ def run_with_prefix(  # pylint: disable=too-many-locals,too-many-statements
     prefix_bytes: bytes = prefix.encode()
 
     def read(fd):  # pylint: disable=too-many-branches
+        """
+        This function is called repeatedly whenever the pty fd becomes ready to be read from.
+
+        In addition to copying over the user content, we perform a very basic kind of terminal emulation:
+        - Any occurence of the "terminal newline" `b"\r\n"` is reduced (back) to `b"\n"`.
+        - At the beginning of a new line and after returning the cursor to the beginning of a line with `b"\r"`, the
+          prefix is printed
+        """
         nonlocal start_of_line, owed_carriage_return, prefix_bytes
 
         data = os.read(fd, 1024)

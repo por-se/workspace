@@ -67,8 +67,9 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
                 raise Exception("Failure downloading locale data")
 
     def build(self, workspace: Workspace):
-        prefix = f'[{self.paths["build_dir"].relative_to(workspace.build_dir)}] '
-        run_with_prefix(["rsync", "-a", f'{self.paths["src_dir"]}/', self.paths["build_dir"]], prefix, check=True)
+        run_with_prefix(["rsync", "-a", f'{self.paths["src_dir"]}/', self.paths["build_dir"]],
+                        self.output_prefix,
+                        check=True)
         locale_build_path = self.paths["build_dir"] / "extra" / "locale" / self.paths["locale_file"].name
         if not locale_build_path.is_file():
             os.symlink(self.paths["locale_file"].resolve(), locale_build_path.resolve())
@@ -79,13 +80,13 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
             llvm = self.find_llvm(workspace)
 
             run_with_prefix(["./configure", "--make-llvm-lib", f'--with-llvm-config={llvm.paths["llvm-config"]}'],
-                            prefix,
+                            self.output_prefix,
                             cwd=self.paths["build_dir"],
                             env=env,
                             check=True)
 
         run_with_prefix(["make", "-j", str(settings.jobs.value)],
-                        prefix,
+                        self.output_prefix,
                         cwd=self.paths["build_dir"],
                         env=env,
                         check=True)
