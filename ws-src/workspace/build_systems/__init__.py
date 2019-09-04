@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import abc
 import shlex
-import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Union
+
+from workspace.util import run_with_prefix
 
 from .linker import Linker
 
@@ -18,8 +19,9 @@ def _quote_sequence(seq: Sequence[str]):
 
 
 class BuildSystemConfig(abc.ABC):
-    def __init__(self, workspace: Workspace):
-        self.linker = workspace.get_default_linker()
+    def __init__(self, workspace: Workspace, output_prefix: str):
+        self.linker: Linker = workspace.get_default_linker()
+        self.output_prefix: str = output_prefix
 
     @abc.abstractmethod
     def is_configured(self, workspace: Workspace, source_dir: Path, build_dir: Path):
@@ -92,8 +94,8 @@ class CMakeConfig(BuildSystemConfig):
                 output.append(f"-D{name}={value_str}")
             return output
 
-    def __init__(self, workspace: Workspace):
-        super().__init__(workspace)
+    def __init__(self, workspace: Workspace, output_prefix: str):
+        super().__init__(workspace, output_prefix)
         self._cmake_flags = CMakeConfig.CMakeFlags(illegal_flags={"CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS"})
         self._extra_c_flags: List[str] = []
         self._extra_cxx_flags: List[str] = []
@@ -134,7 +136,7 @@ class CMakeConfig(BuildSystemConfig):
 
         config_call += cmake_flags.generate()
 
-        subprocess.run(config_call, env=env, check=True)
+        run_with_prefix(config_call, self.output_prefix, env=env, check=True)
 
     def build(  # pylint: disable=too-many-arguments
             self,
@@ -154,7 +156,7 @@ class CMakeConfig(BuildSystemConfig):
         if target:
             build_call += ['--target', target]
 
-        subprocess.run(build_call, env=env, check=True)
+        run_with_prefix(build_call, self.output_prefix, env=env, check=True)
 
     def set_flag(self, name: str, value: Union[bool, int, str, Path]):
         if isinstance(value, Path):

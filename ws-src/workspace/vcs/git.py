@@ -135,7 +135,7 @@ def reference_clone(  # pylint: disable=too-many-arguments
 
     if sparse is not None:
         subprocess.run(["git", "-C", target_path, "config", "core.sparsecheckout", "true"], check=True)
-        with open(target_path / ".git/info/sparse-checkout", "wt") as file:
+        with open(target_path / ".git" / "info" / "sparse-checkout", "wt") as file:
             for line in sparse:
                 print(line, file=file)
 

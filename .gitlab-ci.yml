@@ -44,28 +44,7 @@ editorconfig:
     - '/ec -exclude "\\.py$" -dry-run >paths.log'
     - '/ec -exclude "\\.py$"'
 
-build-not-master:
-  stage: build
-  image: docker:dind
-  except:
-    refs:
-      - master
-  script:
-    - 'source .gitlab-ci-src/setup_dind.sh'
-    - '.gitlab-ci-src/create_base_image.sh'
-    - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
-    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
-
-    - |
-        ( # subshell to enable waiting on parallel processes
-          ( echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push ) &
-          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-          echo "Saved new copy of $IMAGE_NAME to cache"
-          wait
-        )
-    - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
-
-build-master:
+build:
   stage: build
   image: docker:dind
   artifacts:
@@ -73,32 +52,48 @@ build-master:
     paths:
       - build.log
     expire_in: 1 day
-  only:
-    refs:
-      - master
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
     - '.gitlab-ci-src/create_base_image.sh'
-    - 'docker tag base $IMAGE_NAME:latest'
-    - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)' # compute date of tomorrow with the alpine busybox date command
+      # compute date of tomorrow (+60*60*24 seconds) with the alpine busybox date command
+    - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)'
     - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
 
-    - |
+    - | # push CI images while potentially (only on master) building new release images
         ( # subshell to enable waiting on parallel processes
-          ( echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push ) &
-          docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-          echo "Saved new copy of $IMAGE_NAME to cache"
+          (
+            echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push
+            echo "Successfully pushed $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"
+          ) &
+          (
+            docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+            echo "Saved new copy of $IMAGE_NAME to cache"
+          ) &
+          truncate -s 0 build.log # ensure CI succeeds when no build takes place, making sure that no possible remnants of old logs remain
+          if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
+            docker tag base $IMAGE_NAME:latest
+            docker run --name ci \
+              -v ~/.netrc:/root/.netrc \
+              -v /ccache:/ccache \
+              $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1
+            docker commit \
+              --change "CMD [\"shell\", \"-s\", \"fish\"]" \
+              ci $IMAGE_NAME:latest-prebuilt
+          fi
           wait
         )
-    - 'echo "Successfully pushed $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"'
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
+        echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
+      fi
 
-    - 'docker run --name ci -v ~/.netrc:/root/.netrc -v /ccache:/ccache $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1'
-    - 'docker commit --change "CMD [\"shell\", \"-s\", \"fish\"]" ci $IMAGE_NAME:latest-prebuilt'
-    - 'echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push'
+.workspace:
+  stage: test
+  needs: [build]
+  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
 
 test-build-debug:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   artifacts:
     when: always
     paths:
@@ -111,8 +106,7 @@ test-build-debug:
     - 'mv /workspace/build.log build.log'
 
 test-build-profile:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   artifacts:
     when: always
     paths:
@@ -125,8 +119,7 @@ test-build-profile:
     - 'mv /workspace/build.log build.log'
 
 test-build-release:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   artifacts:
     when: always
     paths:
@@ -142,8 +135,7 @@ test-build-release:
     - 'mv /workspace/build-release.log build-release.log'
 
 test-build-sanitized:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   artifacts:
     when: always
     paths:
@@ -155,18 +147,8 @@ test-build-sanitized:
   after_script:
     - 'mv /workspace/build.log build.log'
 
-test-build-dir:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
-  script:
-    - 'cd /workspace'
-    - './ws build-dir llvm'
-    - '! ./ws build-dir'
-    - '! ./ws build-dir lllvm'
-
 test-clean:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   script:
     - 'cd /workspace'
     - 'mkdir -p .build .bin'
@@ -175,42 +157,13 @@ test-clean:
     - '[[ ! -e .bin ]]'
     - '[[ ! -e .build ]]'
 
-test-list-options:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+test-dist-clean-setup-reset-settings:
+  extends: .workspace
   script:
     - 'cd /workspace'
-    - './ws list-options LLVM Z3'
-    - '! ./ws list-options Z4'
-    - './ws list-options'
 
-test-reset-settings:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
-  script:
-    - 'cd /workspace'
-    - 'cp ws-settings.toml ws-settings.bak'
-    - './ws reset-settings'
-    - '! cmp --silent ws-settings.toml ws-settings.bak'
-
-test-run:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
-  script:
-    - 'cd /workspace'
-    - './ws run -h'
-    - './ws run --help'
-    - './ws run echo'
-    - './ws run -- echo'
-    - './ws run profile echo'
-    - './ws run profile -- echo'
-    - '! ./ws run false'
-
-test-dist-clean-and-setup:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
-  script:
-    - 'cd /workspace'
+    # dist-clean -p
+    - 'mkdir -p .build .bin'
     - 'echo y | ./ws dist-clean -p'
     - '[[ -e ws-settings.toml ]]'
     - '[[ ! -e .bin ]]'
@@ -223,13 +176,21 @@ test-dist-clean-and-setup:
     - '[[ ! -e klee-uclibc ]]'
     - '[[ ! -e porse ]]'
 
+    # setup -u
     - './ws setup --until z3'
     - '[[ -e z3 ]]'
     - '[[ ! -e porse ]]'
 
+    # setup
     - './ws setup'
     - '[[ -e porse ]]'
 
+    # reset-settings
+    - 'cp ws-settings.toml ws-settings.bak'
+    - './ws reset-settings'
+    - '! cmp --silent ws-settings.toml ws-settings.bak'
+
+    # dist-clean
     - 'touch foo'
     - 'echo y | ./ws dist-clean'
     - '[[ ! -e ws-settings.toml ]]'
@@ -239,8 +200,7 @@ test-dist-clean-and-setup:
     - '[[ ! -e foo ]]'
 
 test-shell:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  extends: .workspace
   script:
     - 'cd /workspace'
     - 'mkdir -p $(./ws build-dir llvm)'
@@ -259,9 +219,29 @@ test-shell:
     - '! <bad.tmp ./ws shell -s fish'
     - '! <bad.tmp ./ws shell -s zsh'
 
-test-nop:
-  stage: test
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+test-pure:
+  extends: .workspace
   script:
     - 'cd /workspace'
+
+    # nop
     - './ws _ws_nop'
+
+    # run
+    - './ws run -h'
+    - './ws run --help'
+    - './ws run echo'
+    - './ws run -- echo'
+    - './ws run profile echo'
+    - './ws run profile -- echo'
+    - '! ./ws run false'
+
+    # list-options
+    - './ws list-options LLVM Z3'
+    - '! ./ws list-options Z4'
+    - './ws list-options'
+
+    # build-dir
+    - './ws build-dir llvm'
+    - '! ./ws build-dir'
+    - '! ./ws build-dir lllvm'

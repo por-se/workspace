@@ -37,6 +37,11 @@ class IRecipe(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def output_prefix(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
     def arguments(self) -> Mapping[str, Any]:
         raise NotImplementedError()
 

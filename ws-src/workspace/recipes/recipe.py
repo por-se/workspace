@@ -64,6 +64,10 @@ class Recipe(IRecipe, abc.ABC):  # pylint: disable=abstract-method
         return self.profiles[self.profile_name]
 
     @property
+    def output_prefix(self) -> str:
+        return f'[{self.name} ({self.profile_name})] '
+
+    @property
     def paths(self) -> MutableMapping[str, Path]:
         return self.__paths
 

@@ -13,15 +13,16 @@ if TYPE_CHECKING:
 
 
 class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
+    __cmake: Optional[CMakeConfig] = None
+
     def __init__(self, cmake_adjustments: Optional[List[str]] = None):
         self.update_argument_schema({"cmake-adjustments": [str]})
-
         if cmake_adjustments is None:
             cmake_adjustments = []
         self.update_default_arguments({"cmake-adjustments": cmake_adjustments})
 
     def initialize(self, workspace: Workspace) -> None:
-        self.__cmake = CMakeConfig(workspace)
+        self.__cmake = CMakeConfig(workspace, self.output_prefix)
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         del workspace  # unused parameter
@@ -34,8 +35,6 @@ class CMakeRecipeMixin(IRecipe, abc.ABC):  # pylint: disable=abstract-method
     @property
     def cmake_adjustments(self) -> List[str]:
         return self.arguments["cmake-adjustments"]
-
-    __cmake: Optional[CMakeConfig] = None
 
     @property
     def cmake(self) -> CMakeConfig:
