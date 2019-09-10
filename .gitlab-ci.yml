@@ -1,6 +1,6 @@
 variables:
-  PRIVATE_DOCKER_REGISTRY: eyrie.comsys.rwth-aachen.de
-  PUBLIC_DOCKER_REGISTRY: kleenet.comsys.rwth-aachen.de
+  PRIVATE_DOCKER_REGISTRY: registry-push.comsys.rwth-aachen.de
+  PUBLIC_DOCKER_REGISTRY: registry.comsys.rwth-aachen.de
   IMAGE_NAME: $PRIVATE_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
   CI_IMAGE_NAME: $PUBLIC_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
   PIPENV_CACHE_DIR: /cache/pipenv
