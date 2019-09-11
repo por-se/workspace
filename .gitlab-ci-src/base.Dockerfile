@@ -1,4 +1,4 @@
-FROM kleenet.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image:rust
+FROM registry.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image:rust
 
 RUN pacman -Syu --noconfirm crypto++ && pacman -Scc --noconfirm
 

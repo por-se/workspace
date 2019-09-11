@@ -10,7 +10,7 @@ During CI, several docker images are built, and a bunch of testing is performed:
 
 ## Generated Docker Images
 
-While the CI pushes its created docker images to the registry `eyrie.comsys.rwth-aachen.de`, it is strongly suggested to pull these images through the address `kleenet.comsys.rwth-aachen.de`, as this is the public address that (while disallowing pushes) does not require authentication from the user side. Both of these addresses are only reachable from within the COMSYS network.
+While the CI pushes its created docker images to the registry `registry-push.comsys.rwth-aachen.de`, it is strongly suggested to pull these images through the address `registry.comsys.rwth-aachen.de`, as this is the public address that (while disallowing pushes) does not require authentication from the user side. Both of these addresses are only reachable from within the COMSYS network.
 
 Multiple tags are pushed, the purposes of which are:
 

@@ -79,6 +79,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
         self.paths["llvm-config"] = self.paths["build_dir"] / "bin" / "llvm-config"
+        self.paths["llvm-lit"] = self.paths["build_dir"] / "bin" / "llvm-lit"
         self.paths["cmake_src_dir"] = self.paths["src_dir"] / "llvm"
         self.paths["cmake_export_dir"] = self.paths["build_dir"] / "lib" / "cmake" / "llvm"
 

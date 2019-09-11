@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
@@ -131,6 +130,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
         self.cmake.set_flag('LLVM_DIR', llvm.paths["cmake_export_dir"])
+        self.cmake.set_flag('LIT_TOOL', llvm.paths["llvm-lit"])
         self.cmake.set_flag('ENABLE_SOLVER_STP', True)
         self.cmake.set_flag('STP_DIR', stp.paths["src_dir"])
         self.cmake.set_flag('STP_STATIC_LIBRARY', stp.paths["libstp"])
@@ -144,10 +144,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         self.cmake.set_flag('PSEUDOALLOC_LIBRARIES', pseudoalloc.paths["libpseudoalloc"])
         self.cmake.set_flag('PSEUDOALLOC_INCLUDE_DIRS', pseudoalloc.paths["include_dir"])
         self.cmake.set_flag('POR_SIMULATOR_DIR', simulator.paths["build_dir"])
-
-        lit = shutil.which("lit")
-        assert lit, "lit is not installed"
-        self.cmake.set_flag('LIT_TOOL', lit)
 
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
