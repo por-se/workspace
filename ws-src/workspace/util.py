@@ -20,7 +20,8 @@ def _terminal_set_raw_input() -> Optional[int]:
 
     stdin: int = 0
     try:
-        old_mode = mode = tty.tcgetattr(stdin)  # type: ignore
+        mode = tty.tcgetattr(stdin)  # type: ignore
+        old_mode = mode.copy()
 
         mode[tty.IFLAG] &= ~(tty.BRKINT | tty.ICRNL | tty.INPCK | tty.ISTRIP | tty.IXON)  # type: ignore
         mode[tty.CFLAG] &= ~(tty.CSIZE | tty.PARENB)  # type: ignore
