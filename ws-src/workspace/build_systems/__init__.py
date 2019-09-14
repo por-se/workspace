@@ -125,7 +125,7 @@ class CMakeConfig(BuildSystemConfig):
         cmake_flags.set("CMAKE_C_COMPILER_LAUNCHER", "ccache", override=False)
         cmake_flags.set("CMAKE_CXX_COMPILER_LAUNCHER", "ccache", override=False)
 
-        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(settings.ws_path.resolve())}=."]
+        c_flags = ["-fdiagnostics-color=always", f"-fdebug-prefix-map={str(settings.ws_path.resolve())}=.", "-gz"]
         if self.linker:
             c_flags.append(f"-B{workspace.get_linker_dir(self.linker)}")
         cxx_flags = c_flags.copy()
