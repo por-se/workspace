@@ -1,64 +1,58 @@
 from __future__ import annotations
 
-import os
-import subprocess
-from typing import TYPE_CHECKING, Dict, List, cast
+from typing import TYPE_CHECKING
 
-from workspace.settings import settings
+from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
 from .recipe import Recipe
 
 if TYPE_CHECKING:
+    import hashlib
     from workspace import Workspace
 
 
-class PSEUDOALLOC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
+class PSEUDOALLOC(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-name
     profiles = {
         "release": {
-            "cargo_flags": ["--release"],
-            "rust_flags": [],
-        },
-        "debug": {
-            "cargo_flags": [],
-            "rust_flags": [],
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Release',
+            },
         },
         "rel+debinfo": {
-            "cargo_flags": ["--release"],
-            "rust_flags": ["-g"],
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
+            },
+            "cxx_flags": ["-fno-omit-frame-pointer"],
+        },
+        "debug": {
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Debug',
+            },
+        },
+        "sanitized": {
+            "cmake_args": {
+                'CMAKE_BUILD_TYPE': 'Asan',
+            },
         },
     }
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "laboratory://symbiosys/projects/concurrent-symbolic-execution/pseudoalloc.git")
+        CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
     def initialize(self, workspace: Workspace):
         Recipe.initialize(self, workspace)
+        CMakeRecipeMixin.initialize(self, workspace)
 
-        profile_dir_name = "debug"
-        if "--release" in self.profile["cargo_flags"]:
-            profile_dir_name = "release"
+    def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
+        Recipe.compute_digest(self, workspace, digest)
+        CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
-        self.paths["include_dir"] = self.paths["build_dir"] / "include"
-        self.paths["libpseudoalloc"] = self.paths["build_dir"] / profile_dir_name / "libpseudoalloc.so"
-
-    def build(self, workspace: Workspace):
-        cargo_flags = cast(Dict[str, List[str]], self.profile["cargo_flags"])
-        rust_flags = cast(Dict[str, List[str]], self.profile["rust_flags"])
-
-        cargo_env = os.environ.copy()
-        cargo_env["CARGO_TARGET_DIR"] = str(self.paths["build_dir"])
-        cargo_env["RUSTFLAGS"] = " ".join(rust_flags)
-
-        cargo_cmd = ["cargo", "build", "-j", str(settings.jobs.value)]
-        cargo_cmd += cargo_flags
-        subprocess.run(cargo_cmd, check=True, cwd=self.paths["src_dir"], env=cargo_env)
-
-        assert self.paths["libpseudoalloc"].exists(), "Could not find libpseudoalloc.so at expected location"
-        assert (self.paths["include_dir"] /
-                "pseudoalloc.h").exists(), "Could not find pseudoalloc.h in expected directory"
+    def configure(self, workspace: Workspace):
+        CMakeRecipeMixin.configure(self, workspace)
 
 
 register_recipe(PSEUDOALLOC)

@@ -141,8 +141,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         self.cmake.set_flag('ENABLE_PTHREAD_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', klee_uclibc.paths["build_dir"])
-        self.cmake.set_flag('PSEUDOALLOC_LIBRARIES', pseudoalloc.paths["libpseudoalloc"])
-        self.cmake.set_flag('PSEUDOALLOC_INCLUDE_DIRS', pseudoalloc.paths["include_dir"])
+        self.cmake.set_flag('PSEUDOALLOC_DIR', pseudoalloc.paths["build_dir"])
         self.cmake.set_flag('POR_SIMULATOR_DIR', simulator.paths["build_dir"])
 
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
