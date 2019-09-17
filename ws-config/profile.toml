@@ -43,5 +43,5 @@ profile = "rel+debinfo"
 [[Recipe]]
 recipe = "PORSE"
 name = "porse"
-branch = "master"
+branch = "new-pseudoalloc-impl"
 profile = "rel+debinfo"

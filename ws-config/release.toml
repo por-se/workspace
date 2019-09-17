@@ -43,5 +43,5 @@ profile = "release"
 [[Recipe]]
 recipe = "PORSE"
 name = "porse"
-branch = "master"
+branch = "new-pseudoalloc-impl"
 profile = "release"
