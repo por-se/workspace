@@ -1,7 +1,7 @@
 [[Recipe]]
 recipe = "Z3"
 name = "z3"
-branch = "Z3-4.8.5"
+branch = "z3-4.8.6"
 profile = "release"
 shared = false
 openmp = false
