@@ -38,18 +38,28 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "c_flags": ["-fno-omit-frame-pointer"],
-            "cxx_flags": ["-fno-omit-frame-pointer"],
-            "is_performance_build": True,
-            "has_debug_info": True,
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "is_performance_build":
+            True,
+            "has_debug_info":
+            True,
         },
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "is_performance_build": False,
-            "has_debug_info": True,
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "is_performance_build":
+            False,
+            "has_debug_info":
+            True,
         },
     }
 

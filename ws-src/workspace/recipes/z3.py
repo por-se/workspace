@@ -27,13 +27,19 @@ class Z3(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-n
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
             },
-            "c_flags": ["-fno-omit-frame-pointer"],
-            "cxx_flags": ["-fno-omit-frame-pointer"],
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
             },
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
     }
 
