@@ -55,7 +55,7 @@ def main():
 
     exclude_path_exists = (settings.ws_path / ".git" / "info" / "exclude").exists()
 
-    if sys.stdin.isatty:
+    if sys.stdin.isatty():
         subprocess.run(clean_cmd + ["-n"], check=True, env=en_env)
         if exclude_path_exists:
             print("Would remove .git/info/exclude")
@@ -70,10 +70,10 @@ def main():
         except FileNotFoundError:
             pass
 
-    if sys.stdin.isatty:
-        diff = subprocess.run(["git", "diff", "--quiet"], env=en_env)
+    if sys.stdin.isatty():
+        diff = subprocess.run(["git", "diff", "--quiet"], env=en_env, check=False)
         if diff.returncode == 0:
-            diff = subprocess.run(["git", "diff", "--quiet", "--staged"], env=en_env)
+            diff = subprocess.run(["git", "diff", "--quiet", "--staged"], env=en_env, check=False)
         if diff.returncode != 0:
             subprocess.run(["git", "status"], check=True, env=en_env)
             if not _confirm("Also remove all modifications?"):

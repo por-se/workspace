@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+import pty
+import sys
+import tty
 from pathlib import Path
 from typing import Mapping, MutableMapping, Optional, Sequence, Union
 
@@ -16,7 +20,6 @@ def _terminal_set_raw_input() -> Optional[int]:
     """
     Sets the terminal to raw input mode. Returns the old mode.
     """
-    import tty
 
     stdin: int = 0
     try:
@@ -42,8 +45,6 @@ def _terminal_restore_input(old_mode: Optional[int]) -> None:
     Restores the terminal to the old input mode.
     """
     if old_mode is not None:
-        import tty
-
         stdin: int = 0
         tty.tcsetattr(stdin, tty.TCSAFLUSH, old_mode)  # type: ignore
 
@@ -67,10 +68,6 @@ def run_with_prefix(  # pylint: disable=too-many-locals,too-many-statements
         assert isinstance(command, list)
         command = [str(arg) for arg in command]
     assert isinstance(command, list)
-
-    import os
-    import pty
-    import sys
 
     start_of_line: bool = True  # denotes whether we start at the beginning of a line
     owed_carriage_return: bool = False  # `True` iff the previously read block omitted printing a final b'\r'

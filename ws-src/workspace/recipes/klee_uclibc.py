@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import urllib.request
 from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.settings import settings
@@ -47,16 +49,15 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         self.setup_git(self.paths["src_dir"], workspace.patch_dir / self.default_name)
 
         if not self.paths["locale_file"].is_file():
-            import urllib.request
-            import shutil
-
             attempt, attempts = 0, 5
             while attempt < attempts:
                 with urllib.request.urlopen("https://www.uclibc.org/downloads/uClibc-locale-030818.tgz") as response:
                     os.makedirs(self.paths["locale_file"].parent, exist_ok=True)
                     with open(self.paths["locale_file"], "wb") as locale_file:
                         shutil.copyfileobj(response, locale_file)
-                result = subprocess.run(["tar", "-xOf", self.paths["locale_file"]], stdout=subprocess.DEVNULL)
+                result = subprocess.run(["tar", "-xOf", self.paths["locale_file"]],
+                                        stdout=subprocess.DEVNULL,
+                                        check=False)
                 if result.returncode != 0:
                     os.remove(self.paths["locale_file"])
                     attempt += 1

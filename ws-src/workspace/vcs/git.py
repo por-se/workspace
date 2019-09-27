@@ -100,7 +100,7 @@ def reference_clone(  # pylint: disable=too-many-arguments
     def check_ref_dir(ref_dir: Path) -> bool:
         if not ref_dir.is_dir():
             return False
-        result = subprocess.run(["git", "fsck", "--root", "--no-full"], cwd=ref_dir)
+        result = subprocess.run(["git", "fsck", "--root", "--no-full"], cwd=ref_dir, check=False)
         return result.returncode == 0
 
     ref_path = make_ref_path(repo_uri)
