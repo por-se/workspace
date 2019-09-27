@@ -130,6 +130,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
+        self.cmake.set_flag("LLVM_USE_SPLIT_DWARF", True)
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
