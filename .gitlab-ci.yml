@@ -39,7 +39,7 @@ editorconfig:
     when: always
     paths:
       - paths.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - '/ec -exclude "\\.py$" -dry-run >paths.log'
     - '/ec -exclude "\\.py$"'
@@ -51,7 +51,7 @@ build:
     when: always
     paths:
       - build.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
     - '.gitlab-ci-src/create_base_image.sh'
@@ -98,7 +98,7 @@ test-build-debug:
     when: always
     paths:
       - build.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - 'cd /workspace'
     - './ws build debug >build.log 2>&1'
@@ -111,7 +111,7 @@ test-build-profile:
     when: always
     paths:
       - build.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - 'cd /workspace'
     - './ws build profile >build.log 2>&1'
@@ -125,7 +125,7 @@ test-build-release:
     paths:
       - build.log
       - build-release.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - 'cd /workspace'
     - './ws build >build.log 2>&1'
@@ -140,7 +140,7 @@ test-build-sanitized:
     when: always
     paths:
       - build.log
-    expire_in: 1 day
+    expire_in: 1 month
   script:
     - 'cd /workspace'
     - './ws build sanitized >build.log 2>&1'
