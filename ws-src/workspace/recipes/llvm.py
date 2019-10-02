@@ -38,18 +38,28 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "c_flags": ["-fno-omit-frame-pointer"],
-            "cxx_flags": ["-fno-omit-frame-pointer"],
-            "is_performance_build": True,
-            "has_debug_info": True,
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "is_performance_build":
+            True,
+            "has_debug_info":
+            True,
         },
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
                 'LLVM_ENABLE_ASSERTIONS': True,
             },
-            "is_performance_build": False,
-            "has_debug_info": True,
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "is_performance_build":
+            False,
+            "has_debug_info":
+            True,
         },
     }
 
@@ -120,6 +130,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
+        self.cmake.set_flag("LLVM_USE_SPLIT_DWARF", True)
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)

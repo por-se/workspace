@@ -39,8 +39,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
                 'KLEE_RUNTIME_BUILD_TYPE': 'Release+Debug+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
-            "c_flags": ["-fno-omit-frame-pointer"],
-            "cxx_flags": ["-fno-omit-frame-pointer"],
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "debug": {
             "cmake_args": {
@@ -48,6 +50,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
                 'KLEE_RUNTIME_BUILD_TYPE': 'Debug+Asserts',
                 'ENABLE_TCMALLOC': True,
             },
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "sanitized": {
             "cmake_args": {

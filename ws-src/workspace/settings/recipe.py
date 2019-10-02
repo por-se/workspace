@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, List
 
 from cached_property import cached_property
 
+import workspace.recipes.all_recipes
+
 from .vyper import get
 
 if TYPE_CHECKING:
@@ -21,8 +23,7 @@ class Recipes:
 
     def __init__(self):
         # delayed initialization to give the recipes time to register themselves
-        import workspace.recipes.all_recipes
-        self.choices = ["all"] + [name for name in workspace.recipes.all_recipes.ALL]
+        self.choices = ["all"] + list(workspace.recipes.all_recipes.ALL)
 
     def add_argument(self, argparser: ArgumentParser, help_message: str = f'The set of chosen recipes') -> None:
         name = self.name

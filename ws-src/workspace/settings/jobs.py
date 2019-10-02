@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import multiprocessing
 from typing import TYPE_CHECKING
 
 from cached_property import cached_property
@@ -26,8 +27,6 @@ class Jobs:
 
     @cached_property
     def value(self) -> int:
-        import multiprocessing
-
         value = get(self.name)
         if value is None:
             value = 0

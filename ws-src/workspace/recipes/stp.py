@@ -32,8 +32,10 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
                 'ENABLE_ASSERTIONS': True,
                 'SANITIZE': False,
             },
-            "c_flags": ["-fno-omit-frame-pointer"],
-            "cxx_flags": ["-fno-omit-frame-pointer"],
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "debug": {
             "cmake_args": {
@@ -41,6 +43,10 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
                 'ENABLE_ASSERTIONS': True,
                 'SANITIZE': False,
             },
+            "c_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
     }
 

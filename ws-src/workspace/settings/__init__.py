@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from argparse import ArgumentParser
+from typing import TYPE_CHECKING
 
 from cached_property import cached_property
 from vyper import v
@@ -17,6 +20,9 @@ from .vyper import get, write_default_settings_file
 from .ws_path import ws_path
 from .x_git_clone import XGitClone
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 __all__ = [
     "get",
     "write_default_settings_file",
@@ -25,8 +31,9 @@ __all__ = [
 
 
 class _Settings:
-    # get the workspace path
-    ws_path = ws_path
+    def __init__(self) -> None:
+        # get the workspace path
+        self.ws_path: Path = ws_path
 
     @staticmethod
     def bind_args(argparse: ArgumentParser) -> None:

@@ -24,12 +24,15 @@ class PSEUDOALLOC(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'RelWithDebInfo',
             },
-            "cxx_flags": ["-fno-omit-frame-pointer"],
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "debug": {
             "cmake_args": {
                 'CMAKE_BUILD_TYPE': 'Debug',
             },
+            "cxx_flags":
+            ["-fno-omit-frame-pointer", "-g3", "-fvar-tracking", "-fvar-tracking-assignments", "-fdebug-types-section"],
         },
         "sanitized": {
             "cmake_args": {
