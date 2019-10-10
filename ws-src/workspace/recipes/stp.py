@@ -93,6 +93,7 @@ class STP(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid-
 
         self.cmake.set_flag("NOCRYPTOMINISAT", True)
         self.cmake.set_flag("STATICCOMPILE", True)
+        self.cmake.set_flag("Boost_USE_STATIC_LIBS", True)
         self.cmake.set_flag("BUILD_SHARED_LIBS", False)
         self.cmake.set_flag("ENABLE_PYTHON_INTERFACE", False)
 

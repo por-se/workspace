@@ -11,6 +11,7 @@ recipe = "LLVM"
 name = "llvm"
 branch = "llvmorg-8.0.1"
 profile = "rel+debinfo"
+rtti = true
 
 [[Recipe]]
 recipe = "MINISAT"

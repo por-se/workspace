@@ -64,12 +64,30 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     }
 
     default_arguments: Dict[str, Any] = {
+        "exceptions": False,
+        "rtti": False,
+        "split-dwarf": True,
         "z3": None,
     }
 
     argument_schema: Dict[str, Any] = {
+        "exceptions": bool,
+        "rtti": bool,
+        "split-dwarf": bool,
         "z3": schema.Or(str, None),
     }
+
+    @property
+    def exceptions(self) -> bool:
+        return self.arguments["exceptions"]
+
+    @property
+    def rtti(self) -> bool:
+        return self.arguments["rtti"]
+
+    @property
+    def split_dwarf(self) -> bool:
+        return self.arguments["split-dwarf"]
 
     def find_z3(self, workspace: Workspace) -> Optional[Z3]:
         if self.arguments["z3"] is None:
@@ -114,6 +132,10 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         else:
             digest.update("z3 disabled".encode())
 
+        digest.update(f'exceptions:{self.exceptions}'.encode())
+        digest.update(f'rtti:{self.rtti}'.encode())
+        digest.update(f'split_dwarf:{self.split_dwarf}'.encode())
+
     def setup(self, workspace: Workspace):
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
@@ -130,10 +152,12 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
-        self.cmake.set_flag("LLVM_USE_SPLIT_DWARF", True)
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
+        self.cmake.set_flag("LLVM_ENABLE_EH", self.exceptions)
+        self.cmake.set_flag("LLVM_ENABLE_RTTI", self.rtti)
+        self.cmake.set_flag("LLVM_USE_SPLIT_DWARF", self.split_dwarf)
 
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
