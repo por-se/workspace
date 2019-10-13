@@ -125,11 +125,16 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         digest.update(self.find_simulator(workspace).digest)
 
     def configure(self, workspace: Workspace):
+        llvm = self.find_llvm(workspace)
+        if self.profile_name == "sanitized" and llvm.rtti:
+            self.profile["cxx_flags"].append("-fsanitize=vptr")
+        elif self.profile_name == "sanitized":
+            print(f'[{self.__class__.__name__}] LLVM built without RTTI, vptr sanitizer (of UBSan) cannot be enabled.')
+
         CMakeRecipeMixin.configure(self, workspace)
 
         stp = self.find_stp(workspace)
         z3 = self.find_z3(workspace)
-        llvm = self.find_llvm(workspace)
         klee_uclibc = self.find_klee_uclibc(workspace)
         pseudoalloc = self.find_pseudoalloc(workspace)
         simulator = self.find_simulator(workspace)
