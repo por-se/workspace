@@ -73,6 +73,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "stp": STP().default_name,
         "simulator": SIMULATOR().default_name,
         "pseudoalloc": PSEUDOALLOC().default_name,
+        "vptr-sanitizer": False,
     }
 
     argument_schema: Dict[str, Any] = {
@@ -82,7 +83,12 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "stp": str,
         "simulator": str,
         "pseudoalloc": str,
+        "vptr-sanitizer": bool,
     }
+
+    @property
+    def vptr_sanitizer(self) -> bool:
+        return self.arguments["vptr-sanitizer"]
 
     def find_klee_uclibc(self, workspace: Workspace) -> KLEE_UCLIBC:
         return self._find_previous_build(workspace, "klee-uclibc", KLEE_UCLIBC)
@@ -125,16 +131,11 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         digest.update(self.find_simulator(workspace).digest)
 
     def configure(self, workspace: Workspace):
-        llvm = self.find_llvm(workspace)
-        if self.profile_name == "sanitized" and llvm.rtti:
-            self.profile["cxx_flags"].append("-fsanitize=vptr")
-        elif self.profile_name == "sanitized":
-            print(f'[{self.__class__.__name__}] LLVM built without RTTI, vptr sanitizer (of UBSan) cannot be enabled.')
-
         CMakeRecipeMixin.configure(self, workspace)
 
         stp = self.find_stp(workspace)
         z3 = self.find_z3(workspace)
+        llvm = self.find_llvm(workspace)
         klee_uclibc = self.find_klee_uclibc(workspace)
         pseudoalloc = self.find_pseudoalloc(workspace)
         simulator = self.find_simulator(workspace)
@@ -157,6 +158,13 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
 
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
+
+        if self.vptr_sanitizer:
+            if not llvm.rtti:
+                raise Exception(f'[{self.name}] LLVM built without RTTI, vptr sanitizer (of UBSan) cannot be enabled')
+            cxx_flags = self.profile["cxx_flags"].copy()
+            cxx_flags.append("-fsanitize=vptr")
+            self.cmake.set_extra_cxx_flags(cxx_flags)
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin")

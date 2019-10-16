@@ -46,3 +46,4 @@ recipe = "PORSE"
 name = "porse"
 branch = "master"
 profile = "sanitized"
+vptr-sanitizer = true
