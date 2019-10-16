@@ -34,3 +34,4 @@ recipe = "KLEE"
 name = "klee"
 branch = "master"
 profile = "sanitized"
+vptr-sanitizer = true
