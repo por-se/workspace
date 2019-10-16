@@ -75,14 +75,18 @@ class Configs:
                                help=f'{help_message} (choices: {", ".join(self.choices)}) (env: WS_{uppercase_name})')
 
     def _understand_value(self, value: List[str]) -> List[str]:
-        value_set = set(value)
-        for config in value_set:
-            if config == "all":
-                return self.choices[1:]
-            if config not in self.choices:
+        i = 0
+        while i < len(value):
+            config = value[i]
+            if config in self.choices[1:]:
+                i += 1
+            elif config == "all":
+                value[i:i + 1] = self.choices[1:]
+                i += len(self.choices[1:])
+            else:
                 raise Exception(
                     f'"{config}" is not a valid configuration (encountered while parsing the "{self.name}" setting)')
-        return list(value_set)
+        return value
 
     @cached_property
     def value(self) -> List[str]:
