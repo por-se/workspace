@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+import schema
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
+from .klee_libcxx import KLEE_LIBCXX
 from .klee_uclibc import KLEE_UCLIBC
 from .llvm import LLVM
 from .recipe import Recipe
@@ -69,6 +72,7 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         "llvm": LLVM().default_name,
         "z3": Z3().default_name,
         "stp": STP().default_name,
+        "klee-libcxx": None,
         "vptr-sanitizer": False,
     }
 
@@ -77,12 +81,9 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         "llvm": str,
         "z3": str,
         "stp": str,
+        "klee-libcxx": schema.Or(str, None),
         "vptr-sanitizer": bool,
     }
-
-    @property
-    def vptr_sanitizer(self) -> bool:
-        return self.arguments["vptr-sanitizer"]
 
     def find_klee_uclibc(self, workspace: Workspace) -> KLEE_UCLIBC:
         return self._find_previous_build(workspace, "klee-uclibc", KLEE_UCLIBC)
@@ -95,6 +96,15 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
     def find_stp(self, workspace: Workspace) -> STP:
         return self._find_previous_build(workspace, "stp", STP)
+
+    def find_klee_libcxx(self, workspace: Workspace) -> Optional[KLEE_LIBCXX]:
+        if self.arguments["klee-libcxx"] is None:
+            return None
+        return self._find_previous_build(workspace, "klee-libcxx", KLEE_LIBCXX)
+
+    @property
+    def vptr_sanitizer(self) -> bool:
+        return self.arguments["vptr-sanitizer"]
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://klee/klee.git")
@@ -121,15 +131,20 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         digest.update(self.find_llvm(workspace).digest)
         digest.update(self.find_klee_uclibc(workspace).digest)
 
+        klee_libcxx = self.find_klee_libcxx(workspace)
+        if klee_libcxx:
+            digest.update(klee_libcxx.digest)
+
         digest.update(f'vptr-sanitizer:{self.vptr_sanitizer}'.encode())
 
-    def configure(self, workspace: Workspace):
+    def configure(self, workspace: Workspace) -> None:
         CMakeRecipeMixin.configure(self, workspace)
 
         stp = self.find_stp(workspace)
         z3 = self.find_z3(workspace)
         llvm = self.find_llvm(workspace)
         klee_uclibc = self.find_klee_uclibc(workspace)
+        klee_libcxx = self.find_klee_libcxx(workspace)
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
         self.cmake.set_flag('LLVM_DIR', llvm.paths["cmake_export_dir"])
@@ -143,9 +158,13 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', klee_uclibc.paths["build_dir"])
-
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
+
+        if klee_libcxx:
+            self.cmake.set_flag('ENABLE_KLEE_LIBCXX', True)
+            self.cmake.set_flag('KLEE_LIBCXX_DIR', klee_libcxx.paths["build_dir"])
+            self.cmake.set_flag('KLEE_LIBCXX_INCLUDE_DIR', klee_libcxx.paths["include_dir"])
 
         if self.vptr_sanitizer:
             cxx_flags = self.profile["cxx_flags"].copy()

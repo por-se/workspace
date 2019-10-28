@@ -14,6 +14,17 @@ profile = "rel+debinfo"
 rtti = true
 
 [[Recipe]]
+recipe = "KLEE_LIBCXXABI"
+name = "klee-libcxxabi"
+branch = "llvmorg-8.0.1"
+profile = "rel+debinfo"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXX"
+name = "klee-libcxx"
+profile = "rel+debinfo"
+
+[[Recipe]]
 recipe = "MINISAT"
 name = "minisat"
 branch = "releases/2.2.1"
@@ -35,3 +46,4 @@ name = "klee"
 branch = "master"
 profile = "sanitized"
 vptr-sanitizer = true
+klee-libcxx = "klee-libcxx"

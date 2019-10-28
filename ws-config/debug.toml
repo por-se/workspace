@@ -13,6 +13,17 @@ branch = "llvmorg-8.0.1"
 profile = "debug"
 
 [[Recipe]]
+recipe = "KLEE_LIBCXXABI"
+name = "klee-libcxxabi"
+branch = "llvmorg-8.0.1"
+profile = "debug"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXX"
+name = "klee-libcxx"
+profile = "debug"
+
+[[Recipe]]
 recipe = "MINISAT"
 name = "minisat"
 branch = "releases/2.2.1"
@@ -33,3 +44,4 @@ recipe = "KLEE"
 name = "klee"
 branch = "master"
 profile = "debug"
+klee-libcxx = "klee-libcxx"

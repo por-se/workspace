@@ -134,6 +134,21 @@ test-build-release:
     - 'mv /workspace/build.log build.log'
     - 'mv /workspace/build-release.log build-release.log'
 
+test-build-release-no-libcxx:
+  extends: .workspace
+  artifacts:
+    when: always
+    paths:
+      - build.log
+      - build-release-no-libcxx.log
+    expire_in: 1 month
+  script:
+    - 'cd /workspace'
+    - './ws build release-no-libcxx >build.log 2>&1'
+  after_script:
+    - 'mv /workspace/build.log build.log'
+    - 'mv /workspace/build-release-no-libcxx.log build-release-no-libcxx.log'
+
 test-build-sanitized:
   extends: .workspace
   artifacts:
