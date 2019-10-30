@@ -105,6 +105,13 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
+        if self.vptr_sanitizer:
+            llvm = self.find_llvm(workspace)
+            if not llvm.rtti:
+                raise Exception(f'[{self.name}] The {llvm.__class__.__name__} build named "{llvm.name}" '
+                                f'must be built with RTTI to be usable by {self.__class__.__name__} '
+                                f'with vptr sanitizer enabled')
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
@@ -113,6 +120,8 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         digest.update(self.find_z3(workspace).digest)
         digest.update(self.find_llvm(workspace).digest)
         digest.update(self.find_klee_uclibc(workspace).digest)
+
+        digest.update(f'vptr-sanitizer:{self.vptr_sanitizer}'.encode())
 
     def configure(self, workspace: Workspace):
         CMakeRecipeMixin.configure(self, workspace)
@@ -139,8 +148,6 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
 
         if self.vptr_sanitizer:
-            if not llvm.rtti:
-                raise Exception(f'[{self.name}] LLVM built without RTTI, vptr sanitizer (of UBSan) cannot be enabled')
             cxx_flags = self.profile["cxx_flags"].copy()
             cxx_flags.append("-fsanitize=vptr")
             self.cmake.set_extra_cxx_flags(cxx_flags)

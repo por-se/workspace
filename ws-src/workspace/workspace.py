@@ -19,12 +19,12 @@ class Workspace:
     patch_dir: Path = settings.ws_path / 'ws-patch'
     build_dir: Path = settings.ws_path / '.build'
     _bin_dir: Path = settings.ws_path / '.bin'
-    _linker_dirs: Dict[Linker, Path] = {}
-    builds: List[Recipe] = []
 
     def __init__(self, config_name: str):
-        config_path = settings.ws_path / "ws-config" / f'{config_name}.toml'
+        self._linker_dirs: Dict[Linker, Path] = {}
+        self.builds: List[Recipe] = []
 
+        config_path = settings.ws_path / "ws-config" / f'{config_name}.toml'
         assert config_path.exists(), f'given config "{config_name}" does not exist at location "{config_path}"'
 
         with open(config_path) as file:

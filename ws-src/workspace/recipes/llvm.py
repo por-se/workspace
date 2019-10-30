@@ -105,6 +105,11 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
+        z3 = self.find_z3(workspace)
+        if z3 and not z3.shared:
+            raise Exception(f'[{self.name}] The {z3.__class__.__name__} build named "{z3.name}" '
+                            f'must be built as shared to be usable by {self.__class__.__name__}')
+
         self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
         self.paths["llvm-config"] = self.paths["build_dir"] / "bin" / "llvm-config"
         self.paths["llvm-lit"] = self.paths["build_dir"] / "bin" / "llvm-lit"
@@ -126,8 +131,6 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         z3 = self.find_z3(workspace)
         if z3:
-            assert z3.shared, (f'[{self.name}] The {z3.__class__.__name__} build named "{z3.name}" '
-                               f'must be built as shared to be usable by {self.__class__.__name__}')
             digest.update(z3.digest)
         else:
             digest.update("z3 disabled".encode())
