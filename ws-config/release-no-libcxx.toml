@@ -2,7 +2,7 @@
 recipe = "Z3"
 name = "z3"
 branch = "z3-4.8.6"
-profile = "rel+debinfo"
+profile = "release"
 shared = false
 openmp = false
 
@@ -10,18 +10,7 @@ openmp = false
 recipe = "LLVM"
 name = "llvm"
 branch = "llvmorg-9.0.0"
-profile = "debug"
-
-[[Recipe]]
-recipe = "KLEE_LIBCXXABI"
-name = "klee-libcxxabi"
-branch = "llvmorg-8.0.1"
-profile = "debug"
-
-[[Recipe]]
-recipe = "KLEE_LIBCXX"
-name = "klee-libcxx"
-profile = "debug"
+profile = "release"
 
 [[Recipe]]
 recipe = "MINISAT"
@@ -32,7 +21,7 @@ branch = "releases/2.2.1"
 recipe = "STP"
 name = "stp"
 branch = "2.3.3"
-profile = "rel+debinfo"
+profile = "release"
 
 [[Recipe]]
 recipe = "KLEE_UCLIBC"
@@ -43,17 +32,16 @@ branch = "klee_0_9_29"
 recipe = "SIMULATOR"
 name = "simulator"
 branch = "master"
-profile = "debug"
+profile = "release"
 
 [[Recipe]]
 recipe = "PSEUDOALLOC"
 name = "pseudoalloc"
 branch = "master"
-profile = "debug"
+profile = "release"
 
 [[Recipe]]
 recipe = "PORSE"
 name = "porse"
 branch = "master"
-profile = "debug"
-klee-libcxx = "klee-libcxx"
+profile = "release"

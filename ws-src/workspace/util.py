@@ -8,6 +8,15 @@ from pathlib import Path
 from typing import Mapping, MutableMapping, Optional, Sequence, Union
 
 
+def newer_than(target: Path, others: Sequence[Path]) -> bool:
+    """
+    Returns 'True' if 'target' exists and has a more recent modification time than all of the paths given as 'others'.
+    """
+    if not target.exists():
+        return False
+    return os.path.getmtime(target) > max(map(os.path.getmtime, others))
+
+
 def env_prepend_path(env: MutableMapping[str, str], key: str, path: Union[Path, str]) -> MutableMapping[str, str]:
     if key in env and env[key] != "":
         env[key] = f'{path}:{env[key]}'

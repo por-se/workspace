@@ -9,9 +9,20 @@ openmp = false
 [[Recipe]]
 recipe = "LLVM"
 name = "llvm"
-branch = "llvmorg-8.0.1"
+branch = "llvmorg-9.0.0"
 profile = "rel+debinfo"
 rtti = true
+
+[[Recipe]]
+recipe = "KLEE_LIBCXXABI"
+name = "klee-libcxxabi"
+branch = "llvmorg-8.0.1"
+profile = "rel+debinfo"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXX"
+name = "klee-libcxx"
+profile = "rel+debinfo"
 
 [[Recipe]]
 recipe = "MINISAT"
@@ -47,3 +58,4 @@ name = "porse"
 branch = "master"
 profile = "sanitized"
 vptr-sanitizer = true
+klee-libcxx = "klee-libcxx"

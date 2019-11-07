@@ -9,7 +9,18 @@ openmp = false
 [[Recipe]]
 recipe = "LLVM"
 name = "llvm"
+branch = "llvmorg-9.0.0"
+profile = "release"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXXABI"
+name = "klee-libcxxabi"
 branch = "llvmorg-8.0.1"
+profile = "release"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXX"
+name = "klee-libcxx"
 profile = "release"
 
 [[Recipe]]
@@ -45,3 +56,4 @@ recipe = "PORSE"
 name = "porse"
 branch = "master"
 profile = "release"
+klee-libcxx = "klee-libcxx"

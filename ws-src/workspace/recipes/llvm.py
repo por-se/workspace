@@ -110,9 +110,12 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             raise Exception(f'[{self.name}] The {z3.__class__.__name__} build named "{z3.name}" '
                             f'must be built as shared to be usable by {self.__class__.__name__}')
 
-        self.paths["tablegen"] = self.paths["build_dir"] / "bin" / "llvm-tblgen"
-        self.paths["llvm-config"] = self.paths["build_dir"] / "bin" / "llvm-config"
-        self.paths["llvm-lit"] = self.paths["build_dir"] / "bin" / "llvm-lit"
+        self.paths["bin_dir"] = self.paths["build_dir"] / "bin"
+        self.paths["tablegen"] = self.paths["bin_dir"] / "llvm-tblgen"
+        self.paths["llvm-config"] = self.paths["bin_dir"] / "llvm-config"
+        self.paths["llvm-link"] = self.paths["bin_dir"] / "llvm-link"
+        self.paths["llvm-ar"] = self.paths["bin_dir"] / "llvm-ar"
+        self.paths["llvm-lit"] = self.paths["bin_dir"] / "llvm-lit"
         self.paths["cmake_src_dir"] = self.paths["src_dir"] / "llvm"
         self.paths["cmake_export_dir"] = self.paths["build_dir"] / "lib" / "cmake" / "llvm"
 
@@ -124,6 +127,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
                 profile="release",
             )
             self._release_build.initialize(workspace)
+            self._release_build.set_build_targets(["bin/llvm-tblgen"])
 
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
@@ -146,7 +150,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         self.setup_git(self.paths["src_dir"], workspace.patch_dir / self.default_name)
 
-    def configure(self, workspace: Workspace):
+    def configure(self, workspace: Workspace) -> None:
         CMakeRecipeMixin.configure(self, workspace)
 
         z3 = self.find_z3(workspace)
@@ -176,12 +180,12 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     def build(self, workspace: Workspace):
         if not self.profile["is_performance_build"]:
             assert self._release_build is not None
-            self._release_build.build_target(workspace, target='bin/llvm-tblgen')
+            self._release_build.build(workspace)
 
         CMakeRecipeMixin.build(self, workspace)
 
     def add_to_env(self, env, workspace: Workspace):
-        env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin")
+        env_prepend_path(env, "PATH", self.paths["bin_dir"])
 
 
 register_recipe(LLVM)
