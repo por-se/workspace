@@ -108,7 +108,7 @@ class CMakeConfig(BuildSystemConfig):
     def configure(  # pylint: disable=too-many-arguments
             self, workspace: Workspace, source_dir: Path, build_dir: Path, env: Mapping[str, str],
             use_ccache: bool) -> None:
-        from workspace.settings import settings
+        from workspace.settings import settings  # pylint: disable=import-outside-toplevel
 
         assert not self.is_configured(workspace, source_dir, build_dir)
 
@@ -148,7 +148,7 @@ class CMakeConfig(BuildSystemConfig):
             env: Optional[Mapping[str, str]] = None) -> None:
         assert self.is_configured(workspace, source_dir, build_dir)
 
-        from workspace.settings import settings
+        from workspace.settings import settings  # pylint: disable=import-outside-toplevel
 
         build_call = ["cmake", "--build", str(build_dir.resolve()), "-j", str(settings.jobs.value)]
         if targets:
