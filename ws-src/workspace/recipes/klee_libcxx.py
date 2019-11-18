@@ -130,11 +130,11 @@ class KLEE_LIBCXX(Recipe, CMakeRecipeMixin):  # pylint: disable=invalid-name
 
     def build(self, workspace: Workspace):
         klee_libcxxabi = self.find_klee_libcxxabi(workspace)
+        llvm = self.find_llvm(workspace)
 
         CMakeRecipeMixin.build(self, workspace)
 
         if not newer_than(target=self.paths["libcxx.bc"], others=[self.paths["libcxx.so"]]):
-            llvm = self.find_llvm(workspace)
             extract_bc_cmd: List[Union[str, Path]] = [
                 "extract-bc", "--linker", llvm.paths["llvm-link"], "--archiver", llvm.paths["llvm-ar"], "-o",
                 self.paths["libcxx.bc"], self.paths["libcxx.so"]
