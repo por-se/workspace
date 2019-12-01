@@ -1,10 +1,10 @@
 [[Recipe]]
 recipe = "Z3"
 name = "z3"
-branch = "z3-4.8.6"
+branch = "z3-4.8.7"
 profile = "rel+debinfo"
 shared = false
-openmp = false
+thread-safe = false
 
 [[Recipe]]
 recipe = "LLVM"
