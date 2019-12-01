@@ -15,7 +15,7 @@ profile = "rel+debinfo"
 [[Recipe]]
 recipe = "KLEE_LIBCXXABI"
 name = "klee-libcxxabi"
-branch = "llvmorg-8.0.1"
+branch = "llvmorg-9.0.0"
 profile = "rel+debinfo"
 
 [[Recipe]]
