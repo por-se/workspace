@@ -9,7 +9,7 @@ thread-safe = false
 [[Recipe]]
 recipe = "LLVM"
 name = "llvm"
-branch = "llvmorg-8.0.1"
+branch = "llvmorg-9.0.0"
 profile = "rel+debinfo"
 rtti = true
 
