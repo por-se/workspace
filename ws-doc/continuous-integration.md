@@ -1,4 +1,4 @@
-# Continous Integration
+# Continuous Integration
 During CI, several docker images are built, and a bunch of testing is performed:
 - Files in this repository are linted in a variety of ways
 	- Conformance with [`.editorconfig`](/.editorconfig)

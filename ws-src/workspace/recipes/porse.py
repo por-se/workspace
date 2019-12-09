@@ -172,7 +172,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         self.cmake.set_flag('STP_STATIC_LIBRARY', stp.paths["libstp"])
         self.cmake.set_flag('ENABLE_SOLVER_Z3', True)
         self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["include_dir"])
-        self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
+        if z3.gmp:
+            self.cmake.set_flag('Z3_LIBRARIES', f'{z3.paths["libz3"]};{z3.paths["libgmp"]}')
+        else:
+            self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_PTHREAD_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)

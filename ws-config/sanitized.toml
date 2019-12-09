@@ -1,10 +1,10 @@
 [[Recipe]]
 recipe = "Z3"
 name = "z3"
-branch = "z3-4.8.6"
+branch = "z3-4.8.7"
 profile = "rel+debinfo"
 shared = false
-openmp = false
+thread-safe = false
 
 [[Recipe]]
 recipe = "LLVM"
@@ -16,7 +16,7 @@ rtti = true
 [[Recipe]]
 recipe = "KLEE_LIBCXXABI"
 name = "klee-libcxxabi"
-branch = "llvmorg-8.0.1"
+branch = "llvmorg-9.0.0"
 profile = "rel+debinfo"
 
 [[Recipe]]
