@@ -13,6 +13,17 @@ branch = "llvmorg-9.0.0"
 profile = "rel+debinfo"
 
 [[Recipe]]
+recipe = "KLEE_LIBCXXABI"
+name = "klee-libcxxabi"
+branch = "llvmorg-9.0.0"
+profile = "release"
+
+[[Recipe]]
+recipe = "KLEE_LIBCXX"
+name = "klee-libcxx"
+profile = "release"
+
+[[Recipe]]
 recipe = "MINISAT"
 name = "minisat"
 branch = "releases/2.2.1"
@@ -48,5 +59,6 @@ recipe = "PORSE"
 name = "porse"
 branch = "master"
 profile = "rel+debinfo"
+klee-libcxx = "klee-libcxx"
 # WARNING: this is very memory intensive, even for small example programs
 verified-fingerprints = true
