@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+import schema
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
+from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -11,6 +14,7 @@ from .recipe import Recipe
 
 if TYPE_CHECKING:
     import hashlib
+    from .porse import PORSE
     from workspace import Workspace
 
 
@@ -44,6 +48,29 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
         },
     }
 
+    default_arguments: Dict[str, Any] = {
+        "porse": None,
+        "verified-fingerprints": False,
+    }
+
+    argument_schema: Dict[str, Any] = {
+        "porse": schema.Or(str, None),
+        "verified-fingerprints": bool,
+    }
+
+    def find_porse(self, workspace: Workspace) -> Optional[PORSE]:
+        if self.porse is None:
+            return None
+        return workspace.find_build(self.porse, before=None)
+
+    @property
+    def porse(self) -> Optional[str]:
+        return self.arguments["porse"]
+
+    @property
+    def verified_fingerprints(self) -> bool:
+        return self.arguments["verified-fingerprints"]
+
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "laboratory://symbiosys/projects/concurrent-symbolic-execution/simulator.git")
         CMakeRecipeMixin.__init__(self)
@@ -57,8 +84,20 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)
 
+        porse = self.find_porse(workspace)
+        if porse:
+            # porse include dir is known at this time as it does not depend on the digest
+            # and is independent of build arguments for the porse recipe
+            digest.update(f'porse-include-dir:{porse.paths["include_dir"].relative_to(settings.ws_path)}'.encode())
+            digest.update(f'verified-fingerprints:{self.verified_fingerprints}'.encode())
+
     def configure(self, workspace: Workspace):
         CMakeRecipeMixin.configure(self, workspace)
+
+        porse = self.find_porse(workspace)
+        if porse:
+            self.cmake.set_flag('KLEE_INCLUDE_DIR', porse.paths["include_dir"])
+            self.cmake.set_flag('KLEE_VERIFIED_FINGERPRINTS', self.verified_fingerprints)
 
     def add_to_env(self, env, workspace: Workspace):
         env_prepend_path(env, "PATH", self.paths["build_dir"] / "bin" / "random-graph")

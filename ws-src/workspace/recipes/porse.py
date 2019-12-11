@@ -125,6 +125,11 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
+        # set include_dir early, as it does not depend on any build arguments
+        # and needs to be available to compute the digest of simulator
+        self.paths["src_dir"] = settings.ws_path / self.name
+        self.paths["include_dir"] = self.paths["src_dir"] / "include"
+
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)

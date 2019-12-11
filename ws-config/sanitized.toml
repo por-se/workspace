@@ -46,6 +46,7 @@ recipe = "SIMULATOR"
 name = "simulator"
 branch = "master"
 profile = "sanitized"
+porse = "porse"
 
 [[Recipe]]
 recipe = "PSEUDOALLOC"
