@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import schema
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
+from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -77,6 +78,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "klee-libcxx": None,
         "simulator": SIMULATOR().default_name,
         "pseudoalloc": PSEUDOALLOC().default_name,
+        "verified-fingerprints": False,
         "vptr-sanitizer": False,
     }
 
@@ -88,6 +90,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "klee-libcxx": schema.Or(str, None),
         "simulator": str,
         "pseudoalloc": str,
+        "verified-fingerprints": bool,
         "vptr-sanitizer": bool,
     }
 
@@ -115,6 +118,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         return self._find_previous_build(workspace, "pseudoalloc", PSEUDOALLOC)
 
     @property
+    def verified_fingerprints(self) -> bool:
+        return self.arguments["verified-fingerprints"]
+
+    @property
     def vptr_sanitizer(self) -> bool:
         return self.arguments["vptr-sanitizer"]
 
@@ -133,6 +140,17 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
+
+        simulator = self.find_simulator(workspace)
+
+        if self.name != simulator.porse:
+            raise Exception(f'[{self.name}] The {simulator.__class__.__name__} build named "{simulator.name}" '
+                            f'must use the {self.__class__.__name__} build named "{self.name}"')
+
+        if self.verified_fingerprints != simulator.verified_fingerprints:
+            raise Exception(f'[{self.name}] The {simulator.__class__.__name__} build named "{simulator.name}" '
+                            f'and the {self.__class__.__name__} build named "{self.name}" must have the same '
+                            f'verified fingerprints settings')
 
         if self.vptr_sanitizer:
             llvm = self.find_llvm(workspace)
@@ -156,6 +174,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         if klee_libcxx:
             digest.update(klee_libcxx.digest)
 
+        digest.update(f'verified-fingerprints:{self.verified_fingerprints}'.encode())
         digest.update(f'vptr-sanitizer:{self.vptr_sanitizer}'.encode())
 
     def configure(self, workspace: Workspace) -> None:
@@ -195,6 +214,8 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
             self.cmake.set_flag('ENABLE_KLEE_LIBCXX', True)
             self.cmake.set_flag('KLEE_LIBCXX_DIR', klee_libcxx.paths["build_dir"])
             self.cmake.set_flag('KLEE_LIBCXX_INCLUDE_DIR', klee_libcxx.paths["include_dir"])
+
+        self.cmake.set_flag('VERIFIED_FINGERPRINTS', self.verified_fingerprints)
 
         if self.vptr_sanitizer:
             cxx_flags = self.profile["cxx_flags"].copy()
