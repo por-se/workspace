@@ -115,8 +115,14 @@ class KLEE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
+        llvm = self.find_llvm(workspace)
+
+        if llvm.include_tests:
+            raise Exception(f'[{self.name}] The {llvm.__class__.__name__} build named "{llvm.name}" '
+                            f'must be built with "include tests" set to "false" to prevent {self.__class__.__name__} '
+                            f'from reusing LLVM\'s Google Test targets')
+
         if self.vptr_sanitizer:
-            llvm = self.find_llvm(workspace)
             if not llvm.rtti:
                 raise Exception(f'[{self.name}] The {llvm.__class__.__name__} build named "{llvm.name}" '
                                 f'must be built with RTTI to be usable by {self.__class__.__name__} '
