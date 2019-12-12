@@ -201,7 +201,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         else:
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
-        self.cmake.set_flag('ENABLE_PTHREAD_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', klee_uclibc.paths["build_dir"])
         self.cmake.set_flag('PSEUDOALLOC_DIR', pseudoalloc.paths["build_dir"])
