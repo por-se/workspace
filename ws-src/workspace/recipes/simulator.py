@@ -80,6 +80,17 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
 
+        porse = self.find_porse(workspace)
+        if porse:
+            if self.name != porse.simulator:
+                raise Exception(f'[{self.name}] The {porse.__class__.__name__} build named "{porse.name}" '
+                                f'must use the {self.__class__.__name__} build named "{self.name}"')
+
+            if self.verified_fingerprints != porse.verified_fingerprints:
+                raise Exception(f'[{self.name}] The {porse.__class__.__name__} build named "{porse.name}" '
+                                f'and the {self.__class__.__name__} build named "{self.name}" must have the same '
+                                f'verified fingerprints settings')
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
         CMakeRecipeMixin.compute_digest(self, workspace, digest)

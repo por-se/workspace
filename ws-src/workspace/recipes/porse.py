@@ -118,6 +118,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         return self._find_previous_build(workspace, "pseudoalloc", PSEUDOALLOC)
 
     @property
+    def simulator(self) -> str:
+        return self.arguments["simulator"]
+
+    @property
     def verified_fingerprints(self) -> bool:
         return self.arguments["verified-fingerprints"]
 
