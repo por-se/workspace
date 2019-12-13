@@ -65,6 +65,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
     default_arguments: Dict[str, Any] = {
         "exceptions": False,
+        "include-tests": False,
         "rtti": False,
         "split-dwarf": True,
         "z3": None,
@@ -72,6 +73,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
     argument_schema: Dict[str, Any] = {
         "exceptions": bool,
+        "include-tests": bool,
         "rtti": bool,
         "split-dwarf": bool,
         "z3": schema.Or(str, None),
@@ -80,6 +82,10 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
     @property
     def exceptions(self) -> bool:
         return self.arguments["exceptions"]
+
+    @property
+    def include_tests(self) -> bool:
+        return self.arguments["include-tests"]
 
     @property
     def rtti(self) -> bool:
@@ -140,8 +146,9 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
             digest.update("z3 disabled".encode())
 
         digest.update(f'exceptions:{self.exceptions}'.encode())
+        digest.update(f'include-tests:{self.include_tests}'.encode())
         digest.update(f'rtti:{self.rtti}'.encode())
-        digest.update(f'split_dwarf:{self.split_dwarf}'.encode())
+        digest.update(f'split-dwarf:{self.split_dwarf}'.encode())
 
     def setup(self, workspace: Workspace):
         if not self.profile["is_performance_build"]:
@@ -163,6 +170,7 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
         self.cmake.set_flag("LLVM_INCLUDE_EXAMPLES", False)
         self.cmake.set_flag("HAVE_VALGRIND_VALGRIND_H", False)
         self.cmake.set_flag("LLVM_ENABLE_EH", self.exceptions)
+        self.cmake.set_flag("LLVM_INCLUDE_TESTS", self.include_tests)
         self.cmake.set_flag("LLVM_ENABLE_RTTI", self.rtti)
         self.cmake.set_flag("LLVM_USE_SPLIT_DWARF", self.split_dwarf)
 
