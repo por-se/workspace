@@ -17,7 +17,8 @@ class Jobs:
 
     name = "jobs"
 
-    def add_kwargument(self, argparser: ArgumentParser,
+    def add_kwargument(self,
+                       argparser: ArgumentParser,
                        help_message: str = "The number of parallel jobs to start") -> None:
         uppercase_name = self.name.upper().replace("-", "_")
         argparser.add_argument('-j',

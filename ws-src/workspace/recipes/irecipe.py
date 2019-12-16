@@ -72,5 +72,6 @@ class IRecipe(abc.ABC):
         """
         Override `add_to_env` in your recipe, to set up the environment that allows your build artifacts to be used
         """
+
     def clean(self, workspace: Workspace):
         """Override `clean` in your recipe, if you need to perform additional cleanup"""
