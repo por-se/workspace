@@ -9,14 +9,14 @@ thread-safe = false
 [[Recipe]]
 recipe = "LLVM"
 name = "llvm"
-branch = "llvmorg-9.0.0"
+branch = "llvmorg-9.0.1"
 profile = "rel+debinfo"
 rtti = true
 
 [[Recipe]]
 recipe = "KLEE_LIBCXXABI"
 name = "klee-libcxxabi"
-branch = "llvmorg-9.0.0"
+branch = "llvmorg-9.0.1"
 profile = "rel+debinfo"
 
 [[Recipe]]
