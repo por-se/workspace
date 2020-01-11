@@ -8,7 +8,7 @@ class Fish(Shell):
         cd_build_dir = """
 # cd-build-dir
 function cd-build-dir
-    set -l output (build-dir --cd-build-dir $argv 2>&1)
+    set -l output (build-dir --cd-build-dir $argv)
     set -l exitcode $status
     if test $exitcode -ne 0
         echo $output >&2

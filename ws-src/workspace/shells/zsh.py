@@ -10,7 +10,7 @@ class Zsh(Shell):
         cd_build_dir = """
 # cd-build-dir
 function cd-build-dir {
-    output=$(build-dir --cd-build-dir "$@" 2>&1)
+    output=$(build-dir --cd-build-dir "$@")
     exitcode=$?
     if [[ $exitcode -ne 0 ]]; then
         >&2 echo "$output"
