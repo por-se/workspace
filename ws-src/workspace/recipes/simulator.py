@@ -49,11 +49,13 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
     }
 
     default_arguments: Dict[str, Any] = {
+        "expensive-checks": False,
         "porse": None,
         "verified-fingerprints": False,
     }
 
     argument_schema: Dict[str, Any] = {
+        "expensive-checks": bool,
         "porse": schema.Or(str, None),
         "verified-fingerprints": bool,
     }
@@ -62,6 +64,10 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
         if self.porse is None:
             return None
         return workspace.find_build(self.porse, before=None)
+
+    @property
+    def expensive_checks(self) -> bool:
+        return self.arguments["expensive-checks"]
 
     @property
     def porse(self) -> Optional[str]:
@@ -97,6 +103,7 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
 
         porse = self.find_porse(workspace)
         if porse:
+            digest.update(f'expensive-checks:{self.expensive_checks}'.encode())
             # porse include dir is known at this time as it does not depend on the digest
             # and is independent of build arguments for the porse recipe
             digest.update(f'porse-include-dir:{porse.paths["include_dir"].relative_to(settings.ws_path)}'.encode())
@@ -104,6 +111,8 @@ class SIMULATOR(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=in
 
     def configure(self, workspace: Workspace):
         CMakeRecipeMixin.configure(self, workspace)
+
+        self.cmake.set_flag('LIBPOR_CHECKED', self.expensive_checks)
 
         porse = self.find_porse(workspace)
         if porse:
