@@ -46,6 +46,8 @@ name = "simulator"
 branch = "master"
 profile = "rel+debinfo"
 porse = "porse"
+expensive-checks = false
+verified-fingerprints = false
 
 [[Recipe]]
 recipe = "PSEUDOALLOC"
@@ -59,3 +61,4 @@ name = "porse"
 branch = "master"
 profile = "rel+debinfo"
 klee-libcxx = "klee-libcxx"
+verified-fingerprints = false

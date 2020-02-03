@@ -3,3 +3,4 @@ recipe = "SIMULATOR"
 name = "simulator"
 branch = "master"
 profile = "sanitized"
+expensive-checks = false

@@ -46,6 +46,7 @@ name = "simulator"
 branch = "master"
 profile = "rel+debinfo"
 porse = "porse"
+expensive-checks = false
 verified-fingerprints = true
 
 [[Recipe]]

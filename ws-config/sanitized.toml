@@ -47,6 +47,8 @@ name = "simulator"
 branch = "master"
 profile = "sanitized"
 porse = "porse"
+expensive-checks = false
+verified-fingerprints = false
 
 [[Recipe]]
 recipe = "PSEUDOALLOC"
@@ -61,3 +63,4 @@ branch = "master"
 profile = "sanitized"
 vptr-sanitizer = true
 klee-libcxx = "klee-libcxx"
+verified-fingerprints = false
