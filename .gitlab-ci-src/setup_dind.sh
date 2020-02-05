@@ -33,7 +33,7 @@ echo started dockerd with driver "\"$DOCKER_DRIVER\""
 
 set -v # print commands to CI output
 
-docker login -u "$DOCKER_CI_USER" -p "$DOCKER_CI_AUTH" "$PRIVATE_DOCKER_REGISTRY"
+docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 docker info
 
 if [[ -e /cache/image.tar.zst ]] ; then
@@ -45,5 +45,5 @@ if [[ -e /cache/image.tar.zst ]] ; then
 		rm /cache/image.tar.zst
 	fi
 fi
-docker pull $IMAGE_NAME:ci || true # If we don't find a cache image, just go on without one
+docker pull $CI_REGISTRY_IMAGE:ci || true # If we don't find a cache image, just go on without one
 docker images

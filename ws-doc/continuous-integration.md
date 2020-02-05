@@ -10,11 +10,12 @@ During CI, several docker images are built, and a bunch of testing is performed:
 
 ## Generated Docker Images
 
-While the CI pushes its created docker images to the registry `registry-push.comsys.rwth-aachen.de`, it is strongly suggested to pull these images through the address `registry.comsys.rwth-aachen.de`, as this is the public address that (while disallowing pushes) does not require authentication from the user side. Both of these addresses are only reachable from within the COMSYS network.
+Two docker images are generated and pushed to the GitLab registry.
 
-Multiple tags are pushed, the purposes of which are:
-
+The first image uses the name of the repository and pushes several tags:
 - `:latest` provides a fully setup workspace with the sources checked out for the dependent projects based on the master branch
 - `:latest-prebuilt` additionally contains a built release version
-- `:ci` is used internally for layer-caching the ci steps
-- `:$COMMIT_HASH` is an *expiring* version of that specific commit hash
+
+Additionally, the CI will internally use the image corresponding to the name of the repository with an additional `/ci` to push several CI related tags. These tags should be cleaned up regularly to prevent them from accumulating.
+- `:latest` is used internally for layer-caching the ci steps
+- `:$COMMIT_HASH` is used to propagate the image down the CI stages

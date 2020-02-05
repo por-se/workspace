@@ -1,4 +1,4 @@
-FROM registry.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image
+FROM laboratory.comsys.rwth-aachen.de:5050/symbiosys/projects/workspace/docker-base-image:latest
 
 RUN \
 	mkdir -p /reference-repos/v1/github.com/stp/ && \

@@ -1,8 +1,4 @@
 variables:
-  PRIVATE_DOCKER_REGISTRY: registry-push.comsys.rwth-aachen.de
-  PUBLIC_DOCKER_REGISTRY: registry.comsys.rwth-aachen.de
-  IMAGE_NAME: $PRIVATE_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
-  CI_IMAGE_NAME: $PUBLIC_DOCKER_REGISTRY/$CI_PROJECT_PATH_SLUG
   PIPENV_CACHE_DIR: /cache/pipenv
 
 before_script:
@@ -26,9 +22,7 @@ stages:
 
 lint:
   stage: build
-  image: registry.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image
-  variables:
-    PIPENV_CACHE_DIR: /cache/pipenv
+  image: laboratory.comsys.rwth-aachen.de:5050/symbiosys/projects/workspace/docker-base-image:latest
   script:
     - ws-src/check.sh
 
@@ -57,40 +51,40 @@ build:
     - '.gitlab-ci-src/create_base_image.sh'
       # compute date of tomorrow (+60*60*24 seconds) with the alpine busybox date command
     - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)'
-    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $IMAGE_NAME:$CI_COMMIT_SHA .'
+    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA .'
 
     - | # push CI images while potentially (only on master) building new release images
         ( # subshell to enable waiting on parallel processes
           (
-            echo $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA | xargs -n 1 docker push
-            echo "Successfully pushed $IMAGE_NAME:ci $IMAGE_NAME:$CI_COMMIT_SHA (expires at $EXPIRY)"
+            echo $CI_REGISTRY_IMAGE:ci $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA | xargs -n 1 docker push
+            echo "Successfully pushed $CI_REGISTRY_IMAGE:ci $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA (expires at $EXPIRY)"
           ) &
           (
-            docker save $IMAGE_NAME:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-            echo "Saved new copy of $IMAGE_NAME to cache"
+            docker save $CI_REGISTRY_IMAGE:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+            echo "Saved new copy of $CI_REGISTRY_IMAGE to cache"
           ) &
           truncate -s 0 build.log # ensure CI succeeds when no build takes place, making sure that no possible remnants of old logs remain
           if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
-            docker tag base $IMAGE_NAME:latest
+            docker tag base $CI_REGISTRY_IMAGE:latest
             docker run --name ci \
               -v ~/.netrc:/root/.netrc \
               -v /ccache:/ccache \
-              $IMAGE_NAME:latest build -j ${WS_JOBS} >build.log 2>&1
+              $CI_REGISTRY_IMAGE:latest build -j ${WS_JOBS} >build.log 2>&1
             docker commit \
               --change "CMD [\"shell\", \"-s\", \"fish\"]" \
-              ci $IMAGE_NAME:latest-prebuilt
+              ci $CI_REGISTRY_IMAGE:latest-prebuilt
           fi
           wait
         )
     - |
       if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
-        echo $IMAGE_NAME:latest $IMAGE_NAME:latest-prebuilt | xargs -n 1 docker push
+        echo $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:latest-prebuilt | xargs -n 1 docker push
       fi
 
 .workspace:
   stage: test
   needs: [build]
-  image: $CI_IMAGE_NAME:$CI_COMMIT_SHA
+  image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA
 
 test-build-debug:
   extends: .workspace
