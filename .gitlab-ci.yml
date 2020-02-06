@@ -49,23 +49,19 @@ build:
   script:
     - 'source .gitlab-ci-src/setup_dind.sh'
     - '.gitlab-ci-src/create_base_image.sh'
-      # compute date of tomorrow (+60*60*24 seconds) with the alpine busybox date command
-    - 'EXPIRY=$(date -d@"$(( $(date -u +%s)+60*60*24 ))" +%Y-%m-%dT%H:%M:%SZ)'
-    - 'docker build --build-arg EXPIRY_DATE=$EXPIRY --build-arg SRC_IMAGE=base -f .gitlab-ci-src/expiring.Dockerfile -t $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA .'
-
     - | # push CI images while potentially (only on master) building new release images
         ( # subshell to enable waiting on parallel processes
           (
-            echo $CI_REGISTRY_IMAGE:ci $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA | xargs -n 1 docker push
-            echo "Successfully pushed $CI_REGISTRY_IMAGE:ci $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA (expires at $EXPIRY)"
+            echo $CI_REGISTRY_IMAGE/ci:latest $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA | xargs -n 1 docker push
+            echo "Successfully pushed $CI_REGISTRY_IMAGE/ci:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
           ) &
           (
-            docker save $CI_REGISTRY_IMAGE:ci | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
-            echo "Saved new copy of $CI_REGISTRY_IMAGE to cache"
+            docker save $CI_REGISTRY_IMAGE/ci:latest | zstd -T${WS_JOBS:-0} -2 >/cache/image.tar.zst
+            echo "Saved new copy of $CI_REGISTRY_IMAGE/ci:latest to cache"
           ) &
           truncate -s 0 build.log # ensure CI succeeds when no build takes place, making sure that no possible remnants of old logs remain
           if [[ "$CI_COMMIT_REF_NAME" = "master" ]] ; then
-            docker tag base $CI_REGISTRY_IMAGE:latest
+            docker tag $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
             docker run --name ci \
               -v ~/.netrc:/root/.netrc \
               -v /ccache:/ccache \
