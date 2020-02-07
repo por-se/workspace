@@ -45,5 +45,5 @@ if [[ -e /cache/image.tar.zst ]] ; then
 		rm /cache/image.tar.zst
 	fi
 fi
-docker pull $CI_REGISTRY_IMAGE:ci || true # If we don't find a cache image, just go on without one
+docker pull $CI_REGISTRY_IMAGE/ci:latest || true # If we don't find a cache image, just go on without one
 docker images
