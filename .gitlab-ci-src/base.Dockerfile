@@ -1,4 +1,4 @@
-FROM registry.comsys.rwth-aachen.de/symbiosys-projects-workspace-docker-base-image:latest
+FROM laboratory.comsys.rwth-aachen.de:5050/symbiosys/projects/workspace/docker-base-image:latest
 
 RUN pacman -Syu --noconfirm crypto++ && pacman -Scc --noconfirm
 
