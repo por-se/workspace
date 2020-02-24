@@ -162,8 +162,11 @@ class LLVM(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invalid
 
         z3 = self.find_z3(workspace)
         if z3:
+            self.cmake.set_flag("LLVM_ENABLE_Z3_SOLVER", True)
             self.cmake.set_flag('Z3_INCLUDE_DIRS', z3.paths["include_dir"])
             self.cmake.set_flag('Z3_LIBRARIES', z3.paths["libz3"])
+        else:
+            self.cmake.set_flag("LLVM_ENABLE_Z3_SOLVER", False)
 
         self.cmake.set_flag("LLVM_EXTERNAL_CLANG_SOURCE_DIR", self.paths["src_dir"] / "clang")
         self.cmake.set_flag("LLVM_TARGETS_TO_BUILD", "X86")
