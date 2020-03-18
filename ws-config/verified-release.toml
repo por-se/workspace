@@ -41,21 +41,6 @@ branch = "klee_0_9_29"
 repository = "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee-uclibc.git"
 
 [[Recipe]]
-recipe = "SIMULATOR"
-name = "simulator"
-branch = "master"
-profile = "rel+debinfo"
-porse = "porse"
-expensive-checks = false
-verified-fingerprints = true
-
-[[Recipe]]
-recipe = "PSEUDOALLOC"
-name = "pseudoalloc"
-branch = "master"
-profile = "rel+debinfo"
-
-[[Recipe]]
 recipe = "PORSE"
 name = "porse"
 branch = "master"

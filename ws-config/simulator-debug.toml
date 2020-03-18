@@ -1,6 +1,0 @@
-[[Recipe]]
-recipe = "SIMULATOR"
-name = "simulator"
-branch = "master"
-profile = "debug"
-expensive-checks = false

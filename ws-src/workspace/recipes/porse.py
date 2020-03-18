@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import schema
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
-from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -13,9 +12,7 @@ from .all_recipes import register_recipe
 from .klee_libcxx import KLEE_LIBCXX
 from .klee_uclibc import KLEE_UCLIBC
 from .llvm import LLVM
-from .pseudoalloc import PSEUDOALLOC
 from .recipe import Recipe
-from .simulator import SIMULATOR
 from .stp import STP
 from .z3 import Z3
 
@@ -76,8 +73,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "z3": Z3().default_name,
         "stp": STP().default_name,
         "klee-libcxx": None,
-        "simulator": SIMULATOR().default_name,
-        "pseudoalloc": PSEUDOALLOC().default_name,
         "verified-fingerprints": False,
         "vptr-sanitizer": False,
     }
@@ -88,8 +83,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         "z3": str,
         "stp": str,
         "klee-libcxx": schema.Or(str, None),
-        "simulator": str,
-        "pseudoalloc": str,
         "verified-fingerprints": bool,
         "vptr-sanitizer": bool,
     }
@@ -111,16 +104,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
             return None
         return self._find_previous_build(workspace, "klee-libcxx", KLEE_LIBCXX)
 
-    def find_simulator(self, workspace: Workspace) -> SIMULATOR:
-        return self._find_previous_build(workspace, "simulator", SIMULATOR)
-
-    def find_pseudoalloc(self, workspace: Workspace) -> PSEUDOALLOC:
-        return self._find_previous_build(workspace, "pseudoalloc", PSEUDOALLOC)
-
-    @property
-    def simulator(self) -> str:
-        return self.arguments["simulator"]
-
     @property
     def verified_fingerprints(self) -> bool:
         return self.arguments["verified-fingerprints"]
@@ -136,25 +119,9 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
-        # set include_dir early, as it does not depend on any build arguments
-        # and needs to be available to compute the digest of simulator
-        self.paths["src_dir"] = settings.ws_path / self.name
-        self.paths["include_dir"] = self.paths["src_dir"] / "include"
-
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
-
-        simulator = self.find_simulator(workspace)
-
-        if self.name != simulator.porse:
-            raise Exception(f'[{self.name}] The {simulator.__class__.__name__} build named "{simulator.name}" '
-                            f'must use the {self.__class__.__name__} build named "{self.name}"')
-
-        if self.verified_fingerprints != simulator.verified_fingerprints:
-            raise Exception(f'[{self.name}] The {simulator.__class__.__name__} build named "{simulator.name}" '
-                            f'and the {self.__class__.__name__} build named "{self.name}" must have the same '
-                            f'verified fingerprints settings')
 
         llvm = self.find_llvm(workspace)
 
@@ -177,8 +144,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         digest.update(self.find_z3(workspace).digest)
         digest.update(self.find_llvm(workspace).digest)
         digest.update(self.find_klee_uclibc(workspace).digest)
-        digest.update(self.find_pseudoalloc(workspace).digest)
-        digest.update(self.find_simulator(workspace).digest)
 
         klee_libcxx = self.find_klee_libcxx(workspace)
         if klee_libcxx:
@@ -195,8 +160,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         llvm = self.find_llvm(workspace)
         klee_uclibc = self.find_klee_uclibc(workspace)
         klee_libcxx = self.find_klee_libcxx(workspace)
-        pseudoalloc = self.find_pseudoalloc(workspace)
-        simulator = self.find_simulator(workspace)
 
         self.cmake.set_flag('USE_CMAKE_FIND_PACKAGE_LLVM', True)
         self.cmake.set_flag('LLVM_DIR', llvm.paths["cmake_export_dir"])
@@ -213,8 +176,6 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         self.cmake.set_flag('ENABLE_POSIX_RUNTIME', True)
         self.cmake.set_flag('ENABLE_KLEE_UCLIBC', True)
         self.cmake.set_flag('KLEE_UCLIBC_PATH', klee_uclibc.paths["build_dir"])
-        self.cmake.set_flag('PSEUDOALLOC_DIR', pseudoalloc.paths["build_dir"])
-        self.cmake.set_flag('POR_SIMULATOR_DIR', simulator.paths["build_dir"])
 
         self.cmake.set_flag('ENABLE_SYSTEM_TESTS', True)
         self.cmake.set_flag('ENABLE_UNIT_TESTS', True)
