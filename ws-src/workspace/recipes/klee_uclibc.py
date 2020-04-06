@@ -7,7 +7,7 @@ import urllib.request
 from typing import TYPE_CHECKING, Any, Dict
 
 from workspace.settings import settings
-from workspace.util import run_with_prefix
+from workspace.util import env_prepend_path, run_with_prefix
 from workspace.vcs.git import GitRecipeMixin
 
 from .all_recipes import register_recipe
@@ -16,20 +16,30 @@ from .recipe import Recipe
 
 if TYPE_CHECKING:
     import hashlib
+    from .porse import PORSE
     from workspace import Workspace
 
 
 class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
     default_arguments: Dict[str, Any] = {
         "llvm": LLVM().default_name,
+        "porse": "porse",  # hard-coded to avoid a circular dependency
     }
 
     argument_schema: Dict[str, Any] = {
         "llvm": str,
+        "porse": str,
     }
 
     def find_llvm(self, workspace: Workspace) -> LLVM:
         return self._find_previous_build(workspace, "llvm", LLVM)
+
+    def find_porse(self, workspace: Workspace) -> PORSE:
+        return workspace.find_build(self.porse, before=None)
+
+    @property
+    def porse(self):
+        return self.arguments["porse"]
 
     def __init__(self, **kwargs):
         GitRecipeMixin.__init__(self, "github://klee/klee-uclibc.git")
@@ -40,8 +50,18 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
 
         self.paths["locale_file"] = workspace.build_dir / "uclibc-locale" / "uClibc-locale-030818.tgz"
 
+        porse = self.find_porse(workspace)
+        if self.name != porse.klee_uclibc:
+            raise Exception(f'[{self.name}] The {porse.__class__.__name__} build named "{porse.name}" '
+                            f'must use the {self.__class__.__name__} build named "{self.name}"')
+
     def compute_digest(self, workspace: Workspace, digest: "hashlib._Hash") -> None:
         Recipe.compute_digest(self, workspace, digest)
+
+        porse = self.find_porse(workspace)
+        # porse include dir is known at this time as it does not depend on the digest
+        # and is independent of build arguments for the porse recipe
+        digest.update(f'porse-include-dir:{porse.paths["include_dir"].relative_to(settings.ws_path)}'.encode())
 
         digest.update(self.find_llvm(workspace).digest)
 
@@ -76,6 +96,9 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
             os.symlink(self.paths["locale_file"].resolve(), locale_build_path.resolve())
 
         env = workspace.get_env()
+        porse = self.find_porse(workspace)
+
+        env_prepend_path(env, "C_INCLUDE_PATH", porse.paths["include_dir"])
 
         if not (self.paths["build_dir"] / '.config').exists():
             llvm = self.find_llvm(workspace)

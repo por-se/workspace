@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import schema
 
 from workspace.build_systems.cmake_recipe_mixin import CMakeRecipeMixin
+from workspace.settings import settings
 from workspace.util import env_prepend_path
 from workspace.vcs.git import GitRecipeMixin
 
@@ -105,6 +106,10 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         return self._find_previous_build(workspace, "klee-libcxx", KLEE_LIBCXX)
 
     @property
+    def klee_uclibc(self) -> str:
+        return self.arguments["klee-uclibc"]
+
+    @property
     def verified_fingerprints(self) -> bool:
         return self.arguments["verified-fingerprints"]
 
@@ -119,9 +124,20 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 
+        # set include_dir early, as it does not depend on any build arguments
+        # and needs to be available to compute the digest of klee_uclibc
+        self.paths["src_dir"] = settings.ws_path / self.name
+        self.paths["include_dir"] = self.paths["src_dir"] / "include"
+
     def initialize(self, workspace: Workspace) -> None:
         Recipe.initialize(self, workspace)
         CMakeRecipeMixin.initialize(self, workspace)
+
+        klee_uclibc = self.find_klee_uclibc(workspace)
+
+        if self.name != klee_uclibc.porse:
+            raise Exception(f'[{self.name}] The {klee_uclibc.__class__.__name__} build named "{klee_uclibc.name}" '
+                            f'must use the {self.__class__.__name__} build named "{self.name}"')
 
         llvm = self.find_llvm(workspace)
 
