@@ -16,7 +16,7 @@ docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 docker run --name sources -v ~/.netrc:/root/.netrc -v /cache:/cache $CI_REGISTRY_IMAGE/ci:latest bash -c "set -e ; set -u ; set -o pipefail
 	cd /workspace
 	cp .gitlab-ci-src/ws-settings.toml .
-	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup -j ${WS_JOBS}
+	PIPENV_CACHE_DIR=/cache/pipenv ./ws setup -j ${WS_JOBS} laboratory
 "
 docker commit \
 	--change 'WORKDIR /workspace' \

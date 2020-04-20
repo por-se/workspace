@@ -2,7 +2,7 @@
 recipe = "Z3"
 name = "z3"
 branch = "z3-4.8.7"
-profile = "rel+debinfo"
+profile = "release"
 shared = false
 thread-safe = false
 
@@ -10,7 +10,7 @@ thread-safe = false
 recipe = "LLVM"
 name = "llvm"
 branch = "llvmorg-9.0.1"
-profile = "rel+debinfo"
+profile = "release"
 
 [[Recipe]]
 recipe = "KLEE_LIBCXXABI"
@@ -32,18 +32,19 @@ branch = "releases/2.2.1"
 recipe = "STP"
 name = "stp"
 branch = "2.3.3"
-profile = "rel+debinfo"
+profile = "release"
 
 [[Recipe]]
 recipe = "KLEE_UCLIBC"
 name = "klee-uclibc"
 branch = "klee_0_9_29"
+repository = "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee-uclibc.git"
 
 [[Recipe]]
 recipe = "PORSE"
 name = "porse"
 branch = "master"
-profile = "rel+debinfo"
+profile = "release"
 klee-libcxx = "klee-libcxx"
-# WARNING: this is very memory intensive, even for small example programs
-verified-fingerprints = true
+verified-fingerprints = false
+repository = "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee.git"

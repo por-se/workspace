@@ -167,12 +167,12 @@ test-dist-clean-setup-reset-settings:
     - '[[ ! -e porse ]]'
 
     # setup -u
-    - './ws setup --until z3'
+    - './ws setup --until z3 laboratory'
     - '[[ -e z3 ]]'
     - '[[ ! -e porse ]]'
 
     # setup
-    - './ws setup'
+    - './ws setup laboratory'
     - '[[ -e porse ]]'
 
     # reset-settings

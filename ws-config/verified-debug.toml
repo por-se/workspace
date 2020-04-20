@@ -38,7 +38,6 @@ profile = "rel+debinfo"
 recipe = "KLEE_UCLIBC"
 name = "klee-uclibc"
 branch = "klee_0_9_29"
-repository = "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee-uclibc.git"
 
 [[Recipe]]
 recipe = "PORSE"

@@ -118,9 +118,7 @@ class PORSE(Recipe, GitRecipeMixin, CMakeRecipeMixin):  # pylint: disable=invali
         return self.arguments["vptr-sanitizer"]
 
     def __init__(self, **kwargs):
-        GitRecipeMixin.__init__(self,
-                                "laboratory://symbiosys/projects/concurrent-symbolic-execution/klee.git",
-                                upstream="github://klee/klee.git")
+        GitRecipeMixin.__init__(self, "github://por-se/por-se.git", upstream="github://klee/klee.git")
         CMakeRecipeMixin.__init__(self)
         Recipe.__init__(self, **kwargs)
 

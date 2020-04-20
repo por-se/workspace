@@ -42,7 +42,7 @@ class KLEE_UCLIBC(Recipe, GitRecipeMixin):  # pylint: disable=invalid-name
         return self.arguments["porse"]
 
     def __init__(self, **kwargs):
-        GitRecipeMixin.__init__(self, "github://klee/klee-uclibc.git")
+        GitRecipeMixin.__init__(self, "github://por-se/klee-uclibc.git")
         Recipe.__init__(self, **kwargs)
 
     def initialize(self, workspace: Workspace):
