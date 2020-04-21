@@ -18,11 +18,19 @@ if TYPE_CHECKING:
     from workspace import Workspace
 
 
+def get_git_dir() -> Path:
+    result = subprocess.run(["git", "rev-parse", "--git-dir"], check=True, capture_output=True, cwd=settings.ws_path)
+    git_dir = Path(result.stdout.decode().strip())
+    if not git_dir.is_absolute():
+        git_dir = settings.ws_path / git_dir
+    return git_dir
+
+
 def add_exclude_path(path: Union[Path, PurePosixPath, str]) -> None:
     path = PurePosixPath(path)
     path = path.relative_to(settings.ws_path)
 
-    git_dir = settings.ws_path / ".git"
+    git_dir = get_git_dir()
     assert git_dir.is_dir()
 
     git_info_dir = git_dir / "info"
@@ -49,7 +57,8 @@ def remove_exclude_path(path: Union[Path, PurePosixPath, str]) -> None:
     path = PurePosixPath(path)
     path = path.relative_to(settings.ws_path)
 
-    git_exclude_path = settings.ws_path / ".git" / "info" / "exclude"
+    git_dir = get_git_dir()
+    git_exclude_path = git_dir / "info" / "exclude"
     if not git_exclude_path.is_file():
         return  # nothing to un-exclude
 

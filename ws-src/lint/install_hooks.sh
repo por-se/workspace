@@ -19,7 +19,8 @@ for hook in ws-src/lint/hooks/* ; do
 	name="$(basename "${hook%.*}")"
 	if [[ ! "$(readlink .git/hooks/${name})" -ef "${hook}" ]] ; then
 		echo Installing "${name}" hook...
-		rm -f ".git/hooks/${name}"
-		ln -s ../../"${hook}" ".git/hooks/${name}"
+		GIT_DIR="$(git rev-parse --git-dir)"
+		rm -f "${GIT_DIR}/hooks/${name}"
+		ln -s ../../"${hook}" "${GIT_DIR}/hooks/${name}"
 	fi
 done
