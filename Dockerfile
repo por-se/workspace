@@ -15,7 +15,7 @@ RUN echo LC_ALL=en_US.UTF-8 >>/etc/locale.conf && \
 
 ADD . /workspace
 
-RUN /workspace/ws build
+RUN /workspace/ws build && rm -rf /root/.ccache
 
 ENTRYPOINT ["/workspace/ws"]
 CMD ["shell", "-s", "fish"]
