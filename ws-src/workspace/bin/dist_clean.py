@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from workspace.vcs.git import get_git_dir
+
 
 def _emergency_cleanup():
     print(
@@ -53,7 +55,8 @@ def main():
     en_env = os.environ
     en_env["LC_ALL"] = "C"
 
-    exclude_path_exists = (settings.ws_path / ".git" / "info" / "exclude").exists()
+    git_dir = get_git_dir()
+    exclude_path_exists = (git_dir / "info" / "exclude").exists()
 
     if sys.stdin.isatty():
         subprocess.run(clean_cmd + ["-n"], check=True, env=en_env)
@@ -66,7 +69,7 @@ def main():
     if exclude_path_exists:
         print("Removing .git/info/exclude")
         try:
-            os.unlink(settings.ws_path / ".git" / "info" / "exclude")
+            os.unlink(git_dir / "info" / "exclude")
         except FileNotFoundError:
             pass
 
